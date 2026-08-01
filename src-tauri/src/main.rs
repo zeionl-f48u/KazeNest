@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    kazenest_lib::run()
+    kazenest_lib::run().expect("error while running tauri application");
 }
