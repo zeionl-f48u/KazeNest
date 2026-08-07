@@ -1,45 +1,21 @@
 <template>
-  <div class="app-container">
-    <!-- 自定义标题栏（放在最上面） -->
-    <div class="titlebar" data-tauri-drag-region>
-      <div class="titlebar-left">
-        <!-- 这里可以放应用图标或标题 -->
+  <!--
+    真正无边框（decorations: false）+ 接近原生体验的标题栏。
+    - 窗口控件（─/☐/✕）由插件在 webview 内部注入；不需手画。
+    - Snap Layout 悬浮提示（Win11）由插件用原生 HWND overlay 实现。
+    - macOS 上插件用 set_traffic_lights_inset() 接管红绿灯位置。
+    - 拖动：data-tauri-drag-region
+    - 双击最大化、Alt+F4 等系统手势：由插件/Tauri 自身处理。
+  -->
+  <div class="app-shell">
+    <header class="titlebar" data-tauri-drag-region>
+      <div class="titlebar-content">
         <span class="title">KazeNest</span>
       </div>
-      <div class="titlebar-right">
-        <!-- 窗口控制按钮（调用 Tauri API） -->
-        <button @click="minimize">─</button>
-        <button @click="toggleMaximize">☐</button>
-        <button @click="close">✕</button>
-      </div>
-    </div>
-  </div>
-  <div class="app-container">
-    <!-- 侧边栏 -->
-    <nav class="sidebar">
-      <div class="logo">🌪️ KazeNest</div>
-      <ul class="nav-list">
-        <li
-          v-for="item in navItems"
-          :key="item.key"
-          @click="currentPage = item.key"
-          :class="{ active: currentPage === item.key }"
-        >
-          {{ item.icon }} {{ item.label }}
-        </li>
-      </ul>
-      <div class="sidebar-footer">
-        <span class="version">v0.1.0</span>
-      </div>
-    </nav>
+    </header>
 
-    <!-- 内容区 -->
-    <main class="content">
-      <Dashboard   v-show="currentPage === 'dashboard'" class="page-wrapper" />
-      <Files       v-show="currentPage === 'files'"     class="page-wrapper" />
-      <AIChat      v-show="currentPage === 'ai'"        class="page-wrapper" />
-      <Browser     v-show="currentPage === 'browser'"   class="page-wrapper" />
-      <Settings    v-show="currentPage === 'settings'"  class="page-wrapper" />
+    <main class="app-content">
+      <p>主内容区</p>
     </main>
   </div>
 </template>
@@ -47,154 +23,140 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { getCurrentWindow } from '@tauri-apps/api/window'
 
 onMounted(async () => {
+  const win = getCurrentWindow()
   try {
-    console.log('🔄 正在激活自定义标题栏...')
+    // 1. 激活插件 overlay（注入 HTML 控件 + 注册 Win32 HTMAXBUTTON 子窗口）。
+    //    必须在窗口可见前调用，避免出现原生标题栏闪烁。
     await invoke('init_custom_titlebar')
-    console.log('✅ 自定义标题栏激活成功！窗口应显示。')
+
+    // 2. 等待插件在 <html> 上设置 data-tauri-plugin-decoration-active。
+    //    这是插件完成注入的信号。
+    const activated = await waitForPluginActive(5000)
+    if (!activated) {
+      console.warn('⚠️ 插件未在 5s 内激活，但无边框窗口继续显示。')
+    }
+
+    // 3. 标题栏就绪后再显示窗口。
+    await win.show()
   } catch (error) {
-    console.error('❌ 自定义标题栏激活失败:', error)
+    console.error('❌ 标题栏初始化失败:', error)
+    // 出错也要把窗口显示出来，否则用户什么都看不到
+    await win.show()
   }
 })
 
-const win = getCurrentWindow();
-
-import { ref } from 'vue'
-import Dashboard from './pages/Dashboard.vue'
-import Files from './pages/Files.vue'
-import AIChat from './pages/AI.vue'
-import Browser from './pages/Browser.vue'
-import Settings from './pages/Settings.vue'
-
-const currentPage = ref('dashboard')
-
-const navItems = [
-  { key: 'dashboard', icon: '📊', label: '仪表盘' },
-  { key: 'files',     icon: '📁', label: '文件管理' },
-  { key: 'ai',        icon: '🤖', label: 'AI' },
-  { key: 'browser',   icon: '🌐', label: '浏览器' },
-  { key: 'settings',  icon: '⚙️', label: '设置' },
-]
-
-const minimize = () => win.minimize();
-const toggleMaximize = () => win.toggleMaximize();
-const close = () => win.close();
-
+/**
+ * 轮询检查 <html> 上的 data-tauri-plugin-decoration-active 属性。
+ * 该属性由 tauri-plugin-decoration 在 overlay 注入成功后设置。
+ */
+function waitForPluginActive(timeoutMs: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const start = Date.now()
+    const tick = () => {
+      if (document.documentElement.hasAttribute('data-tauri-plugin-decoration-active')) {
+        return resolve(true)
+      }
+      if (Date.now() - start > timeoutMs) {
+        return resolve(false)
+      }
+      setTimeout(tick, 50)
+    }
+    tick()
+  })
+}
 </script>
 
-<style scoped>
-* {
+<style>
+/* README "Titlebar Layout and CSS" 节推荐的全局规则 */
+:root {
+  --app-titlebar-height: 32px;
+}
+
+html,
+body,
+#app {
+  height: 100%;
   margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+}
+
+body,
+.app-shell {
+  overflow: hidden;
+}
+</style>
+
+<style scoped>
+.app-shell {
+  height: 100%;
 }
 
 .titlebar {
+  /* 占满顶部；高度 32px 配合插件注入的 Win32/Libadwaita 控件带高度 */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--app-titlebar-height);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  height: 32px;
-  padding: 0 12px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  user-select: none;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  flex-shrink: 0;
-}
-.titlebar button {
-  border: none;
-  background: transparent;
-  padding: 4px 10px;
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 14px;
-}
-.titlebar button:hover {
-  background: rgba(0, 0, 0, 0.05);
+  z-index: 10;
+
+  /* 与插件默认风格接近的视觉（淡灰底 + 底边线） */
+  background: #f3f3f3;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.app-container {
-  display: flex;
-  height: 100vh;
-  background: #f5f5f7;
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
-}
-
-.sidebar {
-  width: 220px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-right: 0.5px solid rgba(0, 0, 0, 0.06);
-  display: flex;
-  flex-direction: column;
-  padding: 24px 0 16px 0;
-  flex-shrink: 0;
-}
-
-.logo {
-  font-size: 22px;
-  font-weight: 700;
-  padding: 0 20px 32px 20px;
-  color: #1a1a2e;
-}
-
-.nav-list {
-  list-style: none;
-  flex: 1;
-}
-
-.nav-list li {
-  padding: 10px 20px;
-  margin: 2px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #4a4a6a;
-  font-size: 15px;
-  font-weight: 500;
-}
-
-.nav-list li:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-.nav-list li.active {
-  background: #1a1a2e;
-  color: #ffffff;
-}
-
-.sidebar-footer {
-  padding: 16px 20px 0 20px;
-  border-top: 0.5px solid rgba(0, 0, 0, 0.06);
-}
-
-.version {
-  font-size: 12px;
-  color: #999;
-}
-
-.content {
-  flex: 1;
-  padding: 32px 40px;
-  overflow-y: auto;
-}
-
-.page-wrapper {
-  animation: pageFadeIn 0.25s ease;
-}
-
-@keyframes pageFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
+@media (prefers-color-scheme: dark) {
+  .titlebar {
+    background: #2b2b2b;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+}
+
+.titlebar-content {
+  /* 关键：让出插件注入的窗口控件占用的空间。
+     - 无原生 traffic-light 的平台（Windows / Linux）：左侧 0，右侧 138px 左右（─ ☐ ✕）。
+     - macOS：左侧 ~80px（红绿灯），右侧 0。
+     插件会动态写入 --tauri-plugin-decoration-{left,right}-clearance。 */
+  padding-left: max(8px, var(--tauri-plugin-decoration-left-clearance, 0px));
+  padding-right: max(8px, var(--tauri-plugin-decoration-right-clearance, 0px));
+  cursor: default;
+  user-select: none;
+  font-size: 12px;
+  font-weight: 400;
+  color: #1a1a1a;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI",
+    "PingFang SC", sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-color-scheme: dark) {
+  .titlebar-content {
+    color: #f0f0f0;
+  }
+}
+
+.app-content {
+  /* 高度 = 视口 - 标题栏高度；margin-top 把内容顶到标题栏下方 */
+  height: 100%;
+  margin-top: var(--app-titlebar-height);
+  overflow-y: auto;
+  padding: 32px 40px;
+  background: #fafafa;
+  color: #1a1a1a;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  box-sizing: border-box;
+}
+
+@media (prefers-color-scheme: dark) {
+  .app-content {
+    background: #1e1e1e;
+    color: #f0f0f0;
   }
 }
 </style>
