@@ -1,20 +1,28 @@
+<!--
+  Files：文件管理页（占位）
+-->
 <template>
-  <div class="page">
-    <h1>📁 文件管理</h1>
-    <p>这里是云盘文件列表。</p>
-  </div>
+  <PageLayout title="文件管理" subtitle="浏览、搜索与快速预览" icon="folder">
+    <div class="empty">
+      <Icon name="folder-open" :size="40" color="var(--kn-fg-subtle)" />
+      <p>文件管理功能开发中</p>
+    </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
-// 文件管理的逻辑以后写在这里
+import { PageLayout, Icon } from '../component/common'
 </script>
 
 <style scoped>
-.page {
-  animation: fadeIn 0.25s ease;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--kn-space-3);
+  padding: var(--kn-space-10) 0;
+  color: var(--kn-fg-muted);
+  font-size: var(--kn-text-sm);
 }
 </style>

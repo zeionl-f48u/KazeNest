@@ -1,0 +1,64 @@
+/*
+ * Editor 设计 tokens（编辑器示例页专用）
+ * 颜色 / 圆角 / 间距 / 字号引用全局 --kn-*（src/styles/tokens.css）
+ * macOS / VS Code 混合柔和风：白底深字（亮色）、石墨底浅字（暗色）
+ */
+
+:root {
+  /* ============ 标签页 ============ */
+  --ed-tabbar-bg: color-mix(in srgb, var(--kn-bg-sunken) 60%, transparent);
+  --ed-tabbar-border: var(--kn-border);
+  --ed-tab-bg: transparent;
+  --ed-tab-fg: var(--kn-fg-muted);
+  --ed-tab-hover: var(--kn-hover);
+  --ed-tab-active-bg: var(--kn-bg-elev);
+  --ed-tab-active-fg: var(--kn-fg);
+  --ed-tab-active-border: var(--kn-brand-500);
+  --ed-tab-height: 34px;
+
+  /* ============ 代码区 ============ */
+  --ed-bg: var(--kn-bg-elev);
+  --ed-fg: #1f2328;
+  --ed-gutter-fg: #9ca3af;
+  --ed-line-height: 21px;
+  --ed-font: var(--kn-font-mono);
+  --ed-font-size: 13px;
+
+  /* ============ 状态栏 ============ */
+  --ed-status-bg: color-mix(in srgb, var(--kn-bg-sunken) 75%, transparent);
+  --ed-status-fg: var(--kn-fg-muted);
+  --ed-status-hover: var(--kn-hover);
+  --ed-status-height: 24px;
+
+  /* ============ 语法高亮（亮色） ============ */
+  --ed-hl-comment:  #94a3b8;
+  --ed-hl-string:   #0e9f6e;
+  --ed-hl-number:   #d97706;
+  --ed-hl-keyword:  #7c3aed;
+  --ed-hl-fn:       #2563eb;
+  --ed-hl-selector: #0ea5e9;
+}
+
+html.dark {
+  --ed-tabbar-bg: rgba(30, 30, 34, 0.85);
+  --ed-tabbar-border: rgba(255, 255, 255, 0.06);
+  --ed-tab-hover: rgba(255, 255, 255, 0.05);
+  --ed-tab-active-bg: #1e1e22;
+  --ed-tab-active-fg: #e5e7eb;
+  --ed-tab-active-border: var(--kn-brand-400);
+
+  --ed-bg: #1e1e22;
+  --ed-fg: #d4d4d8;
+  --ed-gutter-fg: #52525b;
+
+  --ed-status-bg: rgba(22, 25, 34, 0.9);
+  --ed-status-fg: #9aa3b2;
+  --ed-status-hover: rgba(255, 255, 255, 0.06);
+
+  --ed-hl-comment:  #6a9955;
+  --ed-hl-string:   #ce9178;
+  --ed-hl-number:   #b5cea8;
+  --ed-hl-keyword:  #c586c0;
+  --ed-hl-fn:       #dcdcaa;
+  --ed-hl-selector: #569cd6;
+}

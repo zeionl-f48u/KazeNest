@@ -1,0 +1,144 @@
+/*
+ * KazeNest 全局设计系统
+ * 这是整个项目唯一的色板 / 间距 / 圆角 / 阴影 / 字号 / 动效 来源
+ *
+ * 模块约定：
+ *  - 全局基础 token：--kn-* (本文件)
+ *  - 顶栏私有 token：--tb-* (component/titlebar/tokens.css)
+ *  - 侧栏私有 token：--ab-* / --sb-* (component/sidebar/tokens.css)
+ *    私有 token 引用全局 token 派生，不再单独定义颜色
+ *
+ * 配色哲学：
+ *  - 品牌色：indigo-500 (#6366f1) + violet-500 (#8b5cf6) + pink-500 (#ec4899)
+ *  - 中性色：slate 系（不是 VS Code 的纯灰，让全 App 更柔和）
+ *  - 强调色：sky (#0ea5e9) 用于"已激活 / 选中"
+ *  - 状态色：emerald / amber / rose
+ */
+
+:root {
+  /* ============ 品牌色 ============ */
+  --kn-brand-50:  #eef2ff;
+  --kn-brand-100: #e0e7ff;
+  --kn-brand-200: #c7d2fe;
+  --kn-brand-300: #a5b4fc;
+  --kn-brand-400: #818cf8;
+  --kn-brand-500: #6366f1;
+  --kn-brand-600: #4f46e5;
+  --kn-brand-700: #4338ca;
+
+  --kn-accent-400: #a78bfa;
+  --kn-accent-500: #8b5cf6;
+  --kn-accent-600: #7c3aed;
+
+  --kn-magenta-400: #f472b6;
+  --kn-magenta-500: #ec4899;
+  --kn-magenta-600: #db2777;
+
+  --kn-sky-400: #38bdf8;
+  --kn-sky-500: #0ea5e9;
+  --kn-sky-600: #0284c7;
+
+  --kn-emerald-500: #10b981;
+  --kn-amber-500: #f59e0b;
+  --kn-rose-500: #f43f5e;
+
+  /* ============ 语义色（亮色）============ */
+  --kn-bg:        #f8fafc;                /* 主背景 */
+  --kn-bg-elev:   #ffffff;                /* 浮起表面 */
+  --kn-bg-sunken: #f1f5f9;                /* 凹陷表面 */
+  --kn-fg:        #0f172a;
+  --kn-fg-muted:  #475569;
+  --kn-fg-subtle: #94a3b8;
+  --kn-border:    rgba(15, 23, 42, 0.08);
+  --kn-border-strong: rgba(15, 23, 42, 0.14);
+
+  /* ============ 交互态（亮色）============ */
+  --kn-hover:    rgba(15, 23, 42, 0.04);
+  --kn-active:   rgba(15, 23, 42, 0.08);
+  --kn-selected: var(--kn-brand-50);
+  --kn-focus:    rgba(99, 102, 241, 0.35);
+
+  /* ============ 圆角 ============ */
+  --kn-radius-xs: 3px;
+  --kn-radius-sm: 4px;
+  --kn-radius-md: 6px;
+  --kn-radius-lg: 8px;
+  --kn-radius-xl: 12px;
+  --kn-radius-2xl: 16px;
+  --kn-radius-pill: 999px;
+
+  /* ============ 间距 ============ */
+  --kn-space-1: 4px;
+  --kn-space-2: 8px;
+  --kn-space-3: 12px;
+  --kn-space-4: 16px;
+  --kn-space-5: 20px;
+  --kn-space-6: 24px;
+  --kn-space-8: 32px;
+  --kn-space-10: 40px;
+
+  /* ============ 字号 ============ */
+  --kn-text-2xs: 10px;
+  --kn-text-xs:  11px;
+  --kn-text-sm:  12px;
+  --kn-text-md:  13px;
+  --kn-text-lg:  14px;
+  --kn-text-xl:  16px;
+  --kn-text-2xl: 18px;
+  --kn-text-3xl: 24px;
+
+  /* ============ 字体族 ============ */
+  --kn-font-sans: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont,
+    "PingFang SC", "Microsoft YaHei", sans-serif;
+  --kn-font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+
+  /* ============ 阴影 ============ */
+  --kn-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --kn-shadow-sm: 0 2px 4px rgba(15, 23, 42, 0.06);
+  --kn-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --kn-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.1);
+  --kn-shadow-xl: 0 24px 64px rgba(15, 23, 42, 0.18);
+  --kn-shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.25);
+
+  /* ============ 玻璃面板（顶栏 / 卡片 / 弹层 共享）============ */
+  --kn-glass-bg: rgba(255, 255, 255, 0.55);
+  --kn-glass-border: rgba(255, 255, 255, 0.6);
+  --kn-glass-shadow: var(--kn-shadow-md);
+  --kn-glass-blur: 16px;
+  --kn-glass-saturation: 180%;
+
+  /* ============ 动效 ============ */
+  --kn-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --kn-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --kn-dur-fast: 0.08s;
+  --kn-dur-base: 0.12s;
+  --kn-dur-slow: 0.2s;
+}
+
+html.dark {
+  /* ============ 语义色（暗色）============ */
+  --kn-bg:        #0f1115;
+  --kn-bg-elev:   #161922;
+  --kn-bg-sunken: #0a0c10;
+  --kn-fg:        #e5e7eb;
+  --kn-fg-muted:  #94a3b8;
+  --kn-fg-subtle: #64748b;
+  --kn-border:    rgba(255, 255, 255, 0.06);
+  --kn-border-strong: rgba(255, 255, 255, 0.12);
+
+  /* ============ 交互态（暗色）============ */
+  --kn-hover:    rgba(255, 255, 255, 0.05);
+  --kn-active:   rgba(255, 255, 255, 0.1);
+  --kn-selected: rgba(99, 102, 241, 0.18);
+  --kn-focus:    rgba(129, 140, 248, 0.45);
+
+  --kn-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --kn-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --kn-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --kn-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --kn-shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.65);
+  --kn-shadow-focus: 0 0 0 3px rgba(129, 140, 248, 0.35);
+
+  --kn-glass-bg: rgba(28, 30, 38, 0.55);
+  --kn-glass-border: rgba(255, 255, 255, 0.06);
+}

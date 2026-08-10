@@ -1,20 +1,28 @@
+<!--
+  AI：AI 助手页（占位）
+-->
 <template>
-  <div class="page">
-    <h1>🤖 AI 界面</h1>
-    <p>这里是 AI 界面。</p>
-  </div>
+  <PageLayout title="AI 助手" subtitle="让 AI 帮你写、读、想" icon="sparkles">
+    <div class="empty">
+      <Icon name="sparkles" :size="40" color="var(--kn-magenta-500)" />
+      <p>AI 助手开发中</p>
+    </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
-// AI 界面的逻辑以后写在这里
+import { PageLayout, Icon } from '../component/common'
 </script>
 
 <style scoped>
-.page {
-  animation: fadeIn 0.25s ease;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--kn-space-3);
+  padding: var(--kn-space-10) 0;
+  color: var(--kn-fg-muted);
+  font-size: var(--kn-text-sm);
 }
 </style>

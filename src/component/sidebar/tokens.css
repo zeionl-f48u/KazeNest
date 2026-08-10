@@ -1,0 +1,72 @@
+/*
+ * Sidebar 设计 tokens
+ * 私有 token：--ab-*（活动栏） / --sb-*（侧边栏）
+ * 颜色 / 圆角 / 间距 / 阴影直接引用全局 --kn-*（src/styles/tokens.css）
+ *
+ * VS Code 风格：
+ *  - 活动栏：activityBar.background 暗色 #333 / 亮色 #2C2C
+ *  - 活动项左侧 2px 指示条
+ *  - 侧边栏：sideBar.background 暗色 #252526 / 亮色 #F3F3F3
+ *  - 列表选中：list.activeSelectionBackground
+ */
+
+:root {
+  /* ============ 活动栏（Activity Bar）============ */
+  --ab-width: 48px;
+  --ab-action-size: 48px;
+  --ab-icon-size: 21px;
+  --ab-font-size: var(--kn-text-md);
+
+  /* 柔和：活动栏背景半透明，活动指示条用品牌色而非纯黑 */
+  --ab-bg: color-mix(in srgb, var(--kn-bg-sunken) 94%, transparent);
+  --ab-fg: var(--kn-fg);
+  --ab-inactive-fg: color-mix(in srgb, var(--kn-fg) 45%, transparent);
+  --ab-hover: var(--kn-hover);
+  --ab-press: rgba(15, 23, 42, 0.14);   /* Win11 按压反馈 */
+  --ab-active-border: var(--kn-brand-500);
+  --ab-badge-bg: var(--kn-sky-500);
+  --ab-badge-fg: #ffffff;
+
+  /* ============ 侧边栏（Side Bar）============ */
+  --sb-width: 300px;
+  --sb-titlebar-height: 35px;
+  --sb-font-size: var(--kn-text-md);
+  --sb-row-height: 22px;
+  --sb-tree-indent: 12px;
+
+  --sb-bg: color-mix(in srgb, var(--kn-bg-elev) 96%, transparent);
+  --sb-fg: var(--kn-fg);
+  --sb-fg-muted: var(--kn-fg-muted);
+  --sb-border: var(--kn-border);
+  --sb-hover: var(--kn-hover);
+  --sb-active: var(--kn-active);
+
+  /* 柔和分组头：更浅的透明灰 */
+  --sb-section-header-bg: color-mix(in srgb, var(--kn-fg) 5%, transparent);
+  --sb-section-header-fg: var(--kn-fg-muted);
+  --sb-section-header-hover: var(--kn-hover);
+
+  --sb-item-hover: var(--kn-hover);
+  /* 柔和选中：品牌色 20% 半透明（不再用实心蓝） */
+  --sb-selection-bg: color-mix(in srgb, var(--kn-brand-500) 18%, transparent);
+  --sb-selection-fg: var(--kn-fg);
+
+  --sb-transition-fast: var(--kn-dur-fast);
+}
+
+html.dark {
+  --ab-bg: rgba(24, 26, 30, 0.85);
+  --ab-hover: rgba(255, 255, 255, 0.08);
+  --ab-press: rgba(255, 255, 255, 0.18);   /* Win11 按压反馈 */
+  --ab-active-border: var(--kn-brand-400);
+
+  --sb-bg: rgba(22, 25, 34, 0.88);
+  --sb-fg-muted: #9aa3b2;
+  --sb-section-header-bg: rgba(255, 255, 255, 0.04);
+  --sb-section-header-fg: #b6bdca;
+  --sb-border: rgba(255, 255, 255, 0.06);
+  --sb-selection-bg: color-mix(in srgb, var(--kn-brand-400) 22%, transparent);
+  --sb-selection-fg: var(--kn-fg);
+  --sb-hover: rgba(255, 255, 255, 0.05);
+  --sb-item-hover: rgba(255, 255, 255, 0.06);
+}

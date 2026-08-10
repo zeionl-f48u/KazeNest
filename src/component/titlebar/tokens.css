@@ -1,0 +1,118 @@
+/*
+ * Titlebar 设计 tokens
+ * 私有 token：--tb-*（顶栏专用尺寸 / 顶栏特定配色）
+ * 颜色 / 圆角 / 间距 / 阴影 / 字号直接引用全局 --kn-*（src/styles/tokens.css）
+ *
+ * macOS 风格：柔和、克制、通透
+ *  - 标题栏 = 毛玻璃（frosted glass）：半透明底 + backdrop blur + 发丝分隔线
+ *  - 按钮 hover 为"胶囊"（pill），浅灰柔和高亮
+ *  - 阴影极轻，整体走"轻"而不是"重"
+ */
+
+:root {
+  /* ============ 尺寸（macOS 风格标题栏）============ */
+  --tb-height: 38px;
+  --tb-pad-x: 10px;
+  --tb-icon-size: 15px;
+  --tb-btn-size: 28px;
+  --tb-title-font-size: var(--kn-text-md);
+
+  /* 间距 */
+  --tb-gap: 4px;
+  --tb-toolbar-gap: 2px;
+
+  /* caption 控件（─ ☐ ✕）安全区兜底 */
+  --tb-caption-right-clearance: 139px;
+
+  /* ============ 配色（亮色 — macOS 毛玻璃）============ */
+  /* 主体：半透明白 + backdrop blur（blur 数值在 .tb 里消费） */
+  --tb-bg: rgba(248, 249, 252, 0.72);
+  --tb-blur: 20px;
+  --tb-saturation: 180%;
+  /* 发丝分隔线 + 顶光高光，让顶栏"透"起来 */
+  --tb-border: rgba(15, 23, 42, 0.08);
+  --tb-divider: rgba(15, 23, 42, 0.08);
+  --tb-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 1px 2px rgba(15, 23, 42, 0.03);
+
+  --tb-fg: var(--kn-fg);
+  --tb-fg-muted: var(--kn-fg-muted);
+
+  /* 交互态：浅灰胶囊（macOS toolbar 风格） */
+  --tb-hover: rgba(15, 23, 42, 0.06);
+  --tb-active: rgba(15, 23, 42, 0.1);
+  --tb-focus-ring: var(--kn-focus);
+  --tb-btn-radius: 999px;                 /* 胶囊 hover */
+
+  /* kbd / 标签 */
+  --tb-kbd-bg: color-mix(in srgb, var(--kn-fg) 5%, transparent);
+  --tb-kbd-border: color-mix(in srgb, var(--kn-fg) 9%, transparent);
+  --tb-kbd-fg: var(--kn-fg-muted);
+
+  /* 搜索触发器（命令中心）：柔和凹陷 */
+  --tb-search-bg: color-mix(in srgb, var(--kn-fg) 5%, transparent);
+  --tb-search-bg-hover: color-mix(in srgb, var(--kn-fg) 8%, transparent);
+  --tb-search-bg-focus: color-mix(in srgb, var(--kn-bg-elev) 92%, transparent);
+  --tb-search-border: color-mix(in srgb, var(--kn-fg) 10%, transparent);
+  --tb-search-border-focus: color-mix(in srgb, var(--kn-brand-500) 45%, transparent);
+  --tb-search-radius: var(--kn-radius-pill);
+
+  /* ============ 搜索面板 ============ */
+  --tb-panel-bg: color-mix(in srgb, var(--kn-bg-elev) 98%, transparent);
+  --tb-panel-border: var(--kn-border);
+  --tb-panel-shadow:
+    0 1px 0 rgba(255, 255, 255, 1) inset,
+    0 24px 64px rgba(15, 23, 42, 0.18),
+    0 4px 12px rgba(15, 23, 42, 0.06);
+  --tb-panel-radius: var(--kn-radius-xl);
+  --tb-panel-width: min(560px, calc(100% - 48px));
+  --tb-panel-max-height: min(520px, calc(100vh - 120px));
+
+  --tb-overlay-bg: color-mix(in srgb, var(--kn-fg) 18%, transparent);
+
+  --tb-item-hover: var(--kn-hover);
+  --tb-item-active: color-mix(in srgb, var(--kn-brand-500) 12%, transparent);
+  --tb-item-group-bg: color-mix(in srgb, var(--kn-fg) 6%, transparent);
+  --tb-item-group-fg: var(--kn-fg-muted);
+  --tb-item-divider: var(--kn-border);
+
+  /* 动效 */
+  --tb-transition-fast: var(--kn-dur-fast);
+  --tb-transition-base: var(--kn-dur-base);
+  --tb-transition-slow: var(--kn-dur-slow);
+}
+
+html.dark {
+  /* 暗色 macOS 毛玻璃：石墨色半透明 */
+  --tb-bg: rgba(30, 30, 33, 0.72);
+  --tb-blur: 20px;
+  --tb-saturation: 180%;
+  --tb-border: rgba(255, 255, 255, 0.09);
+  --tb-divider: rgba(255, 255, 255, 0.09);
+  --tb-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.35);
+
+  --tb-hover: rgba(255, 255, 255, 0.07);
+  --tb-active: rgba(255, 255, 255, 0.12);
+
+  --tb-kbd-bg: rgba(255, 255, 255, 0.06);
+  --tb-kbd-border: rgba(255, 255, 255, 0.1);
+
+  --tb-search-bg: rgba(255, 255, 255, 0.06);
+  --tb-search-bg-hover: rgba(255, 255, 255, 0.1);
+  --tb-search-bg-focus: rgba(40, 42, 52, 0.9);
+  --tb-search-border: rgba(255, 255, 255, 0.12);
+  --tb-search-border-focus: rgba(129, 140, 248, 0.5);
+
+  --tb-panel-bg: color-mix(in srgb, #1e1e22 98%, transparent);
+  --tb-panel-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    0 4px 12px rgba(0, 0, 0, 0.35);
+
+  --tb-overlay-bg: rgba(0, 0, 0, 0.45);
+  --tb-item-active: color-mix(in srgb, var(--kn-brand-400) 18%, transparent);
+  --tb-item-group-bg: rgba(255, 255, 255, 0.08);
+}

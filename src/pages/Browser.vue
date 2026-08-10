@@ -1,20 +1,28 @@
+<!--
+  Browser：内置浏览器页（占位）
+-->
 <template>
-  <div class="page">
-    <h1>🌐 内置浏览器</h1>
-    <p>这里是浏览器标签页。</p>
-  </div>
+  <PageLayout title="浏览器" subtitle="内嵌 Web 视图与历史" icon="globe">
+    <div class="empty">
+      <Icon name="globe" :size="40" color="var(--kn-emerald-500)" />
+      <p>浏览器开发中</p>
+    </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
-// 浏览器的逻辑以后写在这里
+import { PageLayout, Icon } from '../component/common'
 </script>
 
 <style scoped>
-.page {
-  animation: fadeIn 0.25s ease;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--kn-space-3);
+  padding: var(--kn-space-10) 0;
+  color: var(--kn-fg-muted);
+  font-size: var(--kn-text-sm);
 }
 </style>

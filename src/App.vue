@@ -1,57 +1,185 @@
+<!--
+  KazeNest 入口
+  - 顶栏独立：./component/titlebar
+  - 边栏独立：./component/sidebar
+  - 通用组件：./component/common
+  - 业务数据：./data
+  - 视图组件：./pages/*
+-->
 <template>
-  <!--
-    真正无边框（decorations: false）+ 接近原生体验的标题栏。
-    - 窗口控件（─/☐/✕）由插件在 webview 内部注入；不需手画。
-    - Snap Layout 悬浮提示（Win11）由插件用原生 HWND overlay 实现。
-    - macOS 上插件用 set_traffic_lights_inset() 接管红绿灯位置。
-    - 拖动：data-tauri-drag-region
-    - 双击最大化、Alt+F4 等系统手势：由插件/Tauri 自身处理。
-  -->
   <div class="app-shell">
-    <header class="titlebar" data-tauri-drag-region>
-      <div class="titlebar-content">
-        <span class="title">KazeNest</span>
-      </div>
-    </header>
+    <Titlebar
+      title="KazeNest"
+      :search-items="searchItems"
+      @search-select="onSearchSelect"
+    >
+      <!-- 左侧：工作区 + 菜单（TitlebarChrome 模块化） -->
+      <template #leading>
+        <TitlebarChrome
+          part="leading"
+          :workspace-name="workspaceName"
+          :menus="topMenus"
+          @workspace="onWorkspace"
+          @menu="onMenu"
+        />
+      </template>
 
-    <main class="app-content">
-      <p>主内容区</p>
-    </main>
+      <!-- 右侧：Ask AI + 通知 + 账户（TitlebarChrome 模块化） -->
+      <template #trailing>
+        <TitlebarChrome
+          part="trailing"
+          :notify-count="notifyCount"
+          @ask-ai="onAskAI"
+          @notify="onNotify"
+          @account="onAccount"
+        />
+      </template>
+    </Titlebar>
+
+    <!-- VS Code 布局：活动栏 | 侧边栏 | 主内容 -->
+    <div class="app-body">
+      <ActivityBar
+        :items="activityItems"
+        :model-value="activeView"
+        @update:model-value="onActivitySelect"
+        @toggle="onActivityToggle"
+      />
+
+      <SideBar
+        v-if="sideBarOpen"
+        :title="sideBarTitle"
+        :sections="sideBarSections"
+        v-model="selectedNodeId"
+        @close="sideBarOpen = false"
+      />
+
+      <!-- 编辑器视图通栏铺满（VS Code 风格），其余视图保留内边距 -->
+      <main
+        class="app-content"
+        :class="{ 'is-flush': activeView === 'editor' }"
+      >
+        <!-- 切换视图时安卓 Activity 风格过渡（淡入 + 上移） -->
+        <Transition name="view" mode="out-in">
+          <component :is="viewComponent" :key="activeView" />
+        </Transition>
+      </main>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, markRaw, onMounted, ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 
+import { Titlebar, TitlebarChrome } from './component/titlebar'
+import { ActivityBar, SideBar } from './component/sidebar'
+
+import {
+  searchItems,
+  activityItems,
+  topMenus,
+  sideBarConfig,
+} from './data'
+import type { SearchItem } from './data'
+
+import Home from './pages/Home.vue'
+import Editor from './pages/Editor.vue'
+import Files from './pages/Files.vue'
+import AI from './pages/AI.vue'
+import Browser from './pages/Browser.vue'
+import Settings from './pages/Settings.vue'
+
+/* =================== 视图状态 =================== */
+
+/** 默认进入编辑器（应用定位为编辑器） */
+const activeView = ref('editor')
+const sideBarOpen = ref(true)
+const selectedNodeId = ref('')
+const notifyCount = ref(3)
+const workspaceName = '我的工作区'
+
+/* =================== 视图组件映射 =================== */
+
+const viewComponents = {
+  home:     markRaw(Home),
+  editor:   markRaw(Editor),
+  files:    markRaw(Files),
+  ai:       markRaw(AI),
+  browser:  markRaw(Browser),
+  settings: markRaw(Settings),
+  // account 走 settings 页（账户面板后续单独做）
+  account:  markRaw(Settings),
+} as const
+
+const viewComponent = computed(
+  () => viewComponents[activeView.value as keyof typeof viewComponents] ?? Home
+)
+
+/* =================== 侧边栏内容 =================== */
+
+const sideBarTitle = computed(() => sideBarConfig[activeView.value]?.title ?? '侧边栏')
+const sideBarSections = computed(() => sideBarConfig[activeView.value]?.sections ?? [])
+
+/* =================== 顶栏 handler =================== */
+
+function onSearchSelect(item: SearchItem) {
+  console.log('search selected:', item)
+}
+
+function onMenu(name: string) {
+  console.log('menu clicked:', name)
+}
+
+function onWorkspace() {
+  console.log('workspace clicked')
+}
+
+function onAskAI() {
+  console.log('ask AI')
+}
+
+function onNotify() {
+  console.log('notify clicked')
+}
+
+function onAccount() {
+  console.log('account clicked')
+}
+
+/* =================== 活动栏 handler =================== */
+
+function onActivitySelect(id: string) {
+  activeView.value = id
+  selectedNodeId.value = ''
+  sideBarOpen.value = true
+}
+
+function onActivityToggle() {
+  sideBarOpen.value = !sideBarOpen.value
+}
+
+/* =================== 启动 =================== */
+
 onMounted(async () => {
+  /* 页面 → 外壳导航（首页卡片 / 快捷入口等派发 'kn:navigate'） */
+  const onNavigate = (e: Event) => {
+    const detail = (e as CustomEvent<string>).detail
+    if (detail) onActivitySelect(detail)
+  }
+  window.addEventListener('kn:navigate', onNavigate)
+
   const win = getCurrentWindow()
   try {
-    // 1. 激活插件 overlay（注入 HTML 控件 + 注册 Win32 HTMAXBUTTON 子窗口）。
-    //    必须在窗口可见前调用，避免出现原生标题栏闪烁。
     await invoke('init_custom_titlebar')
-
-    // 2. 等待插件在 <html> 上设置 data-tauri-plugin-decoration-active。
-    //    这是插件完成注入的信号。
-    const activated = await waitForPluginActive(5000)
-    if (!activated) {
-      console.warn('⚠️ 插件未在 5s 内激活，但无边框窗口继续显示。')
-    }
-
-    // 3. 标题栏就绪后再显示窗口。
+    await waitForPluginActive(5000)
     await win.show()
   } catch (error) {
     console.error('❌ 标题栏初始化失败:', error)
-    // 出错也要把窗口显示出来，否则用户什么都看不到
     await win.show()
   }
 })
 
-/**
- * 轮询检查 <html> 上的 data-tauri-plugin-decoration-active 属性。
- * 该属性由 tauri-plugin-decoration 在 overlay 注入成功后设置。
- */
 function waitForPluginActive(timeoutMs: number): Promise<boolean> {
   return new Promise((resolve) => {
     const start = Date.now()
@@ -59,9 +187,7 @@ function waitForPluginActive(timeoutMs: number): Promise<boolean> {
       if (document.documentElement.hasAttribute('data-tauri-plugin-decoration-active')) {
         return resolve(true)
       }
-      if (Date.now() - start > timeoutMs) {
-        return resolve(false)
-      }
+      if (Date.now() - start > timeoutMs) return resolve(false)
       setTimeout(tick, 50)
     }
     tick()
@@ -70,11 +196,9 @@ function waitForPluginActive(timeoutMs: number): Promise<boolean> {
 </script>
 
 <style>
-/* README "Titlebar Layout and CSS" 节推荐的全局规则 */
-:root {
-  --app-titlebar-height: 32px;
-}
-
+/* ============================================================
+ * 全局基础（tokens.css 提供 --kn-* 语义色 / 间距 / 圆角 / 阴影）
+ * ============================================================ */
 html,
 body,
 #app {
@@ -82,81 +206,64 @@ body,
   margin: 0;
 }
 
-body,
-.app-shell {
+body {
+  background:
+    radial-gradient(1200px 600px at 10% 0%, rgba(99, 102, 241, 0.18), transparent 60%),
+    radial-gradient(900px 500px at 100% 100%, rgba(236, 72, 153, 0.12), transparent 60%),
+    var(--kn-bg);
+  color: var(--kn-fg);
+  font-family: var(--kn-font-sans);
+  font-size: var(--kn-text-md);
   overflow: hidden;
+}
+
+#app,
+.app-shell {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* tauri-plugin-decoration 注入的覆盖层不接收事件（让位给应用按钮） */
+[data-tauri-plugin-decoration-root]
+  [data-tauri-decoration-tb]
+  > [data-tauri-drag-region] {
+  pointer-events: none !important;
+}
+
+/* PrimeVue 5 未配置许可证时会在右下角固定渲染水印宿主
+   （控制台同时输出 "PrimeUI license is not configured"）。
+   个人项目不使用其商业水印，直接隐藏。 */
+#p-license-host {
+  display: none !important;
 }
 </style>
 
 <style scoped>
 .app-shell {
+  position: relative;
+}
+
+/* ============ 布局：活动栏 | 侧边栏 | 主内容 ============ */
+.app-body {
   height: 100%;
-}
-
-.titlebar {
-  /* 占满顶部；高度 32px 配合插件注入的 Win32/Libadwaita 控件带高度 */
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: var(--app-titlebar-height);
+  padding-top: var(--tb-height);
   display: flex;
-  align-items: center;
-  z-index: 10;
-
-  /* 与插件默认风格接近的视觉（淡灰底 + 底边线） */
-  background: #f3f3f3;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-@media (prefers-color-scheme: dark) {
-  .titlebar {
-    background: #2b2b2b;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  }
-}
-
-.titlebar-content {
-  /* 关键：让出插件注入的窗口控件占用的空间。
-     - 无原生 traffic-light 的平台（Windows / Linux）：左侧 0，右侧 138px 左右（─ ☐ ✕）。
-     - macOS：左侧 ~80px（红绿灯），右侧 0。
-     插件会动态写入 --tauri-plugin-decoration-{left,right}-clearance。 */
-  padding-left: max(8px, var(--tauri-plugin-decoration-left-clearance, 0px));
-  padding-right: max(8px, var(--tauri-plugin-decoration-right-clearance, 0px));
-  cursor: default;
-  user-select: none;
-  font-size: 12px;
-  font-weight: 400;
-  color: #1a1a1a;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI",
-    "PingFang SC", sans-serif;
-  white-space: nowrap;
+  align-items: stretch;
+  box-sizing: border-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (prefers-color-scheme: dark) {
-  .titlebar-content {
-    color: #f0f0f0;
-  }
 }
 
 .app-content {
-  /* 高度 = 视口 - 标题栏高度；margin-top 把内容顶到标题栏下方 */
-  height: 100%;
-  margin-top: var(--app-titlebar-height);
+  flex: 1;
+  min-width: 0;
   overflow-y: auto;
-  padding: 32px 40px;
-  background: #fafafa;
-  color: #1a1a1a;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  padding: var(--kn-space-6);
   box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  .app-content {
-    background: #1e1e1e;
-    color: #f0f0f0;
-  }
+/* 编辑器等全屏视图：去掉内边距、内部自滚动 */
+.app-content.is-flush {
+  padding: 0;
+  overflow: hidden;
 }
 </style>

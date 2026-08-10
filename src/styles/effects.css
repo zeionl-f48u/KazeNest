@@ -1,0 +1,39 @@
+/* ============================================================
+ * 动效 / 交互反馈（全局）
+ * - .kn-ripple：Material 水波纹（配合 v-ripple 指令使用）
+ * - .view-*：视图切换过渡（安卓 Activity 风格：淡入 + 上移）
+ * ============================================================ */
+
+/* ---------- 水波纹 ---------- */
+.kn-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--kn-ripple-color, currentColor);
+  opacity: 0.32;
+  transform: scale(0);
+  pointer-events: none;
+  animation: kn-ripple 0.5s var(--kn-ease-out) forwards;
+  will-change: transform, opacity;
+}
+@keyframes kn-ripple {
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* ---------- 视图切换（安卓 Activity 过渡） ---------- */
+.view-enter-active,
+.view-leave-active {
+  transition:
+    opacity var(--kn-dur-base) var(--kn-ease-out),
+    transform var(--kn-dur-base) var(--kn-ease-out);
+}
+.view-enter-from {
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+}
+.view-leave-to {
+  opacity: 0;
+  transform: scale(0.985);
+}

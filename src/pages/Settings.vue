@@ -1,20 +1,28 @@
+<!--
+  Settings：系统设置页（占位）
+-->
 <template>
-  <div class="page">
-    <h1>⚙️ 设置</h1>
-    <p>这里是系统设置。</p>
-  </div>
+  <PageLayout title="设置" subtitle="主题、快捷键与偏好" icon="cog">
+    <div class="empty">
+      <Icon name="cog" :size="40" color="var(--kn-fg-subtle)" />
+      <p>设置面板开发中</p>
+    </div>
+  </PageLayout>
 </template>
 
 <script setup lang="ts">
-// 设置的逻辑以后写在这里
+import { PageLayout, Icon } from '../component/common'
 </script>
 
 <style scoped>
-.page {
-  animation: fadeIn 0.25s ease;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--kn-space-3);
+  padding: var(--kn-space-10) 0;
+  color: var(--kn-fg-muted);
+  font-size: var(--kn-text-sm);
 }
 </style>
