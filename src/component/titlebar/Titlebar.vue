@@ -17,7 +17,7 @@
     data-tauri-drag-region="deep"
   >
     <!-- 最左端：应用图标 + 应用名（KazeNest）+ 菜单栏 -->
-    <div class="tb-left">
+    <div ref="leftRef" class="tb-left">
       <button
         v-if="showIcon"
         class="tb-icon-btn"
@@ -36,7 +36,11 @@
 
       <span class="tb-title">{{ title }}</span>
 
-      <div v-if="$slots.leading" class="tb-slot tb-slot--leading">
+      <div
+        ref="leadingSlotRef"
+        v-if="$slots.leading"
+        class="tb-slot tb-slot--leading"
+      >
         <slot name="leading" />
       </div>
     </div>
@@ -131,7 +135,84 @@ function onGlobalToggle() {
   searchOpen.value = !searchOpen.value
 }
 
-onMounted(() => window.addEventListener('titlebar:search-toggle', onGlobalToggle))
+/* =================== 溢出布局：leading slot 固定 flex-basis ===================
+ *
+ * 背景：TitlebarChrome 会按「可用宽度」把放不下的菜单收进 ⋯。
+ * 若 leading slot 用 flex-basis:auto，一旦菜单被 display:none，
+ * 它的 max-content 变小 → flex 把 slot 宽度压缩 → 触发 ResizeObserver
+ * → 又隐藏更多菜单……形成「坍缩反馈循环」，窗口变宽后也无法恢复。
+ *
+ * 解法：把 slot 的 flex-basis 固定为「全部内容自然宽度」（scrollWidth
+ * 即使被裁剪也返回完整内容宽度），使 slot 宽度只由 flex 分配决定，
+ * 与可见内容无关，从而打破循环；恢复时 slot 也会回到自然宽度。
+ */
+const leadingSlotRef = ref<HTMLElement>()
+function syncLeadingBasis() {
+  const el = leadingSlotRef.value
+  if (!el) return
+  /* 子组件 TitlebarChrome 会先挂载并立即 layout() 折叠放不下的菜单，
+   * 若此时直接量 scrollWidth 会得到"折叠后"的宽度并固化（窄窗口启动时
+   * 的 bug：放大后永远恢复不了）。所以测量前先临时还原所有折叠项：
+   * 强制显示菜单 + 还原工作区图标化，量到真实自然宽度再还原。 */
+  const menus = Array.from(el.querySelectorAll<HTMLElement>('.tb-menu'))
+  const ws = el.querySelector<HTMLElement>('.tb-workspace')
+  const wsIconOnly = ws?.classList.contains('is-icon-only') ?? false
+  const prevDisplays: (string | null)[] = []
+  menus.forEach((m, i) => {
+    prevDisplays[i] = m.style.display
+    m.style.display = 'inline-flex' // 覆盖 .is-overflowed 的 display:none
+  })
+  if (ws && wsIconOnly) ws.classList.remove('is-icon-only')
+  const natural = el.scrollWidth
+  menus.forEach((m, i) => { m.style.display = prevDisplays[i] ?? '' })
+  if (ws && wsIconOnly) ws.classList.add('is-icon-only')
+  if (natural > 0) {
+    const current = parseFloat(el.style.flexBasis || '0')
+    if (Math.abs(current - natural) > 1) el.style.flexBasis = `${natural}px`
+  }
+}
+
+/* .tb-left 也需要固定 flex-basis：它若用 auto，隐藏菜单会让它的
+ * max-content 变小 → 宽度不再恢复 → ResizeObserver 不再触发 → 菜单卡在 ⋯。
+ * 这里用「真实自然宽度」= 图标 + 标题内容宽（scrollWidth 不受截断影响）
+ * + slot 固定 basis + 间距，状态无关，窄→宽可恢复。
+ */
+const leftRef = ref<HTMLElement>()
+
+function computeLeftNatural(): number {
+  const left = leftRef.value
+  if (!left) return 0
+  const icon = left.querySelector<HTMLElement>('.tb-icon-btn')
+  const title = left.querySelector<HTMLElement>('.tb-title')
+  const slot = leadingSlotRef.value
+  if (!icon || !title || !slot) return 0
+  const gap = parseFloat(getComputedStyle(left).gap) || 0
+  const iconW = icon.getBoundingClientRect().width
+  const titleW = title.scrollWidth // 内容宽，与是否截断无关
+  const slotW = parseFloat(slot.style.flexBasis) || slot.getBoundingClientRect().width
+  return Math.ceil(iconW + titleW + slotW + gap * 2)
+}
+
+function syncLeftBasis() {
+  const left = leftRef.value
+  const natural = computeLeftNatural()
+  if (left && natural > 0) {
+    const current = parseFloat(left.style.flexBasis || '0')
+    if (Math.abs(current - natural) > 1) left.style.flexBasis = `${natural}px`
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('titlebar:search-toggle', onGlobalToggle)
+  syncLeadingBasis()
+  syncLeftBasis()
+  // 字体加载完成后自然宽度可能变化，重新校准
+  const fonts = (document as Document & { fonts?: FontFaceSet }).fonts
+  if (fonts?.ready) fonts.ready.then(() => {
+    syncLeadingBasis()
+    syncLeftBasis()
+  })
+})
 onBeforeUnmount(() => window.removeEventListener('titlebar:search-toggle', onGlobalToggle))
 
 /* =================== caption 区域宽度 =================== */
@@ -194,10 +275,7 @@ const captionSpacerWidth = computed(
   overflow: hidden;
 }
 
-/* 窗口较窄：隐藏应用名（保留应用图标） */
-@media (max-width: 900px) {
-  .tb-title { display: none; }
-}
+/* 窗口较窄：应用名省略号截断（VS Code 的 .window-title 行为），不再隐藏 */
 
 .tb-icon-btn {
   width: var(--tb-btn-size);
@@ -212,6 +290,7 @@ const captionSpacerWidth = computed(
   pointer-events: auto;
   color: inherit;
   padding: 0;
+  flex-shrink: 0;
   transition: background var(--tb-transition-fast);
 }
 .tb-icon-btn:hover  { background: var(--tb-hover); }
@@ -233,6 +312,10 @@ const captionSpacerWidth = computed(
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* 让位优先级：菜单(收进⋯) → 搜索框 → 标题。标题 shrink 很小，
+   * 只有当左侧空间被菜单/搜索耗尽后才轻微截断（VS Code 风格）。 */
+  flex-shrink: 0.2;
+  min-width: 0;
   user-select: none;
   pointer-events: none;       /* 让事件穿透，点击落在 header 上触发拖动 */
   opacity: 0.92;
@@ -245,8 +328,14 @@ const captionSpacerWidth = computed(
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-width: 0;
+  /* 搜索区硬性下限（220px）：空间不足时由左侧菜单（收进 ⋯）先让位，
+   * 搜索框保持完整；仅当极窄、菜单已全部折叠仍不够时才缩小 */
+  min-width: 220px;
   height: 100%;
+}
+/* 极窄（与 SearchTrigger 的图标化下限同步，低于 tauri minWidth 800 仅兜底） */
+@media (max-width: 640px) {
+  .tb-center { min-width: 36px; }
 }
 
 /* ============ 扩展 slot ============ */
@@ -259,6 +348,11 @@ const captionSpacerWidth = computed(
   position: relative;
   z-index: 2;               /* 盖过 .tb 的 stacking context，确保事件落在 slot */
   isolation: isolate;       /* 创建独立 stacking context，防止外部 transform 影响 */
+}
+/* 左侧 slot 允许收缩，驱动 TitlebarChrome 的 ⋯ 溢出测量 */
+.tb-slot--leading {
+  flex-shrink: 1;
+  min-width: 0;
 }
 /* 所有后代都保持可交互（拖动由 drag.js 按元素类型智能判断） */
 .tb-slot :deep(*) {

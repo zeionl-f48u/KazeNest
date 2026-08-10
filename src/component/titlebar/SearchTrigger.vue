@@ -116,17 +116,15 @@ function onGlobalKeydown(e: KeyboardEvent) {
   color: var(--tb-kbd-fg);
 }
 
-/* ============ 响应式：窗口缩小时收缩搜索框 ============ */
-/* 较窄：缩小宽度、隐藏快捷键 */
-@media (max-width: 950px) {
-  .st-trigger {
-    min-width: 150px;
-    width: 26vw;
-  }
+/* ============ 响应式：搜索框最后才缩小 ============ */
+/* 窗口变窄时优先折叠左侧菜单（文件/编辑/… 收进 ⋯），搜索框保持完整；
+ * 仅当极窄、菜单已全部折叠仍不够时才缩小搜索框。 */
+/* 较窄：只隐藏快捷键（搜索框宽度不变） */
+@media (max-width: 800px) {
   .st-kbd { display: none; }
 }
-/* 很窄：搜索变为图标按钮 */
-@media (max-width: 900px) {
+/* 极窄（低于 tauri minWidth 800，仅兜底）：搜索变为图标按钮 */
+@media (max-width: 640px) {
   .st-trigger {
     width: 36px;
     min-width: 36px;
