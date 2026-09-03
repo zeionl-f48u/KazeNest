@@ -81,11 +81,21 @@
         </div>
       </section>
     </div>
+
+    <!-- 拖拽手柄：调节侧边栏宽度 -->
+    <div
+      class="sb-resize"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="调整侧边栏宽度"
+      @mousedown="onResizeStart"
+      @dblclick="resetWidth"
+    />
   </aside>
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { Icon } from '../common'
 import SideBarTree from './SideBarTree.vue'
 import type { SideBarSection, SideBarSelection, TreeItem } from './types'
@@ -108,6 +118,64 @@ const emit = defineEmits<{
   more: []
   close: []
 }>()
+
+/* =================== 宽度拖拽调节 =================== */
+
+/** 侧边栏宽度范围（px） */
+const MIN_WIDTH = 180
+const MAX_WIDTH = 480
+/** 默认宽度（与 tokens.css 的 --sb-width 一致） */
+const DEFAULT_WIDTH = 300
+
+/** 当前侧边栏宽度（px），写入 CSS 变量 --sb-width */
+const sbWidth = ref(DEFAULT_WIDTH)
+
+/** 拖拽中是否已按下 */
+let dragging = false
+/** 按下时的起始 X 与起始宽度 */
+let startX = 0
+let startWidth = 0
+
+function onResizeStart(e: MouseEvent) {
+  e.preventDefault()
+  dragging = true
+  startX = e.clientX
+  startWidth = sbWidth.value
+  document.body.classList.add('sb-resizing')
+  window.addEventListener('mousemove', onResizeMove)
+  window.addEventListener('mouseup', onResizeEnd)
+}
+
+function onResizeMove(e: MouseEvent) {
+  if (!dragging) return
+  const delta = e.clientX - startX
+  const next = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta))
+  sbWidth.value = next
+  document.documentElement.style.setProperty('--sb-width', `${next}px`)
+}
+
+function onResizeEnd() {
+  dragging = false
+  document.body.classList.remove('sb-resizing')
+  window.removeEventListener('mousemove', onResizeMove)
+  window.removeEventListener('mouseup', onResizeEnd)
+}
+
+/** 双击手柄恢复默认宽度 */
+function resetWidth() {
+  sbWidth.value = DEFAULT_WIDTH
+  document.documentElement.style.setProperty('--sb-width', `${DEFAULT_WIDTH}px`)
+}
+
+onMounted(() => {
+  // 初始化时同步一次 CSS 变量（确保与默认值一致）
+  document.documentElement.style.setProperty('--sb-width', `${DEFAULT_WIDTH}px`)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('mousemove', onResizeMove)
+  window.removeEventListener('mouseup', onResizeEnd)
+})
 
 /* =================== 分组折叠 =================== */
 const collapsedSections = reactive<Set<string>>(
@@ -150,6 +218,7 @@ function onSelect(sec: SideBarSection, item: TreeItem) {
 
 <style scoped>
 .sb {
+  position: relative;
   width: var(--sb-width);
   height: 100%;
   display: flex;
@@ -161,6 +230,25 @@ function onSelect(sec: SideBarSection, item: TreeItem) {
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  transition: width var(--sb-resize-transition, 0s);
+}
+
+/* ============ 拖拽手柄 ============ */
+.sb-resize {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  transition: background var(--sb-transition-fast);
+}
+.sb-resize:hover {
+  background: color-mix(in srgb, var(--kn-brand-500) 25%, transparent);
+}
+.sb-resize:active {
+  background: color-mix(in srgb, var(--kn-brand-500) 40%, transparent);
 }
 
 /* ============ 标题栏 ============ */

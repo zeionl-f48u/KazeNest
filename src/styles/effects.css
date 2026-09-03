@@ -38,6 +38,17 @@
   transform: scale(0.985);
 }
 
+/* ---------- 侧边栏拖拽调节宽度 ---------- */
+/* 拖拽中：全局 col-resize 光标 + 禁用文本选择 + 禁用宽度过渡（更跟手） */
+body.sb-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+body.sb-resizing .sb {
+  transition: none !important;
+}
+
 /* ---------- 全局滚动条美化 ---------- */
 * {
   scrollbar-width: thin;
