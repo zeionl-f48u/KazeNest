@@ -142,6 +142,8 @@ const emit = defineEmits<{
 const WORKSPACE_ICON_W = 33
 /** ⋯ 按钮固定宽度（px，与 CSS .tb-more { width: 28px } 保持一致） */
 const MORE_BTN_W = 28
+/** 安全余量（px）：让菜单比实际空间更早收进 ⋯，避免与中央搜索框重叠 */
+const SAFETY_BUFFER = 24
 
 const leadingRef = ref<HTMLElement>()
 const wsRef = ref<HTMLElement>()
@@ -174,7 +176,9 @@ function measureNatural() {
 function layout() {
   const container = leadingRef.value
   if (!container) return
-  const available = container.clientWidth
+  /* 预留安全余量：让菜单比实际空间更早收进 ⋯，
+   * 避免「帮助/⋯」在窗口缩小时与中央搜索框重叠 */
+  const available = container.clientWidth - SAFETY_BUFFER
   const menus = props.menus
 
   // 1) 工作区：优先完整显示，空间不足则图标化（仍可点击，非隐藏）

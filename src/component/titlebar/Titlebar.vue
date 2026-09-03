@@ -178,7 +178,10 @@ function computeLeftNatural(): number {
   if (!icon || !title || !slot) return 0
   const gap = parseFloat(getComputedStyle(left).gap) || 0
   const iconW = icon.getBoundingClientRect().width
-  const titleW = title.scrollWidth // 内容宽，与是否截断无关
+  /* 标题用「实际可见宽度」而非完整 scrollWidth：
+   * 窗口缩小时标题会被截断，flex-basis 也随之缩小，
+   * 给中央搜索框让出空间，避免「帮助/⋯」与搜索框重叠。 */
+  const titleW = title.getBoundingClientRect().width
   /* 用 slot 的「实际可见宽度」而非 flex-basis 自然宽度：
    * 当菜单收进 ⋯ 后 slot 实际变窄，.tb-left 的 flex-basis 也随之缩小，
    * 给中央搜索框让出空间，避免「帮助/⋯」与搜索框重叠。 */
