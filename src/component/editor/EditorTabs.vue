@@ -89,6 +89,7 @@ defineEmits<{
   transition: background var(--kn-dur-fast) var(--kn-ease-out), color var(--kn-dur-fast);
 }
 .ed-tab:hover { background: var(--ed-tab-hover); }
+.ed-tab:active { background: var(--kn-active); }
 
 .ed-tab.is-active {
   background: var(--ed-tab-active-bg);

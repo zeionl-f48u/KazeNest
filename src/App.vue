@@ -45,13 +45,15 @@
         @toggle="onActivityToggle"
       />
 
-      <SideBar
-        v-if="sideBarOpen"
-        :title="sideBarTitle"
-        :sections="sideBarSections"
-        v-model="selectedNodeId"
-        @close="sideBarOpen = false"
-      />
+      <Transition name="sidebar" mode="out-in">
+        <SideBar
+          v-if="sideBarOpen"
+          :title="sideBarTitle"
+          :sections="sideBarSections"
+          v-model="selectedNodeId"
+          @close="sideBarOpen = false"
+        />
+      </Transition>
 
       <!-- 编辑器视图通栏铺满（VS Code 风格），其余视图保留内边距 -->
       <main
@@ -265,5 +267,21 @@ body {
 .app-content.is-flush {
   padding: 0;
   overflow: hidden;
+}
+
+/* ============ 侧边栏滑入/滑出过渡 ============ */
+.sidebar-enter-active,
+.sidebar-leave-active {
+  transition:
+    opacity var(--kn-dur-slow) var(--kn-ease-out),
+    transform var(--kn-dur-slow) var(--kn-ease-out);
+}
+.sidebar-enter-from {
+  opacity: 0;
+  transform: translateX(-12px);
+}
+.sidebar-leave-to {
+  opacity: 0;
+  transform: translateX(-12px);
 }
 </style>

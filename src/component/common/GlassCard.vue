@@ -81,8 +81,12 @@ const iconStyle = computed(() => {
   cursor: pointer;
 }
 .gc.is-interactive:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   box-shadow: var(--kn-shadow-lg);
+  border-color: color-mix(in srgb, var(--kn-brand-500) 22%, var(--kn-glass-border));
+}
+.gc.is-interactive:hover .gc-icon {
+  transform: scale(1.08) rotate(-3deg);
 }
 
 .gc-media {
@@ -101,6 +105,7 @@ const iconStyle = computed(() => {
   background: color-mix(in srgb, var(--kn-brand-500) 18%, transparent);
   color: var(--kn-brand-500);
   font-size: 20px;
+  transition: transform var(--kn-dur-base) var(--kn-ease-out);
 }
 
 .gc-body {

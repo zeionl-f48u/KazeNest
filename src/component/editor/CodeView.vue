@@ -9,6 +9,7 @@
       v-for="(line, i) in lines"
       :key="i"
       class="ed-line"
+      :class="{ 'is-active': i + 1 === activeLine }"
       :data-line="i + 1"
     >
       <span class="ed-ln">{{ i + 1 }}</span>
@@ -19,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { highlightLine } from '../../utils/highlight'
 import type { EditorFile } from '../../data/editorFiles'
 
@@ -33,10 +34,14 @@ const emit = defineEmits<{
 
 const lines = computed(() => props.file.content.split('\n'))
 
+/** 当前活动行（点击后高亮，VS Code 风格） */
+const activeLine = ref(1)
+
 function onCodeClick(e: MouseEvent) {
   const lineEl = (e.target as HTMLElement).closest<HTMLElement>('.ed-line')
   if (!lineEl) return
   const line = Number(lineEl.dataset.line) || 1
+  activeLine.value = line
   let col = 1
   // 通过 caret 定位计算列
   const sel = window.getSelection?.()
@@ -67,6 +72,12 @@ function onCodeClick(e: MouseEvent) {
 .ed-line {
   display: flex;
   white-space: pre;
+  transition: background var(--kn-dur-fast);
+}
+
+/* 当前活动行高亮（VS Code 风格） */
+.ed-line.is-active {
+  background: var(--ed-line-active-bg);
 }
 
 .ed-ln {
@@ -77,7 +88,10 @@ function onCodeClick(e: MouseEvent) {
   color: var(--ed-gutter-fg);
   user-select: none;
   -webkit-user-select: none;
+  transition: color var(--kn-dur-fast);
 }
+.ed-line:hover .ed-ln { color: var(--ed-gutter-fg-hover); }
+.ed-line.is-active .ed-ln { color: var(--ed-gutter-fg-active); }
 
 .ed-txt {
   padding-right: 24px;

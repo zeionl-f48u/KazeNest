@@ -26,14 +26,50 @@
 .view-enter-active,
 .view-leave-active {
   transition:
-    opacity var(--kn-dur-base) var(--kn-ease-out),
-    transform var(--kn-dur-base) var(--kn-ease-out);
+    opacity var(--kn-dur-slow) var(--kn-ease-out),
+    transform var(--kn-dur-slow) var(--kn-ease-out);
 }
 .view-enter-from {
   opacity: 0;
-  transform: translateY(10px) scale(0.98);
+  transform: translateY(12px) scale(0.98);
 }
 .view-leave-to {
   opacity: 0;
   transform: scale(0.985);
+}
+
+/* ---------- 全局滚动条美化 ---------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--kn-border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--kn-border-strong);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--kn-fg-subtle);
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- 焦点可见性（无障碍） ---------- */
+:focus-visible {
+  outline: 2px solid var(--kn-focus);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+
+/* ---------- 文本选择 ---------- */
+::selection {
+  background: var(--kn-selected);
+  color: var(--kn-fg);
 }

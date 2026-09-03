@@ -10,6 +10,7 @@
     <!-- ============ 欢迎区 ============ -->
     <header class="home-hero">
       <div class="home-logo">
+        <span class="home-logo-glow" aria-hidden="true" />
         <Icon name="cloud" :size="34" />
       </div>
       <h1 class="home-title">KazeNest</h1>
@@ -24,6 +25,24 @@
           <Icon name="folder-open" :size="14" />
           <span>打开工作区</span>
         </button>
+      </div>
+
+      <!-- 快捷状态条：让首页更有"工作台"感 -->
+      <div class="home-stats">
+        <span class="home-stat">
+          <Icon name="file-text" :size="12" />
+          {{ recent.length }} 个最近文件
+        </span>
+        <span class="home-stat-dot" aria-hidden="true" />
+        <span class="home-stat">
+          <Icon name="sparkles" :size="12" />
+          AI 助手就绪
+        </span>
+        <span class="home-stat-dot" aria-hidden="true" />
+        <span class="home-stat">
+          <Icon name="cloud" :size="12" />
+          云同步已开启
+        </span>
       </div>
     </header>
 
@@ -121,8 +140,9 @@ function go(target: string) {
 }
 
 .home-logo {
-  width: 72px;
-  height: 72px;
+  position: relative;
+  width: 76px;
+  height: 76px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -130,13 +150,32 @@ function go(target: string) {
   background: linear-gradient(135deg, var(--kn-brand-500), var(--kn-magenta-500));
   color: #fff;
   box-shadow: var(--kn-shadow-lg);
+  overflow: hidden;
+}
+
+/* logo 背后的柔光晕 */
+.home-logo-glow {
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.55), transparent 60%);
+  opacity: 0.6;
+  animation: logo-breathe 4s var(--kn-ease-in-out) infinite;
+}
+@keyframes logo-breathe {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50%      { opacity: 0.75; transform: scale(1.08); }
 }
 
 .home-title {
   margin: 0;
   font-size: var(--kn-text-3xl);
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.5px;
+  background: linear-gradient(120deg, var(--kn-fg), var(--kn-brand-500) 60%, var(--kn-magenta-500));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 .home-subtitle {
@@ -179,6 +218,41 @@ function go(target: string) {
   color: #fff;
   box-shadow: var(--kn-shadow-md);
 }
+.home-btn.is-primary:hover {
+  box-shadow: var(--kn-shadow-lg);
+  filter: brightness(1.05);
+}
+
+/* ============ 快捷状态条 ============ */
+.home-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--kn-space-3);
+  margin-top: var(--kn-space-4);
+  padding: 6px 14px;
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-pill);
+  background: var(--kn-glass-bg);
+  backdrop-filter: saturate(var(--kn-glass-saturation)) blur(var(--kn-glass-blur));
+  -webkit-backdrop-filter: saturate(var(--kn-glass-saturation)) blur(var(--kn-glass-blur));
+  font-size: var(--kn-text-xs);
+  color: var(--kn-fg-muted);
+}
+
+.home-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.home-stat-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--kn-fg-subtle);
+  opacity: 0.5;
+}
 
 /* ============ 分区 ============ */
 .home-section {
@@ -201,6 +275,21 @@ function go(target: string) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: var(--kn-space-4);
+}
+
+/* 卡片入场错落动画 */
+.home-grid .gc {
+  animation: card-in var(--kn-dur-slow) var(--kn-ease-out) backwards;
+}
+.home-grid .gc:nth-child(1) { animation-delay: 0.02s; }
+.home-grid .gc:nth-child(2) { animation-delay: 0.06s; }
+.home-grid .gc:nth-child(3) { animation-delay: 0.1s; }
+.home-grid .gc:nth-child(4) { animation-delay: 0.14s; }
+.home-grid .gc:nth-child(5) { animation-delay: 0.18s; }
+.home-grid .gc:nth-child(6) { animation-delay: 0.22s; }
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .gc-link {
@@ -246,8 +335,19 @@ function go(target: string) {
 }
 .home-recent-item:last-child { border-bottom: 0; }
 .home-recent-item:hover { background: var(--kn-hover); }
+.home-recent-item:hover .home-recent-name { color: var(--kn-brand-500); }
 
-.home-recent-icon { opacity: 0.85; }
+.home-recent-icon {
+  opacity: 0.85;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--kn-radius-md);
+  background: var(--kn-bg-sunken);
+  flex-shrink: 0;
+}
 .home-recent-name {
   flex: 1;
   min-width: 0;
@@ -255,6 +355,7 @@ function go(target: string) {
   text-overflow: ellipsis;
   font-family: var(--kn-font-mono);
   font-size: var(--kn-text-sm);
+  transition: color var(--kn-dur-fast);
 }
 .home-recent-time {
   font-size: var(--kn-text-xs);

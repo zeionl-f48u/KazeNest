@@ -375,28 +375,47 @@ onBeforeUnmount(() => {
 .tb-more:active { background: var(--tb-active); }
 .tb-more.is-visible { display: inline-flex; }
 
-/* —— Ask AI（柔和胶囊） —— */
+/* —— Ask AI（渐变胶囊，突出主操作） —— */
 .tb-ai {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   height: 26px;
-  padding: 0 10px;
+  padding: 0 12px;
   border-radius: var(--tb-btn-radius);
   font-size: var(--kn-text-sm);
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.1px;
-  color: var(--tb-fg);
-  background: var(--tb-search-bg);
-  border: 1px solid var(--tb-search-border);
+  color: #fff;
+  background: linear-gradient(135deg, var(--kn-brand-500), var(--kn-magenta-500));
+  border: 1px solid transparent;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--kn-brand-500) 35%, transparent);
   transition:
-    background var(--tb-transition-fast),
-    border-color var(--tb-transition-fast);
+    filter var(--tb-transition-fast),
+    box-shadow var(--tb-transition-fast),
+    transform var(--tb-transition-fast);
 }
-.tb-ai:hover  { background: var(--tb-search-bg-hover); border-color: var(--tb-search-border-focus); }
-.tb-ai:active { background: var(--tb-active); }
-.tb-ai-icon { color: var(--kn-magenta-500); }
+.tb-ai:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--kn-brand-500) 45%, transparent);
+  transform: translateY(-1px);
+}
+.tb-ai:active {
+  filter: brightness(0.95);
+  transform: translateY(0);
+}
+.tb-ai-icon { color: #fff; }
 .tb-ai-text { line-height: 1; }
+.tb-ai-kbd {
+  font-family: var(--kn-font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  line-height: 1.4;
+}
 
 .tb-ai-kbd {
   font-family: inherit;

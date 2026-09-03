@@ -20,6 +20,7 @@
   --ed-bg: var(--kn-bg-elev);
   --ed-fg: #1f2328;
   --ed-gutter-fg: #9ca3af;
+  --ed-line-active-bg: rgba(99, 102, 241, 0.06);
   --ed-line-height: 21px;
   --ed-font: var(--kn-font-mono);
   --ed-font-size: 13px;
@@ -50,6 +51,7 @@ html.dark {
   --ed-bg: #1e1e22;
   --ed-fg: #d4d4d8;
   --ed-gutter-fg: #52525b;
+  --ed-line-active-bg: rgba(129, 140, 248, 0.08);
 
   --ed-status-bg: rgba(22, 25, 34, 0.9);
   --ed-status-fg: #9aa3b2;

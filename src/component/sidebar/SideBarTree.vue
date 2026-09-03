@@ -108,6 +108,7 @@ function onChildSelect(node: TreeItem) {
 }
 
 .sbt-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -137,6 +138,18 @@ function onChildSelect(node: TreeItem) {
 .sbt-row.is-selected .sbt-icon,
 .sbt-row.is-selected .sbt-meta {
   color: inherit;
+}
+
+/* 选中行左侧品牌色指示条 */
+.sbt-row.is-selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--kn-brand-500);
 }
 
 .sbt-chevron {
