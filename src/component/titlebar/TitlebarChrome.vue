@@ -17,9 +17,9 @@
       :aria-label="'切换工作区'"
       @click="$emit('workspace')"
     >
-      <Icon name="folder-open" :size="14" class="tb-ws-icon" />
+      <Icon name="folder-open" :size="13" class="tb-ws-icon" />
       <span class="tb-ws-name">{{ workspaceName }}</span>
-      <Icon name="chevron-down" :size="10" class="tb-ws-caret" />
+      <Icon name="chevron-down" :size="8" class="tb-ws-caret" />
     </button>
 
     <span class="tb-sep" aria-hidden="true" />
@@ -45,7 +45,7 @@
       :aria-label="'更多菜单'"
       @click="openMore"
     >
-      <Icon name="ellipsis-h" :size="14" />
+      <Icon name="ellipsis-h" :size="13" />
     </button>
 
     <!-- 溢出菜单（Teleport 到 body，避免被 overflow:hidden 裁剪） -->
@@ -77,7 +77,7 @@
       :aria-label="'Ask AI'"
       @click="$emit('askAi')"
     >
-      <Icon name="sparkles" :size="14" class="tb-ai-icon" />
+      <Icon name="sparkles" :size="13" class="tb-ai-icon" />
       <span class="tb-ai-text">Ask AI</span>
       <kbd class="tb-ai-kbd">⌘ I</kbd>
     </button>
@@ -91,7 +91,7 @@
         aria-label="通知"
         @click="$emit('notify')"
       >
-        <Icon name="bell" :size="15" />
+        <Icon name="bell" :size="14" />
         <span v-if="notifyCount > 0" class="tb-util-badge">{{ notifyCount }}</span>
       </button>
       <button
@@ -100,7 +100,7 @@
         aria-label="账户"
         @click="$emit('account')"
       >
-        <Icon name="user" :size="15" />
+        <Icon name="user" :size="14" />
       </button>
     </div>
   </template>
@@ -138,14 +138,10 @@ const emit = defineEmits<{
 
 /* ============ 溢出布局（参考 VS Code menubar 的 updateOverflowAction） ============ */
 
-/** 工作区图标化时的宽度（px，= padding 10×2 + 图标 14，与 .tb-workspace.is-icon-only 一致） */
-const WORKSPACE_ICON_W = 34
+/** 工作区图标化时的宽度（px） */
+const WORKSPACE_ICON_W = 33
 /** ⋯ 按钮固定宽度（px，与 CSS .tb-more { width: 28px } 保持一致） */
 const MORE_BTN_W = 28
-/** 垂直分隔线占位（px，.tb-sep 的 1px 宽 + 左右 4px 外边距） */
-const SEP_W = 9
-/** 安全余量（px）：让菜单比实际空间更早收进 ⋯，避免与中央搜索框重叠 */
-const SAFETY_BUFFER = 24
 
 const leadingRef = ref<HTMLElement>()
 const wsRef = ref<HTMLElement>()
@@ -178,11 +174,8 @@ function measureNatural() {
 function layout() {
   const container = leadingRef.value
   if (!container) return
-  /* 预留安全余量：让菜单比实际空间更早收进 ⋯，
-   * 避免「帮助/⋯」在窗口缩小时与中央搜索框重叠 */
-  const available = container.clientWidth - SAFETY_BUFFER
+  const available = container.clientWidth
   const menus = props.menus
-  const gap = parseFloat(getComputedStyle(container).gap) || 0
 
   // 1) 工作区：优先完整显示，空间不足则图标化（仍可点击，非隐藏）
   let used = 0
@@ -197,22 +190,19 @@ function layout() {
   const menuTotal = menuWidths.value.reduce((a, b) => a + (b || 0), 0)
 
   // 2) 全部菜单放得下 → 不需要 ⋯
-  // 自然宽度 = 工作区 + 分隔线 + 菜单 + 相邻元素的 flex 间隙（n+1 个）
-  const naturalTotal = used + SEP_W + menuTotal + (menus.length + 1) * gap
-  if (naturalTotal <= available) {
+  if (used + menuTotal <= available) {
     hiddenMenus.value = []
     showMore.value = false
     return
   }
 
   // 3) 放不下 → 从右往左把菜单收进 ⋯，直到「可见菜单 + ⋯」放得下
-  // 可见项 = [工作区, 分隔线, m1..mv, ⋯]，共 v+3 项 → v+2 个间隙
-  const rest = available - (used + SEP_W + MORE_BTN_W + 2 * gap)
   let acc = 0
   let visibleCount = 0
+  const rest = available - used
   for (let i = 0; i < menus.length; i++) {
     const w = menuWidths.value[i] ?? 0
-    if (acc + w + visibleCount * gap <= rest) {
+    if (acc + w + MORE_BTN_W <= rest) {
       acc += w
       visibleCount++
     } else {
@@ -321,9 +311,9 @@ onBeforeUnmount(() => {
 .tb-workspace {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 28px;
-  padding: 0 12px;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
   border-radius: var(--tb-btn-radius);
   font-size: var(--kn-text-sm);
   font-weight: 500;
@@ -336,7 +326,7 @@ onBeforeUnmount(() => {
 .tb-ws-name  { white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
 .tb-ws-caret { opacity: 0.5; margin-left: 2px; }
 /* 空间不足：只留图标（仍可点击） */
-.tb-workspace.is-icon-only { padding: 0 10px; }
+.tb-workspace.is-icon-only { padding: 0 9px; }
 .tb-workspace.is-icon-only .tb-ws-name,
 .tb-workspace.is-icon-only .tb-ws-caret { display: none; }
 
@@ -357,8 +347,8 @@ onBeforeUnmount(() => {
 .tb-menu {
   display: inline-flex;
   align-items: center;
-  height: 28px;
-  padding: 0 9px;
+  height: 26px;
+  padding: 0 8px;
   border-radius: var(--tb-btn-radius);
   font-size: var(--kn-text-sm);
   letter-spacing: 0.1px;
@@ -373,7 +363,7 @@ onBeforeUnmount(() => {
 /* —— ⋯ 溢出按钮 —— */
 .tb-more {
   width: 28px;
-  height: 28px;
+  height: 26px;
   display: none;
   align-items: center;
   justify-content: center;
@@ -389,9 +379,9 @@ onBeforeUnmount(() => {
 .tb-ai {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 28px;
-  padding: 0 14px;
+  gap: 6px;
+  height: 26px;
+  padding: 0 12px;
   border-radius: var(--tb-btn-radius);
   font-size: var(--kn-text-sm);
   font-weight: 600;
@@ -401,21 +391,32 @@ onBeforeUnmount(() => {
   border: 1px solid transparent;
   box-shadow: 0 1px 3px color-mix(in srgb, var(--kn-brand-500) 35%, transparent);
   transition:
-    filter var(--tb-transition-fast) var(--kn-ease-out),
-    box-shadow var(--tb-transition-fast) var(--kn-ease-out),
-    transform var(--tb-transition-fast) var(--kn-ease-out);
+    filter var(--tb-transition-fast),
+    box-shadow var(--tb-transition-fast),
+    transform var(--tb-transition-fast);
 }
 .tb-ai:hover {
   filter: brightness(1.08);
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--kn-brand-500) 45%, transparent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--kn-brand-500) 45%, transparent);
   transform: translateY(-1px);
 }
 .tb-ai:active {
   filter: brightness(0.95);
-  transform: translateY(0) scale(0.98);
+  transform: translateY(0);
 }
 .tb-ai-icon { color: #fff; }
 .tb-ai-text { line-height: 1; }
+.tb-ai-kbd {
+  font-family: var(--kn-font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  line-height: 1.4;
+}
+
 .tb-ai-kbd {
   font-family: inherit;
   font-size: var(--kn-text-2xs);

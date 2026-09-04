@@ -150,15 +150,25 @@ const leadingSlotRef = ref<HTMLElement>()
 function syncLeadingBasis() {
   const el = leadingSlotRef.value
   if (!el) return
-  /* 让 slot 的 flex-basis 跟随「实际可见宽度」而非自然宽度：
-   * 当菜单收进 ⋯ 后，slot 实际变窄，flex-basis 也随之缩小，
-   * 给中央搜索框让出空间，避免「帮助/⋯」与搜索框重叠。
-   * 用显式 flex-basis（非 auto）可避免「菜单隐藏 → 内容变少 → slot 变窄
-   * → ResizeObserver → 又隐藏菜单」的坍缩反馈循环。 */
-  const visible = el.getBoundingClientRect().width
-  if (visible > 0) {
+  /* 子组件 TitlebarChrome 会先挂载并立即 layout() 折叠放不下的菜单，
+   * 若此时直接量 scrollWidth 会得到"折叠后"的宽度并固化（窄窗口启动时
+   * 的 bug：放大后永远恢复不了）。所以测量前先临时还原所有折叠项：
+   * 强制显示菜单 + 还原工作区图标化，量到真实自然宽度再还原。 */
+  const menus = Array.from(el.querySelectorAll<HTMLElement>('.tb-menu'))
+  const ws = el.querySelector<HTMLElement>('.tb-workspace')
+  const wsIconOnly = ws?.classList.contains('is-icon-only') ?? false
+  const prevDisplays: (string | null)[] = []
+  menus.forEach((m, i) => {
+    prevDisplays[i] = m.style.display
+    m.style.display = 'inline-flex' // 覆盖 .is-overflowed 的 display:none
+  })
+  if (ws && wsIconOnly) ws.classList.remove('is-icon-only')
+  const natural = el.scrollWidth
+  menus.forEach((m, i) => { m.style.display = prevDisplays[i] ?? '' })
+  if (ws && wsIconOnly) ws.classList.add('is-icon-only')
+  if (natural > 0) {
     const current = parseFloat(el.style.flexBasis || '0')
-    if (Math.abs(current - visible) > 1) el.style.flexBasis = `${visible}px`
+    if (Math.abs(current - natural) > 1) el.style.flexBasis = `${natural}px`
   }
 }
 
@@ -178,14 +188,8 @@ function computeLeftNatural(): number {
   if (!icon || !title || !slot) return 0
   const gap = parseFloat(getComputedStyle(left).gap) || 0
   const iconW = icon.getBoundingClientRect().width
-  /* 标题用「实际可见宽度」而非完整 scrollWidth：
-   * 窗口缩小时标题会被截断，flex-basis 也随之缩小，
-   * 给中央搜索框让出空间，避免「帮助/⋯」与搜索框重叠。 */
-  const titleW = title.getBoundingClientRect().width
-  /* 用 slot 的「实际可见宽度」而非 flex-basis 自然宽度：
-   * 当菜单收进 ⋯ 后 slot 实际变窄，.tb-left 的 flex-basis 也随之缩小，
-   * 给中央搜索框让出空间，避免「帮助/⋯」与搜索框重叠。 */
-  const slotW = slot.getBoundingClientRect().width
+  const titleW = title.scrollWidth // 内容宽，与是否截断无关
+  const slotW = parseFloat(slot.style.flexBasis) || slot.getBoundingClientRect().width
   return Math.ceil(iconW + titleW + slotW + gap * 2)
 }
 
@@ -208,24 +212,8 @@ onMounted(() => {
     syncLeadingBasis()
     syncLeftBasis()
   })
-  // 窗口缩放时重新校准 .tb-left 的 flex-basis：
-  // 菜单收进 ⋯ 后 slot 实际变窄，flex-basis 跟随缩小，给搜索框让位，避免重叠
-  window.addEventListener('resize', onWindowResize)
 })
-onBeforeUnmount(() => {
-  window.removeEventListener('titlebar:search-toggle', onGlobalToggle)
-  window.removeEventListener('resize', onWindowResize)
-})
-
-/** 窗口缩放后重新校准左侧 flex-basis（防抖，避免频繁重排） */
-let resizeTimer: number | undefined
-function onWindowResize() {
-  if (resizeTimer) window.clearTimeout(resizeTimer)
-  resizeTimer = window.setTimeout(() => {
-    syncLeadingBasis()
-    syncLeftBasis()
-  }, 60)
-}
+onBeforeUnmount(() => window.removeEventListener('titlebar:search-toggle', onGlobalToggle))
 
 /* =================== caption 区域宽度 =================== */
 
