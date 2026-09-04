@@ -12,14 +12,14 @@
 :root {
   /* ============ 尺寸（macOS 风格标题栏）============ */
   --tb-height: 38px;
-  --tb-pad-x: 10px;
-  --tb-icon-size: 15px;
+  --tb-pad-x: 12px;
+  --tb-icon-size: 16px;
   --tb-btn-size: 28px;
   --tb-title-font-size: var(--kn-text-md);
 
   /* 间距 */
-  --tb-gap: 4px;
-  --tb-toolbar-gap: 2px;
+  --tb-gap: 6px;
+  --tb-toolbar-gap: 3px;
 
   /* caption 控件（─ ☐ ✕）安全区兜底 */
   --tb-caption-right-clearance: 139px;
