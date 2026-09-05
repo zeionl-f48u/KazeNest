@@ -114,11 +114,12 @@ const props = withDefaults(
   defineProps<{
     /** 渲染哪一侧 */
     part: 'leading' | 'trailing'
-    /** leading：工作区名称 */
+    /** leading：工作区名称（App.vue 的 workspaceName） */
     workspaceName?: string
-    /** leading：文字菜单 */
+    /** leading：文字菜单（来自 data/activityItems.ts 的 topMenus：
+     *   在这数组里增删菜单文字即可，放不下的会自动收进 ⋯） */
     menus?: readonly string[]
-    /** trailing：通知徽标数 */
+    /** trailing：通知徽标数（App.vue 的 notifyCount） */
     notifyCount?: number
   }>(),
   {
@@ -138,6 +139,10 @@ const emit = defineEmits<{
 
 /* ============ 溢出布局（参考 VS Code menubar 的 updateOverflowAction） ============ */
 
+/* 调节：窗口变窄时如何让位
+ * - 顺序：工作区先图标化 → 菜单再收进 ⋯ → 极窄时 Ask AI 隐藏文字
+ * - WORKSPACE_ICON_W: 工作区图标化后的宽度（px），改了 .tb-workspace.is-icon-only 的 padding 要同步
+ * - MORE_BTN_W: ⋯ 按钮固定宽度（px），与 CSS .tb-more { width: 28px } 保持一致 */
 /** 工作区图标化时的宽度（px） */
 const WORKSPACE_ICON_W = 33
 /** ⋯ 按钮固定宽度（px，与 CSS .tb-more { width: 28px } 保持一致） */

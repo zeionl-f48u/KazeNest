@@ -113,7 +113,7 @@ function onChildSelect(node: TreeItem) {
   align-items: center;
   gap: 4px;
   width: calc(100% - 12px);
-  height: var(--sb-row-height);
+  height: var(--sb-row-height);   /* 行高：sidebar/tokens.css 的 --sb-row-height */
   margin: 0 6px;
   padding-right: 6px;
   background: transparent;

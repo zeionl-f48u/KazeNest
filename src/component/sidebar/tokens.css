@@ -3,6 +3,15 @@
  * 私有 token：--ab-*（活动栏） / --sb-*（侧边栏）
  * 颜色 / 圆角 / 间距 / 阴影直接引用全局 --kn-*（src/styles/tokens.css）
  *
+ * 调节指南：
+ *  - 活动栏宽度：--ab-width；每个按钮格高：--ab-action-size
+ *  - 活动指示条颜色（选中时左侧 2px 竖条）：--ab-active-border
+ *  - 徽标底色（右上角数字角标）：--ab-badge-bg
+ *  - 侧边栏默认宽度：--sb-width（SideBar.vue 里 MIN/MAX/DEFAULT 常量与它对应）
+ *  - 树行高：--sb-row-height；缩进步长：--sb-tree-indent
+ *  - 列表选中底色：--sb-selection-bg（现在是品牌色 18% 半透明"柔和选中"）
+ *  - 分组头深浅：--sb-section-header-bg / --sb-section-header-fg
+ *
  * VS Code 风格：
  *  - 活动栏：activityBar.background 暗色 #333 / 亮色 #2C2C
  *  - 活动项左侧 2px 指示条

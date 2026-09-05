@@ -2,6 +2,11 @@
  * 编辑器打开的文件（标签页 + 代码内容）
  * 实际项目：标签 = 侧边栏点击打开的文件；content 从 Tauri 文件系统读取
  * 这里内置几个示例文件，方便编辑器页演示
+ *
+ * 调节指南：
+ *  - 增删示例文件：数组里加减一条（id 即文件名，也是标签的 key）
+ *  - language 显示在状态栏；icon 名来自 Icon.vue 的 ICONS 表
+ *  - color 是标签图标的着色（支持 var(--kn-*) 语义色）
  */
 export interface EditorFile {
   id: string

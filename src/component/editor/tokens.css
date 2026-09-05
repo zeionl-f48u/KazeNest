@@ -2,6 +2,17 @@
  * Editor 设计 tokens（编辑器示例页专用）
  * 颜色 / 圆角 / 间距 / 字号引用全局 --kn-*（src/styles/tokens.css）
  * macOS / VS Code 混合柔和风：白底深字（亮色）、石墨底浅字（暗色）
+ *
+ * 调节指南：
+ *  - 标签页栏：--ed-tab-height（高度）、--ed-tab-active-border（顶部品牌色条）
+ *  - 代码区：--ed-bg / --ed-fg（底色与文字色）、--ed-font（字体）、
+ *    --ed-font-size（字号）、--ed-line-height（行距，调小更密）
+ *  - 行号栏：--ed-gutter-fg（默认色）/ --ed-gutter-fg-hover（悬停）/
+ *    --ed-gutter-fg-active（活动行）
+ *  - 当前行高亮：--ed-line-active-bg
+ *  - 状态栏：--ed-status-bg / --ed-status-height
+ *  - 语法高亮颜色：--ed-hl-*（与 utils/highlight.ts 的 hl-* 类对应；
+ *    亮色在 :root，暗色在 html.dark）
  */
 
 :root {

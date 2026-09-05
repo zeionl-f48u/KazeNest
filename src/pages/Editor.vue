@@ -20,7 +20,9 @@ import { EditorTabs, CodeView, StatusBar } from '../component/editor'
 import { editorFiles } from '../data/editorFiles'
 import type { EditorFile } from '../data/editorFiles'
 
-/** 打开的标签（初始 = 全部示例文件；可关闭） */
+/** 打开的标签（初始 = 全部示例文件；可关闭）
+ * 调节：想让编辑器初始打开别的文件，改 data/editorFiles.ts，
+ * 这里会自动跟随；初始活动标签 = 数组第一项。 */
 const openFiles = ref<EditorFile[]>([...editorFiles])
 const activeFileId = ref(editorFiles[0]?.id ?? '')
 

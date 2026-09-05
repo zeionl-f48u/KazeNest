@@ -17,7 +17,13 @@ vueApp.use(PrimeVue, {
   theme: {
     preset: Aura,
     options: {
+      /* 暗色模式开关：
+       * 给 <html> 加/去 class="dark" 即可切换（App.vue 依赖 .dark 变量）。
+       * 之后做设置页时：document.documentElement.classList.toggle('dark') 就完事。
+       */
       darkModeSelector: '.dark',
+      /* cssLayer: false → PrimeVue 样式不包在 @layer 里，优先级更高。
+       * 若之后全面用 Tailwind，想让它参与 layer 排序可改为 true。 */
       cssLayer: false,
     },
   },

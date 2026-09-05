@@ -1,6 +1,10 @@
 /**
  * 首页快捷入口卡片数据
  * 实际项目可从后端 / 配置加载
+ *
+ * 调节指南：
+ *  - 增删首页卡片：数组里加减一条；target 必须对应 App.vue 的视图 id
+ *  - color 支持任何 CSS 颜色 / var()，会同时染图标底色与文字
  */
 export interface HomeCard {
   id: string

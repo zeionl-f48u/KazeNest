@@ -75,6 +75,7 @@ const props = withDefaults(
   defineProps<{
     modelValue: boolean
     items: SearchItem[]
+    /** 输入框占位文案，可自定义 */
     placeholder?: string
   }>(),
   { placeholder: '搜索设置、文件、命令…' }

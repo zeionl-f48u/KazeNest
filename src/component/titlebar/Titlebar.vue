@@ -82,15 +82,19 @@ import type { SearchItem } from './types'
 
 withDefaults(
   defineProps<{
+    /** 顶栏左侧应用名（App.vue 传入 "KazeNest"） */
     title?: string
     /** 应用图标名（走 Icon 组件，缺省云端 logo） */
     appIcon?: string
+    /** 自定义图标地址（传了就用 <img> 替代 Icon） */
     iconUrl?: string
+    /** 是否显示最左端应用图标按钮 */
     showIcon?: boolean
+    /** 窗口失焦时顶栏半透明（is-inactive） */
     isInactive?: boolean
-    /** 搜索面板的候选项 */
+    /** 搜索面板的候选项（来自 data/searchItems.ts） */
     searchItems?: SearchItem[]
-    /** 是否启用搜索功能（false 时中央不渲染 trigger，面板也不会出现）*/
+    /** 是否启用搜索功能（false 时中央不渲染 trigger，面板也不会出现） */
     searchEnabled?: boolean
   }>(),
   {

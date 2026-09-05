@@ -32,6 +32,7 @@ defineEmits<{
 }>()
 
 const isMac = ref(false)
+/* 快捷键提示文案：改这里可换快捷键显示（实际绑定在 onGlobalKeydown） */
 const shortcutHint = computed(() => (isMac.value ? '⌘ K' : 'Ctrl K'))
 
 onMounted(() => {
@@ -62,6 +63,10 @@ function onGlobalKeydown(e: KeyboardEvent) {
 
 <style scoped>
 /* macOS 命令中心：22px 高、胶囊圆角、柔和凹陷底 + 描边 */
+/* 搜索框尺寸调节：
+ * - min-width 220 / max-width 600 / width 34vw → 中央命令中心的常态宽度
+ * - focus 时 width 80% → 打开面板时的拉宽效果
+ * - 极窄 640px 以下会缩成 36px 图标按钮 */
 .st-trigger {
   pointer-events: auto;
   display: inline-flex;

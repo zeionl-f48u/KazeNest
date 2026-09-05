@@ -121,6 +121,11 @@ const emit = defineEmits<{
 
 /* =================== 宽度拖拽调节 =================== */
 
+/* 调节：侧边栏宽度范围与默认值都在这改
+ *  - MIN_WIDTH / MAX_WIDTH：拖拽手柄允许的最小/最大宽度
+ *  - DEFAULT_WIDTH：默认宽度，且双击手柄恢复到这个值
+ *  - 与 tokens.css 的 --sb-width（默认 300px）保持一致；
+ *    初始化时这里会把 --sb-width 写回根元素，所以实际以 DEFAULT_WIDTH 为准 */
 /** 侧边栏宽度范围（px） */
 const MIN_WIDTH = 180
 const MAX_WIDTH = 480

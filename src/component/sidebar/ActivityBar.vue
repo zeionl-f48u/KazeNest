@@ -103,6 +103,8 @@ function onClick(item: ActivityItem) {
 }
 
 /* ============ 活动项 ============ */
+/* 调节：图标尺寸 --ab-icon-size；指示条颜色 --ab-active-border；
+   徽标（右上角数字）颜色 --ab-badge-bg，全部在 sidebar/tokens.css */
 .ab-item {
   position: relative;
   width: var(--ab-width);

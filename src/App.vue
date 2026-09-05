@@ -93,8 +93,12 @@ import Browser from './pages/Browser.vue'
 import Settings from './pages/Settings.vue'
 
 /* =================== 视图状态 =================== */
-
-/** 默认进入编辑器（应用定位为编辑器） */
+/* 调节入口（改这里的值即可调默认行为）：
+ * - activeView:   默认进入哪个视图。'editor' 是应用定位；改 'home' 可改成先见欢迎页
+ * - sideBarOpen:  启动时侧边栏是否展开
+ * - notifyCount:  顶栏通知徽标数字（0 = 不显示）
+ * - workspaceName: 顶栏左侧工作区选择器显示的文字
+ * 视图 id 与 activityItems.ts 的 id 一一对应。 */
 const activeView = ref('editor')
 const sideBarOpen = ref(true)
 const selectedNodeId = ref('')
@@ -124,7 +128,13 @@ const sideBarTitle = computed(() => sideBarConfig[activeView.value]?.title ?? '�
 const sideBarSections = computed(() => sideBarConfig[activeView.value]?.sections ?? [])
 
 /* =================== 顶栏 handler =================== */
-
+/* 这些目前只是打日志的占位。接真实逻辑时在这里替换：
+ * - onSearchSelect: 搜索面板选中某项 → 可导航/执行命令
+ * - onMenu: 顶栏菜单（文件/编辑/…）点中 → 弹出菜单
+ * - onWorkspace: 工作区选择器 → 打开"切换工作区"对话框
+ * - onAskAI: Ask AI 按钮 → 打开 AI 侧栏/对话框
+ * - onNotify: 通知铃铛 → 打开通知中心
+ * - onAccount: 账户头像 → 打开账户面板（目前跳设置页） */
 function onSearchSelect(item: SearchItem) {
   console.log('search selected:', item)
 }
@@ -151,12 +161,14 @@ function onAccount() {
 
 /* =================== 活动栏 handler =================== */
 
+/** 切视图：同时清空侧边栏选中、强制展开侧边栏（VS Code 行为） */
 function onActivitySelect(id: string) {
   activeView.value = id
   selectedNodeId.value = ''
   sideBarOpen.value = true
 }
 
+/** 再次点击当前活动项：折叠/展开侧边栏 */
 function onActivityToggle() {
   sideBarOpen.value = !sideBarOpen.value
 }

@@ -22,6 +22,7 @@
         :style="f.color ? { color: f.color } : undefined"
       />
       <span class="ed-tab-name">{{ f.name }}</span>
+      <!-- 标签最大宽度：.ed-tab-name 的 max-width: 160px -->
       <button
         type="button"
         class="ed-tab-close"
@@ -108,7 +109,7 @@ defineEmits<{
 }
 
 .ed-tab-icon { flex-shrink: 0; }
-.ed-tab-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+.ed-tab-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; } /* 调节：标签文字最长宽度 */
 
 .ed-tab-close {
   display: inline-flex;

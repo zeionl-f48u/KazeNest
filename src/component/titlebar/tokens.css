@@ -3,6 +3,14 @@
  * 私有 token：--tb-*（顶栏专用尺寸 / 顶栏特定配色）
  * 颜色 / 圆角 / 间距 / 阴影 / 字号直接引用全局 --kn-*（src/styles/tokens.css）
  *
+ * 调节指南：
+ *  - 顶栏高度：改 --tb-height（App.vue 的 --tb-height 消费它做内容区留白）
+ *  - 毛玻璃：--tb-bg 的透明度 + --tb-blur（越大越糊）+ --tb-saturation
+ *  - 整体配色：只改 :root 里亮色 + html.dark 里暗色两块
+ *  - 搜索面板尺寸：--tb-panel-width / --tb-panel-max-height
+ *  - 按钮圆角（胶囊 vs 直角）：--tb-btn-radius
+ *  - 底部 caption（─☐✕）安全区：--tb-caption-right-clearance
+ *
  * macOS 风格：柔和、克制、通透
  *  - 标题栏 = 毛玻璃（frosted glass）：半透明底 + backdrop blur + 发丝分隔线
  *  - 按钮 hover 为"胶囊"（pill），浅灰柔和高亮

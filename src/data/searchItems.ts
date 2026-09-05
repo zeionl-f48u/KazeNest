@@ -1,6 +1,11 @@
 /**
  * 顶栏全局搜索的候选项
  * 实际项目可从 Tauri 后端 / 索引服务取
+ *
+ * 调节指南：
+ *  - 增删候选项：数组里加减一条；group 决定在结果里归到哪一组
+ *  - icon 名来自 Icon.vue 的 ICONS 表；color 是结果左侧图标底色
+ *  - 选中后的行为在 App.vue 的 onSearchSelect 里接
  */
 export interface SearchItem {
   id: string

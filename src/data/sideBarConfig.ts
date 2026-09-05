@@ -63,7 +63,19 @@ const workspaceTree: TreeItem[] = [
   { id: 'ws-file-vite',    label: 'vite.config.ts', meta: 'TS' },
 ]
 
-/* ============ 按视图分组的侧边栏配置 ============ */
+/* ============ 按视图分组的侧边栏配置 ============
+ *
+ * 调节指南（每个视图在侧边栏显示什么，都在这张表里改）：
+ *  - 增删一个分组：sections 数组里加/减一项
+ *    · id      分组唯一 id（同时是 SideBar 的自定义 slot 名）
+ *    · title   分组标题
+ *    · count   分组头右侧计数（数字字符串会显示；不想要就删掉）
+ *    · items   分组内容（TreeItem[] 树；有 children 即文件夹）
+ *    · collapsed: true 默认折叠该分组
+ *  - 想完全自定义某分组的内容：在 SideBar 里给它加同名具名 slot
+ *    （<template #sec-quick>…</template>），占位内容就不会渲染
+ *  - workspaceTree 目前是示例数据，接 Tauri 文件系统后替换为真实目录树
+ */
 
 export interface SideBarConfig {
   title: string
