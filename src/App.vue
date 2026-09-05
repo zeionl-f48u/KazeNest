@@ -62,7 +62,7 @@
       >
         <!-- 切换视图时安卓 Activity 风格过渡（淡入 + 上移） -->
         <Transition name="view" mode="out-in">
-          <component :is="viewComponent" :key="activeView" />
+          <component :is="viewComponent" :key="activeView" v-bind="comingSoonProps" />
         </Transition>
       </main>
     </div>
@@ -82,15 +82,13 @@ import {
   activityItems,
   topMenus,
   sideBarConfig,
+  comingSoonConfig,
 } from './data'
 import type { SearchItem } from './data'
 
 import Home from './pages/Home.vue'
 import Editor from './pages/Editor.vue'
-import Files from './pages/Files.vue'
-import AI from './pages/AI.vue'
-import Browser from './pages/Browser.vue'
-import Settings from './pages/Settings.vue'
+import ComingSoon from './component/common/ComingSoon.vue'
 
 /* =================== 视图状态 =================== */
 /* 调节入口（改这里的值即可调默认行为）：
@@ -110,17 +108,21 @@ const workspaceName = '我的工作区'
 const viewComponents = {
   home:     markRaw(Home),
   editor:   markRaw(Editor),
-  files:    markRaw(Files),
-  ai:       markRaw(AI),
-  browser:  markRaw(Browser),
-  settings: markRaw(Settings),
-  // account 走 settings 页（账户面板后续单独做）
-  account:  markRaw(Settings),
+  // 占位视图（files/ai/browser/settings/account）统一走 ComingSoon 组件，
+  // 展示内容来自 data/comingSoon.ts 的 comingSoonConfig
+  files:    markRaw(ComingSoon),
+  ai:       markRaw(ComingSoon),
+  browser:  markRaw(ComingSoon),
+  settings: markRaw(ComingSoon),
+  account:  markRaw(ComingSoon),
 } as const
 
 const viewComponent = computed(
   () => viewComponents[activeView.value as keyof typeof viewComponents] ?? Home
 )
+
+/** 占位视图的展示数据（非占位视图返回空对象，组件不接收多余 props） */
+const comingSoonProps = computed(() => comingSoonConfig[activeView.value] ?? {})
 
 /* =================== 侧边栏内容 =================== */
 

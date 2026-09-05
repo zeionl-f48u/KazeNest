@@ -74,12 +74,6 @@ const ICONS: Record<string, string> = {
   'angle-double-up':    '<polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/>',
   'angle-double-left':  '<polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/>',
   'angle-double-right': '<polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/>',
-  'arrow-right':   '<polyline points="9 18 15 12 9 6"/>',
-  'arrow-left':    '<polyline points="15 18 9 12 15 6"/>',
-  'arrow-up':      '<polyline points="18 15 12 9 6 15"/>',
-  'arrow-down':    '<polyline points="6 9 12 15 18 9"/>',
-  'back':          '<polyline points="15 18 9 12 15 6"/>',
-  'forward':       '<polyline points="9 18 15 12 9 6"/>',
 
   /* ============ 操作 ============ */
   'plus':          '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
@@ -125,8 +119,19 @@ const props = withDefaults(
 /* 归一化：去掉 'pi ' 前缀和 'pi-' 前缀 */
 const bareName = computed(() => props.name.replace(/^(pi\s+)?pi-?/, ''))
 
+/* 同义图标别名：与 chevron-* 完全同路径的旧名（back/forward/arrow-*）在此映射，
+ * 避免在 ICONS 表里重复维护同一份 SVG 路径 */
+const ALIASES: Record<string, string> = {
+  'back':         'chevron-right',
+  'forward':      'chevron-left',
+  'arrow-right':  'chevron-right',
+  'arrow-left':   'chevron-left',
+  'arrow-up':     'chevron-up',
+  'arrow-down':   'chevron-down',
+}
+
 /** 未知图标回退到可见的占位圆点 */
-const path = computed(() => ICONS[bareName.value] ?? ICONS['dot'])
+const path = computed(() => ICONS[ALIASES[bareName.value] ?? bareName.value] ?? ICONS['dot'])
 
 const style = computed(() => {
   const s: Record<string, string> = {}

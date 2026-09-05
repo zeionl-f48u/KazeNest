@@ -31,7 +31,7 @@ vueApp.use(PrimeVue, {
 vueApp.mount('#app')
 
 /* ============================================================
- * 顶栏事件诊断器
+ * 顶栏事件诊断器（仅开发模式生效；生产构建会被 tree-shake 掉）
  *
  * 用途：检查顶栏按钮是否被其他元素 / 事件处理函数拦截。
  * 用法：打开 DevTools 控制台，执行 `__TB_DEBUG__.enable()`，
@@ -42,45 +42,47 @@ vueApp.mount('#app')
  *       - 任意一个步骤为 false，就说明事件在那一层被吃了
  * 关闭：`__TB_DEBUG__.disable()`
  * ============================================================ */
-type DebugApi = {
-  enable: () => void
-  disable: () => void
-  state: () => 'enabled' | 'disabled'
+if (import.meta.env.DEV) {
+  type DebugApi = {
+    enable: () => void
+    disable: () => void
+    state: () => 'enabled' | 'disabled'
+  }
+  const debugApi: DebugApi = {
+    state: () => 'disabled',
+    enable() {
+      if (this.state() === 'enabled') return
+      const onDown = (e: MouseEvent) => {
+        const t = e.target as HTMLElement | null
+        if (!t) return
+        const inSlot = !!t.closest('.tb-slot, .tb-leading, .tb-center')
+        if (!inSlot) return
+        console.log('[TB-DEBUG] mousedown on:', t, '| in titlebar =', inSlot, '| button? ', t.tagName)
+      }
+      const onClick = (e: MouseEvent) => {
+        const t = e.target as HTMLElement | null
+        if (!t) return
+        const inSlot = !!t.closest('.tb-slot, .tb-leading, .tb-center')
+        if (!inSlot) return
+        const pe = getComputedStyle(t).pointerEvents
+        const region = getComputedStyle(t).getPropertyValue('-webkit-app-region') || '(inherit)'
+        console.log('[TB-DEBUG] click on:', t, '| pointer-events =', pe, '| app-region =', region)
+      }
+      window.addEventListener('mousedown', onDown, true)
+      window.addEventListener('click', onClick, true)
+      // 单独标一个全局开关，方便 disable 时清掉
+      ;(window as unknown as { __TB_DEBUG_HANDLERS__: () => void }).__TB_DEBUG_HANDLERS__ = () => {
+        window.removeEventListener('mousedown', onDown, true)
+        window.removeEventListener('click', onClick, true)
+      }
+      this.state = () => 'enabled'
+      console.log('[TB-DEBUG] enabled. 点击顶栏按钮看日志。')
+    },
+    disable() {
+      ;(window as unknown as { __TB_DEBUG_HANDLERS__?: () => void }).__TB_DEBUG_HANDLERS__?.()
+      this.state = () => 'disabled'
+      console.log('[TB-DEBUG] disabled.')
+    },
+  }
+  ;(window as unknown as { __TB_DEBUG__: DebugApi }).__TB_DEBUG__ = debugApi
 }
-const debugApi: DebugApi = {
-  state: () => 'disabled',
-  enable() {
-    if (this.state() === 'enabled') return
-    const onDown = (e: MouseEvent) => {
-      const t = e.target as HTMLElement | null
-      if (!t) return
-      const inSlot = !!t.closest('.tb-slot, .tb-leading, .tb-center')
-      if (!inSlot) return
-      console.log('[TB-DEBUG] mousedown on:', t, '| in titlebar =', inSlot, '| button? ', t.tagName)
-    }
-    const onClick = (e: MouseEvent) => {
-      const t = e.target as HTMLElement | null
-      if (!t) return
-      const inSlot = !!t.closest('.tb-slot, .tb-leading, .tb-center')
-      if (!inSlot) return
-      const pe = getComputedStyle(t).pointerEvents
-      const region = getComputedStyle(t).getPropertyValue('-webkit-app-region') || '(inherit)'
-      console.log('[TB-DEBUG] click on:', t, '| pointer-events =', pe, '| app-region =', region)
-    }
-    window.addEventListener('mousedown', onDown, true)
-    window.addEventListener('click', onClick, true)
-    // 单独标一个全局开关，方便 disable 时清掉
-    ;(window as unknown as { __TB_DEBUG_HANDLERS__: () => void }).__TB_DEBUG_HANDLERS__ = () => {
-      window.removeEventListener('mousedown', onDown, true)
-      window.removeEventListener('click', onClick, true)
-    }
-    this.state = () => 'enabled'
-    console.log('[TB-DEBUG] enabled. 点击顶栏按钮看日志。')
-  },
-  disable() {
-    ;(window as unknown as { __TB_DEBUG_HANDLERS__?: () => void }).__TB_DEBUG_HANDLERS__?.()
-    this.state = () => 'disabled'
-    console.log('[TB-DEBUG] disabled.')
-  },
-}
-;(window as unknown as { __TB_DEBUG__: DebugApi }).__TB_DEBUG__ = debugApi

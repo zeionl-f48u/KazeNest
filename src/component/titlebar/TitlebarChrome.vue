@@ -411,17 +411,7 @@ onBeforeUnmount(() => {
 }
 .tb-ai-icon { color: #fff; }
 .tb-ai-text { line-height: 1; }
-.tb-ai-kbd {
-  font-family: var(--kn-font-sans);
-  font-size: 10px;
-  font-weight: 500;
-  padding: 1px 5px;
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.22);
-  color: #fff;
-  line-height: 1.4;
-}
-
+/* 快捷键小标签：主题色 kbd 样式（只保留一份，旧样式已被删除） */
 .tb-ai-kbd {
   font-family: inherit;
   font-size: var(--kn-text-2xs);
