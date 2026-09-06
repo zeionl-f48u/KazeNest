@@ -1,4 +1,5 @@
 import type { SideBarSection, TreeItem } from '../component/sidebar'
+import type { ViewId } from './activityItems'
 
 /* ============ 共享数据 ============ */
 
@@ -82,7 +83,8 @@ export interface SideBarConfig {
   sections: SideBarSection[]
 }
 
-export const sideBarConfig: Record<string, SideBarConfig> = {
+/* Record<ViewId, …>：每个活动栏视图都必须有侧边栏配置，漏配编译报错 */
+export const sideBarConfig: Record<ViewId, SideBarConfig> = {
   home: {
     title: '首页',
     sections: [

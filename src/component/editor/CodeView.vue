@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { highlightLine } from '../../utils/highlight'
+import { highlightLine } from './highlight'
 import type { EditorFile } from '../../data/editorFiles'
 
 const props = defineProps<{

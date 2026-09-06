@@ -97,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onActivated, ref } from 'vue'
 import { GlassCard, Icon } from '../component/common'
 import { homeCards } from '../data/homeCards'
 import { getRecentFiles, formatRelativeTime } from '../utils/persist'
@@ -112,7 +112,9 @@ const recent = ref<RecentFile[]>([
   { name: 'README.md',              icon: 'file-text', color: 'var(--kn-fg-muted)',    timestamp: Date.now() - 24 * 60 * 60_000 },
 ])
 
-onMounted(async () => {
+/* KeepAlive 下视图不销毁，onMounted 只在首次触发；
+ * 改 onActivated：每次回到首页都从 store 刷新最近列表 */
+onActivated(async () => {
   const saved = await getRecentFiles()
   if (saved.length > 0) recent.value = saved
 })

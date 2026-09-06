@@ -11,7 +11,7 @@ import type { ActivityItem } from '../component/sidebar'
  *  - 放到底部：position: 'bottom'
  *  - 图标名来自 Icon.vue 的 ICONS 表（不认识的名字会退化成圆点）
  */
-export const activityItems: ActivityItem[] = [
+export const activityItems = [
   { id: 'home',     label: '首页',     icon: 'home' },
   { id: 'editor',   label: '编辑器',   icon: 'file-text' },
   { id: 'files',    label: '文件管理', icon: 'folder' },
@@ -19,7 +19,14 @@ export const activityItems: ActivityItem[] = [
   { id: 'browser',  label: '浏览器',   icon: 'globe' },
   { id: 'settings', label: '设置',     icon: 'cog', position: 'bottom' },
   { id: 'account',  label: '账户',     icon: 'user', position: 'bottom' },
-]
+] as const satisfies ActivityItem[]
+
+/**
+ * 视图 id 全集（视图的"单一事实来源"）。
+ * App.vue 的 viewComponents / sideBarConfig 都引用它做类型约束，
+ * 新增/删除活动栏条目时，漏配组件或侧边栏配置会直接编译报错。
+ */
+export type ViewId = (typeof activityItems)[number]['id']
 
 /** 顶栏文字菜单：增删菜单项只改这里（放不下的自动收进 ⋯） */
 export const topMenus = ['文件', '编辑', '视图', '窗口', '帮助'] as const

@@ -4,6 +4,6 @@
 export { homeCards, type HomeCard } from './homeCards'
 export { editorFiles, type EditorFile } from './editorFiles'
 export { searchItems, type SearchItem } from './searchItems'
-export { activityItems, topMenus, type TopMenu } from './activityItems'
+export { activityItems, topMenus, type TopMenu, type ViewId } from './activityItems'
 export { sideBarConfig, type SideBarConfig } from './sideBarConfig'
 export { comingSoonConfig, type ComingSoonConfig } from './comingSoon'

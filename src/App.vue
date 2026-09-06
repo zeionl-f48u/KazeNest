@@ -60,9 +60,13 @@
         class="app-content"
         :class="{ 'is-flush': activeView === 'editor' }"
       >
-        <!-- 切换视图时安卓 Activity 风格过渡（淡入 + 上移） -->
+        <!-- 切换视图时安卓 Activity 风格过渡（淡入 + 上移）
+             KeepAlive：切走不销毁，回来保留状态（编辑器标签/光标/滚动位置等）。
+             同一组件类型（ComingSoon）靠 :key 区分实例，互不串数据。 -->
         <Transition name="view" mode="out-in">
-          <component :is="viewComponent" :key="activeView" v-bind="comingSoonProps" />
+          <KeepAlive>
+            <component :is="viewComponent" :key="activeView" v-bind="comingSoonProps" />
+          </KeepAlive>
         </Transition>
       </main>
     </div>
@@ -84,7 +88,7 @@ import {
   sideBarConfig,
   comingSoonConfig,
 } from './data'
-import type { SearchItem } from './data'
+import type { SearchItem, ViewId } from './data'
 
 import Home from './pages/Home.vue'
 import Editor from './pages/Editor.vue'
@@ -97,7 +101,7 @@ import ComingSoon from './component/common/ComingSoon.vue'
  * - notifyCount:  顶栏通知徽标数字（0 = 不显示）
  * - workspaceName: 顶栏左侧工作区选择器显示的文字
  * 视图 id 与 activityItems.ts 的 id 一一对应。 */
-const activeView = ref('editor')
+const activeView = ref<ViewId>('editor')
 const sideBarOpen = ref(true)
 const selectedNodeId = ref('')
 const notifyCount = ref(3)
@@ -105,6 +109,8 @@ const workspaceName = '我的工作区'
 
 /* =================== 视图组件映射 =================== */
 
+/* satisfies Record<ViewId, …>：活动栏加了新视图而这里漏配组件 → 编译报错
+ *（视图 id 的单一事实来源是 data/activityItems.ts 的 ViewId） */
 const viewComponents = {
   home:     markRaw(Home),
   editor:   markRaw(Editor),
@@ -115,10 +121,10 @@ const viewComponents = {
   browser:  markRaw(ComingSoon),
   settings: markRaw(ComingSoon),
   account:  markRaw(ComingSoon),
-} as const
+} as const satisfies Record<ViewId, unknown>
 
 const viewComponent = computed(
-  () => viewComponents[activeView.value as keyof typeof viewComponents] ?? Home
+  () => viewComponents[activeView.value] ?? Home
 )
 
 /** 占位视图的展示数据（非占位视图返回空对象，组件不接收多余 props） */
@@ -163,9 +169,10 @@ function onAccount() {
 
 /* =================== 活动栏 handler =================== */
 
-/** 切视图：同时清空侧边栏选中、强制展开侧边栏（VS Code 行为） */
+/** 切视图：同时清空侧边栏选中、强制展开侧边栏（VS Code 行为）
+ * id 来自 activityItems，类型上直接收窄为 ViewId */
 function onActivitySelect(id: string) {
-  activeView.value = id
+  activeView.value = id as ViewId
   selectedNodeId.value = ''
   sideBarOpen.value = true
 }

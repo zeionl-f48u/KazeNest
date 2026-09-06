@@ -95,10 +95,10 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { onBeforeUnmount, onMounted, reactive } from 'vue'
 import { Icon } from '../common'
 import SideBarTree from './SideBarTree.vue'
-import { getSidebarWidth, setSidebarWidth } from '../../utils/persist'
+import { useSidebarWidth, MIN_WIDTH, MAX_WIDTH } from '../../composables/useSidebarWidth'
 import type { SideBarSection, SideBarSelection, TreeItem } from './types'
 
 const props = withDefaults(
@@ -120,21 +120,11 @@ const emit = defineEmits<{
   close: []
 }>()
 
-/* =================== 宽度拖拽调节 =================== */
+/* =================== 宽度拖拽调节 ===================
+ * 宽度值、范围、持久化都在 composables/useSidebarWidth.ts
+ *（MIN_WIDTH / MAX_WIDTH / DEFAULT_WIDTH 从那边导入） */
 
-/* 调节：侧边栏宽度范围与默认值都在这改
- *  - MIN_WIDTH / MAX_WIDTH：拖拽手柄允许的最小/最大宽度
- *  - DEFAULT_WIDTH：默认宽度，且双击手柄恢复到这个值
- *  - 与 tokens.css 的 --sb-width（默认 300px）保持一致；
- *    初始化时这里会把 --sb-width 写回根元素，所以实际以 DEFAULT_WIDTH 为准 */
-/** 侧边栏宽度范围（px） */
-const MIN_WIDTH = 180
-const MAX_WIDTH = 480
-/** 默认宽度（与 tokens.css 的 --sb-width 一致） */
-const DEFAULT_WIDTH = 300
-
-/** 当前侧边栏宽度（px），写入 CSS 变量 --sb-width */
-const sbWidth = ref(DEFAULT_WIDTH)
+const { width: sbWidth, restore: restoreWidth, persist: persistWidth, resetToDefault } = useSidebarWidth()
 
 /** 拖拽中是否已按下 */
 let dragging = false
@@ -166,22 +156,19 @@ function onResizeEnd() {
   window.removeEventListener('mousemove', onResizeMove)
   window.removeEventListener('mouseup', onResizeEnd)
   // 拖拽结束落盘，下次启动恢复
-  setSidebarWidth(sbWidth.value)
+  persistWidth()
 }
 
 /** 双击手柄恢复默认宽度（同时覆盖持久化的值） */
 function resetWidth() {
-  sbWidth.value = DEFAULT_WIDTH
-  document.documentElement.style.setProperty('--sb-width', `${DEFAULT_WIDTH}px`)
-  setSidebarWidth(DEFAULT_WIDTH)
+  resetToDefault()
+  document.documentElement.style.setProperty('--sb-width', `${sbWidth.value}px`)
 }
 
 onMounted(async () => {
-  // 恢复上次保存的宽度；没有则用默认值（与 tokens.css 的 --sb-width 一致）
-  const saved = await getSidebarWidth()
-  const width = saved != null ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, saved)) : DEFAULT_WIDTH
-  sbWidth.value = width
-  document.documentElement.style.setProperty('--sb-width', `${width}px`)
+  // 恢复上次保存的宽度；没有则保持默认值
+  await restoreWidth()
+  document.documentElement.style.setProperty('--sb-width', `${sbWidth.value}px`)
 })
 
 onBeforeUnmount(() => {
