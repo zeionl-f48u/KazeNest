@@ -181,10 +181,11 @@ function layout() {
   if (!container) return
   const available = container.clientWidth
   const menus = props.menus
+  const BUFFER = 5
 
   // 1) 工作区：优先完整显示，空间不足则图标化（仍可点击，非隐藏）
   let used = 0
-  if (wsWidth.value > 0 && used + wsWidth.value <= available) {
+  if (wsWidth.value > 0 && used + wsWidth.value + BUFFER <= available) {
     used += wsWidth.value
     workspaceIconOnly.value = false
   } else {
@@ -195,7 +196,7 @@ function layout() {
   const menuTotal = menuWidths.value.reduce((a, b) => a + (b || 0), 0)
 
   // 2) 全部菜单放得下 → 不需要 ⋯
-  if (used + menuTotal <= available) {
+  if (used + menuTotal+ BUFFER <= available) {
     hiddenMenus.value = []
     showMore.value = false
     return
@@ -207,7 +208,7 @@ function layout() {
   const rest = available - used
   for (let i = 0; i < menus.length; i++) {
     const w = menuWidths.value[i] ?? 0
-    if (acc + w + MORE_BTN_W <= rest) {
+    if (acc + w + MORE_BTN_W + BUFFER <= rest) {
       acc += w
       visibleCount++
     } else {
