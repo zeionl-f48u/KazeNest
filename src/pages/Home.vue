@@ -81,15 +81,15 @@
       </h2>
       <div class="home-recent">
         <button
-          v-for="item in recent"
-          :key="item.id"
+          v-for="(item, i) in recent"
+          :key="item.name + i"
           type="button"
           class="home-recent-item"
           @click="go('editor')"
         >
           <Icon :name="item.icon" :size="14" class="home-recent-icon" :style="item.color ? { color: item.color } : undefined" />
           <span class="home-recent-name">{{ item.name }}</span>
-          <span class="home-recent-time">{{ item.time }}</span>
+          <span class="home-recent-time">{{ formatRelativeTime(item.timestamp) }}</span>
         </button>
       </div>
     </section>
@@ -97,17 +97,25 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
 import { GlassCard, Icon } from '../component/common'
 import { homeCards } from '../data/homeCards'
+import { getRecentFiles, formatRelativeTime } from '../utils/persist'
+import type { RecentFile } from '../utils/persist'
 
 const cards = homeCards
 
-/** 最近打开（示例数据，后续接 Tauri 历史记录） */
-const recent = [
-  { id: 'r1', name: 'src/App.vue',        icon: 'file-text', color: 'var(--kn-emerald-500)', time: '2 分钟前' },
-  { id: 'r2', name: 'src/data/homeCards.ts', icon: 'file-text', color: 'var(--kn-sky-500)',   time: '1 小时前' },
-  { id: 'r3', name: 'README.md',          icon: 'file-text', color: 'var(--kn-fg-muted)',    time: '昨天' },
-]
+/** 最近打开（优先从 settings.json 读取；首次使用用示例数据兜底） */
+const recent = ref<RecentFile[]>([
+  { name: 'src/App.vue',            icon: 'file-text', color: 'var(--kn-emerald-500)', timestamp: Date.now() - 2 * 60_000 },
+  { name: 'src/data/homeCards.ts',  icon: 'file-text', color: 'var(--kn-sky-500)',     timestamp: Date.now() - 60 * 60_000 },
+  { name: 'README.md',              icon: 'file-text', color: 'var(--kn-fg-muted)',    timestamp: Date.now() - 24 * 60 * 60_000 },
+])
+
+onMounted(async () => {
+  const saved = await getRecentFiles()
+  if (saved.length > 0) recent.value = saved
+})
 
 /**
  * 导航：向 App.vue 派发全局导航事件（页面与外壳解耦）

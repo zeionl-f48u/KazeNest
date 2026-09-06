@@ -6,7 +6,12 @@
 -->
 <template>
   <div class="editor-page">
-    <EditorTabs :files="openFiles" v-model="activeFileId" @close="onCloseTab" />
+    <EditorTabs
+      :files="openFiles"
+      :model-value="activeFileId"
+      @update:model-value="onTabSelect"
+      @close="onCloseTab"
+    />
 
     <CodeView :file="activeFile" @cursor="onCursor" />
 
@@ -19,6 +24,7 @@ import { computed, ref } from 'vue'
 import { EditorTabs, CodeView, StatusBar } from '../component/editor'
 import { editorFiles } from '../data/editorFiles'
 import type { EditorFile } from '../data/editorFiles'
+import { addRecentFile } from '../utils/persist'
 
 /** 打开的标签（初始 = 全部示例文件；可关闭）
  * 调节：想让编辑器初始打开别的文件，改 data/editorFiles.ts，
@@ -34,6 +40,14 @@ const cursor = ref({ line: 1, col: 1 })
 
 function onCursor(pos: { line: number; col: number }) {
   cursor.value = pos
+}
+
+/** 用户点击标签切换：切到某文件即记为"最近打开"（首次初始激活不算） */
+function onTabSelect(id: string) {
+  if (id === activeFileId.value) return
+  activeFileId.value = id
+  const f = openFiles.value.find((x) => x.id === id)
+  if (f) addRecentFile({ name: f.id, icon: f.icon, color: f.color, timestamp: Date.now() })
 }
 
 function onCloseTab(id: string) {

@@ -98,6 +98,7 @@
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { Icon } from '../common'
 import SideBarTree from './SideBarTree.vue'
+import { getSidebarWidth, setSidebarWidth } from '../../utils/persist'
 import type { SideBarSection, SideBarSelection, TreeItem } from './types'
 
 const props = withDefaults(
@@ -164,17 +165,23 @@ function onResizeEnd() {
   document.body.classList.remove('sb-resizing')
   window.removeEventListener('mousemove', onResizeMove)
   window.removeEventListener('mouseup', onResizeEnd)
+  // 拖拽结束落盘，下次启动恢复
+  setSidebarWidth(sbWidth.value)
 }
 
-/** 双击手柄恢复默认宽度 */
+/** 双击手柄恢复默认宽度（同时覆盖持久化的值） */
 function resetWidth() {
   sbWidth.value = DEFAULT_WIDTH
   document.documentElement.style.setProperty('--sb-width', `${DEFAULT_WIDTH}px`)
+  setSidebarWidth(DEFAULT_WIDTH)
 }
 
-onMounted(() => {
-  // 初始化时同步一次 CSS 变量（确保与默认值一致）
-  document.documentElement.style.setProperty('--sb-width', `${DEFAULT_WIDTH}px`)
+onMounted(async () => {
+  // 恢复上次保存的宽度；没有则用默认值（与 tokens.css 的 --sb-width 一致）
+  const saved = await getSidebarWidth()
+  const width = saved != null ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, saved)) : DEFAULT_WIDTH
+  sbWidth.value = width
+  document.documentElement.style.setProperty('--sb-width', `${width}px`)
 })
 
 onBeforeUnmount(() => {

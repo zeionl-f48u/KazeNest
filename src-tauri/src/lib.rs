@@ -48,6 +48,7 @@ fn restore_native_titlebar(window: WebviewWindow) -> Result<(), String> {
 pub fn run() -> Result<(), tauri::Error> {
     tauri::Builder::default()
         .plugin(tauri_plugin_decoration::init())
+        .plugin(tauri_plugin_store::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             init_custom_titlebar,
             restore_native_titlebar
