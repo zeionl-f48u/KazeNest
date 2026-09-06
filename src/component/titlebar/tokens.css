@@ -21,7 +21,7 @@
   /* ============ 尺寸（macOS 风格标题栏）============ */
   --tb-height: 38px;
   --tb-pad-x: 10px;
-  --tb-icon-size: 15px;
+  --tb-icon-size: 17px;
   --tb-btn-size: 28px;
   --tb-title-font-size: var(--kn-text-md);
 

@@ -31,7 +31,7 @@
           :alt="title"
           class="tb-icon-img"
         />
-        <Icon v-else :name="appIcon" :size="15" class="tb-icon-fallback" />
+        <Icon v-else :name="appIcon" :size="17" class="tb-icon-fallback" />
       </button>
 
       <span class="tb-title">{{ title }}</span>

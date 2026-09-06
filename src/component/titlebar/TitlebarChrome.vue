@@ -17,9 +17,9 @@
       :aria-label="'切换工作区'"
       @click="$emit('workspace')"
     >
-      <Icon name="folder-open" :size="13" class="tb-ws-icon" />
+      <Icon name="folder-open" :size="15" class="tb-ws-icon" />
       <span class="tb-ws-name">{{ workspaceName }}</span>
-      <Icon name="chevron-down" :size="8" class="tb-ws-caret" />
+      <Icon name="chevron-down" :size="9" class="tb-ws-caret" />
     </button>
 
     <span class="tb-sep" aria-hidden="true" />
@@ -45,7 +45,7 @@
       :aria-label="'更多菜单'"
       @click="openMore"
     >
-      <Icon name="ellipsis-h" :size="13" />
+      <Icon name="ellipsis-h" :size="15" />
     </button>
 
     <!-- 溢出菜单（Teleport 到 body，避免被 overflow:hidden 裁剪） -->
@@ -77,7 +77,7 @@
       :aria-label="'Ask AI'"
       @click="$emit('askAi')"
     >
-      <Icon name="sparkles" :size="13" class="tb-ai-icon" />
+      <Icon name="sparkles" :size="15" class="tb-ai-icon" />
       <span class="tb-ai-text">Ask AI</span>
       <kbd class="tb-ai-kbd">⌘ I</kbd>
     </button>
@@ -91,7 +91,7 @@
         aria-label="通知"
         @click="$emit('notify')"
       >
-        <Icon name="bell" :size="14" />
+        <Icon name="bell" :size="15" />
         <span v-if="notifyCount > 0" class="tb-util-badge">{{ notifyCount }}</span>
       </button>
       <button
@@ -100,7 +100,7 @@
         aria-label="账户"
         @click="$emit('account')"
       >
-        <Icon name="user" :size="14" />
+        <Icon name="user" :size="15" />
       </button>
     </div>
   </template>
