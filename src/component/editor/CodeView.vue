@@ -397,6 +397,7 @@ onMounted(() => {
   inset: 0;
   margin: 0;
   padding: 10px 0 16px;
+  box-sizing: border-box;
   overflow: hidden;
   pointer-events: none;
   font-family: var(--ed-font);
@@ -406,10 +407,18 @@ onMounted(() => {
   white-space: pre;
   word-break: normal;
   overflow-wrap: normal;
+  font-variant-ligatures: none;
+  letter-spacing: normal;
 }
 .ed-hl code {
   display: block;
   white-space: pre;
+  /* 关键：浏览器 UA 默认给 <code> 指定 monospace，会覆盖继承的 --ed-font，
+     必须显式 inherit，否则高亮文字与 textarea 字体不同 → 逐字错位 */
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  font-variant-ligatures: inherit;
 }
 .ed-hl-line {
   min-height: var(--ed-line-height);
@@ -418,12 +427,12 @@ onMounted(() => {
   background: var(--ed-line-active-bg);
 }
 
-/* 编辑层：文字透明 + 可见光标，覆盖整个代码区 */
+/* 编辑层：文字透明 + 可见光标，覆盖整个代码区
+   注意：必须与 .ed-hl 完全相同的 box-sizing / padding / 字体度量，
+   否则 textarea 的可滚动范围与高亮层不一致 → 底部行错位 */
 .ed-input {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
   margin: 0;
   padding: 10px 0 16px;
   border: 0;
@@ -440,7 +449,15 @@ onMounted(() => {
   word-break: normal;
   overflow-wrap: normal;
   overflow: auto;
-  box-sizing: content-box;
+  box-sizing: border-box;
+  font-variant-ligatures: none;
+  letter-spacing: normal;
+  /* 隐藏滚动条：滚动条会占布局空间，导致与高亮层最底行错位；
+     滚动仍可用（滚轮/键盘），与 VS Code 悬浮滚动条一致 */
+  scrollbar-width: none;
+}
+.ed-input::-webkit-scrollbar {
+  display: none;
 }
 .ed-input::selection {
   background: rgba(99, 102, 241, 0.25);
