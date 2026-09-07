@@ -15,6 +15,8 @@ export interface EditorFile {
   icon: string
   color?: string
   content: string
+  /** 是否有未保存的修改（编辑后 true，Ctrl+S 后 false） */
+  modified?: boolean
 }
 
 const mainTs = `// KazeNest — Where Clouds Rest

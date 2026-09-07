@@ -2,6 +2,7 @@
  * 轻量语法高亮（仅用于编辑器示例页展示）
  * 基于正则分词，输出 HTML 字符串；类名对应 editor/tokens.css 里的 .hl-*
  * 支持：注释、字符串、数字、关键字、函数调用、CSS 选择器/属性
+ * 可选 marks 参数：把命中区段包进 <mark class="hl-find">（查找高亮用）
  *
  * 调节指南：
  *  - 想高亮更多语言的关键字：往 KEYWORDS 字符串里加词（用 | 分隔）
@@ -24,26 +25,70 @@ const RE = new RegExp(
   'g'
 )
 
+/** 查找高亮的行内区段（start/end 相对该行，current 标记当前匹配） */
+export interface MarkRange {
+  start: number
+  end: number
+  current?: boolean
+}
+
 /**
  * 把一段代码渲染成带高亮 span 的 HTML
+ * @param code  单行代码（不含换行）
+ * @param marks 可选查找匹配区段
  */
-export function highlightLine(code: string): string {
+export function highlightLine(code: string, marks?: MarkRange[]): string {
   let out = ''
   let last = 0
   RE.lastIndex = 0
   let m: RegExpExecArray | null
   while ((m = RE.exec(code)) !== null) {
-    out += escapeHtml(code.slice(last, m.index))
-    if (m[1]) out += `<span class="hl-comment">${m[1]}</span>`
-    else if (m[2]) out += `<span class="hl-string">${m[2]}</span>`
-    else if (m[3]) out += `<span class="hl-number">${m[3]}</span>`
-    else if (m[4]) out += `<span class="hl-keyword">${m[4]}</span>`
-    else if (m[5]) out += `<span class="hl-fn">${m[5]}</span>`
-    else if (m[6]) out += `<span class="hl-selector">${m[6]}</span>`
+    out += emitSegment(code.slice(last, m.index), last, marks, null)
+    const cls = m[1] ? 'hl-comment'
+      : m[2] ? 'hl-string'
+      : m[3] ? 'hl-number'
+      : m[4] ? 'hl-keyword'
+      : m[5] ? 'hl-fn'
+      : m[6] ? 'hl-selector'
+      : null
+    out += emitSegment(m[0], m.index, marks, cls)
     last = m.index + m[0].length
   }
-  out += escapeHtml(code.slice(last))
+  out += emitSegment(code.slice(last), last, marks, null)
   return out || '&nbsp;'
+}
+
+/**
+ * 输出一段文本：无查找标记时整段一个 span；有标记时按覆盖区间拆成多个片段，
+ * 被命中的片段包 <mark class="hl-find">（保留外层 token 颜色类）。
+ */
+function emitSegment(text: string, offset: number, marks: MarkRange[] | undefined, cls: string | null): string {
+  if (!text) return ''
+  if (!marks || marks.length === 0) {
+    return cls ? `<span class="${cls}">${escapeHtml(text)}</span>` : escapeHtml(text)
+  }
+  // 逐字符覆盖率：null=未命中，''=命中，'is-current'=当前匹配
+  const cover: (string | null)[] = new Array(text.length).fill(null)
+  for (const r of marks) {
+    const s = Math.max(r.start - offset, 0)
+    const e = Math.min(r.end - offset, text.length)
+    for (let i = s; i < e; i++) cover[i] = r.current ? 'is-current' : ''
+  }
+  let out = ''
+  let i = 0
+  while (i < text.length) {
+    let j = i + 1
+    while (j < text.length && cover[j] === cover[i]) j++
+    const piece = escapeHtml(text.slice(i, j))
+    if (cover[i] !== null) {
+      const inner = `<mark class="hl-find ${cover[i]}">${piece}</mark>`
+      out += cls ? `<span class="${cls}">${inner}</span>` : inner
+    } else {
+      out += cls ? `<span class="${cls}">${piece}</span>` : piece
+    }
+    i = j
+  }
+  return out
 }
 
 function escapeHtml(text: string): string {

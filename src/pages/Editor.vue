@@ -2,7 +2,8 @@
   Editor：编辑器页
   - 标签页（EditorTabs）→ 代码区（CodeView）→ 状态栏（StatusBar）
   - 文件数据来自 data/editorFiles.ts（后续接 Tauri 文件系统）
-  - 关闭标签：移除并自动切换到相邻标签（至少保留一个）
+  - 编辑联动：CodeView 变更 → 更新内容 + 标记未保存；Ctrl+S 清除标记
+  - 关闭标签：自动切换到相邻标签；关闭全部后进入空文件态
 -->
 <template>
   <div class="editor-page">
@@ -11,16 +12,24 @@
       :model-value="activeFileId"
       @update:model-value="onTabSelect"
       @close="onCloseTab"
+      @close-others="onCloseOthers"
+      @close-all="onCloseAll"
+      @close-saved="onCloseSaved"
     />
 
-    <CodeView :file="activeFile" @cursor="onCursor" />
+    <CodeView :file="activeFile" @update="onContentUpdate" @cursor="onCursor" />
 
-    <StatusBar :file="activeFile" :line="cursor.line" :col="cursor.col" />
+    <StatusBar
+      :file="activeFile"
+      :line="cursor.line"
+      :col="cursor.col"
+      :selected="cursor.selected"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { EditorTabs, CodeView, StatusBar } from '../component/editor'
 import { editorFiles } from '../data/editorFiles'
 import type { EditorFile } from '../data/editorFiles'
@@ -32,15 +41,41 @@ import { addRecentFile } from '../utils/persist'
 const openFiles = ref<EditorFile[]>([...editorFiles])
 const activeFileId = ref(editorFiles[0]?.id ?? '')
 
+/** 无标签时的兜底空文件（CodeView 已有"空文件"空态展示） */
+const EMPTY_FILE: EditorFile = {
+  id: '',
+  name: '未打开文件',
+  language: '',
+  icon: 'file',
+  content: '',
+}
+
 const activeFile = computed(
-  () => openFiles.value.find((f) => f.id === activeFileId.value) ?? openFiles.value[0]
+  () => openFiles.value.find((f) => f.id === activeFileId.value) ?? openFiles.value[0] ?? EMPTY_FILE
 )
 
-const cursor = ref({ line: 1, col: 1 })
+const cursor = ref({ line: 1, col: 1, selected: 0 })
 
-function onCursor(pos: { line: number; col: number }) {
+function onCursor(pos: { line: number; col: number; selected: number }) {
   cursor.value = pos
 }
+
+/** 代码内容变更：更新文件内容并标记未保存 */
+function onContentUpdate(content: string) {
+  const f = activeFile.value
+  if (!f || f.content === content) return
+  f.content = content
+  f.modified = true
+}
+
+/** Ctrl+S：保存当前文件（演示版仅清除未保存标记） */
+function onSave() {
+  const f = activeFile.value
+  if (!f || !f.modified) return
+  f.modified = false
+}
+
+/* =================== 标签操作 =================== */
 
 /** 用户点击标签切换：切到某文件即记为"最近打开"（首次初始激活不算） */
 function onTabSelect(id: string) {
@@ -56,13 +91,43 @@ function onCloseTab(id: string) {
   // 关闭的是当前活动标签 → 切换到相邻标签
   if (openFiles.value[idx].id === activeFileId.value) {
     const next = openFiles.value[idx + 1] ?? openFiles.value[idx - 1]
-    if (next) activeFileId.value = next.id
+    activeFileId.value = next?.id ?? ''
   }
   openFiles.value.splice(idx, 1)
-  if (openFiles.value.length === 0) {
-    // 兜底：至少保留一个空标签（示例）
-    activeFileId.value = editorFiles[0].id
-    openFiles.value = [editorFiles[0]]
+}
+
+/** ⋯ 菜单：关闭其他标签 */
+function onCloseOthers() {
+  if (activeFileId.value) {
+    openFiles.value = openFiles.value.filter((f) => f.id === activeFileId.value)
+  }
+}
+
+/** ⋯ 菜单：关闭全部标签（进入空文件态） */
+function onCloseAll() {
+  openFiles.value = []
+  activeFileId.value = ''
+}
+
+/** ⋯ 菜单：关闭所有已保存标签（未保存的保留） */
+function onCloseSaved() {
+  const activeId = activeFileId.value
+  openFiles.value = openFiles.value.filter((f) => f.modified || f.id === activeId)
+  if (!openFiles.value.some((f) => f.id === activeFileId.value)) {
+    activeFileId.value = openFiles.value[0]?.id ?? ''
+  }
+}
+
+/* =================== 全局快捷键 =================== */
+
+onMounted(() => window.addEventListener('keydown', onGlobalKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown))
+
+function onGlobalKeydown(e: KeyboardEvent) {
+  const mod = e.metaKey || e.ctrlKey
+  if (mod && e.key.toLowerCase() === 's') {
+    e.preventDefault()
+    onSave()
   }
 }
 </script>

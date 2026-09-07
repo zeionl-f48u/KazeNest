@@ -1,7 +1,7 @@
 <!--
   StatusBar：编辑器底部状态栏
-  - 左：分支 / 诊断计数
-  - 右：光标位置 / 编码 / 语言 / 保存状态
+  - 左：分支 / 诊断计数（示例数据）
+  - 右：光标位置 / 选区字数 / 编码 / 语言 / 空格 / 保存状态（真实联动）
 -->
 <template>
   <footer class="ed-status">
@@ -18,11 +18,14 @@
 
     <div class="ed-status-right">
       <span class="ed-status-item">Ln {{ line }}, Col {{ col }}</span>
+      <span v-if="selected > 1" class="ed-status-item">{{ selected }} 个字符已选中</span>
       <span class="ed-status-item">UTF-8</span>
       <span class="ed-status-item">{{ file.language }}</span>
-      <span class="ed-status-item">
-        <Icon name="check" :size="11" class="ed-status-saved" />
-        已保存
+      <span class="ed-status-item">空格：2</span>
+      <span class="ed-status-item" :title="file.modified ? '有未保存的修改' : '已保存'">
+        <Icon v-if="!file.modified" name="check" :size="11" class="ed-status-saved" />
+        <span v-else class="ed-status-dot is-dirty" />
+        {{ file.modified ? '未保存' : '已保存' }}
       </span>
     </div>
   </footer>
@@ -36,6 +39,8 @@ defineProps<{
   file: EditorFile
   line: number
   col: number
+  /** 选中的字符数（>1 时显示） */
+  selected: number
 }>()
 </script>
 
@@ -84,6 +89,7 @@ defineProps<{
 }
 .ed-status-dot.is-error { background: var(--kn-rose-500); }
 .ed-status-dot.is-warn  { background: var(--kn-amber-500); }
+.ed-status-dot.is-dirty { background: var(--kn-amber-500); }
 
 .ed-status-saved { color: var(--kn-emerald-500); }
 </style>

@@ -42,6 +42,13 @@
   --ed-status-hover: var(--kn-hover);
   --ed-status-height: 24px;
 
+  /* ============ 标签修改点 / 查找面板 ============ */
+  --ed-tab-dot: var(--kn-amber-500);
+  --ed-find-bg: var(--kn-bg-elev);
+  --ed-find-border: var(--kn-border);
+  --ed-hl-find-bg: rgba(255, 208, 90, 0.35);
+  --ed-hl-find-current-bg: rgba(255, 208, 90, 0.55);
+
   /* ============ 语法高亮（亮色） ============ */
   --ed-hl-comment:  #94a3b8;
   --ed-hl-string:   #0e9f6e;
@@ -68,10 +75,37 @@ html.dark {
   --ed-status-fg: #9aa3b2;
   --ed-status-hover: rgba(255, 255, 255, 0.06);
 
+  --ed-find-bg: #1e1e22;
+  --ed-find-border: rgba(255, 255, 255, 0.1);
+  --ed-hl-find-bg: rgba(255, 196, 44, 0.22);
+  --ed-hl-find-current-bg: rgba(255, 196, 44, 0.38);
+
   --ed-hl-comment:  #6a9955;
   --ed-hl-string:   #ce9178;
   --ed-hl-number:   #b5cea8;
   --ed-hl-keyword:  #c586c0;
   --ed-hl-fn:       #dcdcaa;
   --ed-hl-selector: #569cd6;
+}
+
+/* ============================================================
+ * 语法高亮类（v-html 渲染的内容不在 scoped 范围内，放全局）
+ * ============================================================ */
+.hl-comment  { color: var(--ed-hl-comment); }
+.hl-string   { color: var(--ed-hl-string); }
+.hl-number   { color: var(--ed-hl-number); }
+.hl-keyword  { color: var(--ed-hl-keyword); }
+.hl-fn       { color: var(--ed-hl-fn); }
+.hl-selector { color: var(--ed-hl-selector); }
+
+/* 查找命中高亮：黄底，保留语法颜色；当前匹配更亮 */
+.hl-find {
+  background: var(--ed-hl-find-bg);
+  border-radius: 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.hl-find.is-current {
+  background: var(--ed-hl-find-current-bg);
+  box-shadow: inset 0 -2px 0 var(--kn-brand-500);
 }
