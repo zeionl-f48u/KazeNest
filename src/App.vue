@@ -47,7 +47,7 @@
 
       <Transition name="sidebar" mode="out-in">
         <SideBar
-          v-if="sideBarOpen"
+          v-if="sideBarVisible"
           :title="sideBarTitle"
           :sections="sideBarSections"
           v-model="selectedNodeId"
@@ -80,6 +80,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 
 import { Titlebar, TitlebarChrome } from './component/titlebar'
 import { ActivityBar, SideBar } from './component/sidebar'
+import type { ActivityItem } from './component/sidebar'
 
 import {
   searchItems,
@@ -131,6 +132,14 @@ const viewComponent = computed(
 const comingSoonProps = computed(() => comingSoonConfig[activeView.value] ?? {})
 
 /* =================== 侧边栏内容 =================== */
+
+/** 侧边栏是否显示：开关打开 且 当前视图未标记 sidebar:false（如设置/账户）
+ * as const 字面量上多数条目没有 sidebar 字段，这里按 ActivityItem 结构取值 */
+const sideBarVisible = computed(
+  () =>
+    sideBarOpen.value &&
+    ((activityItems.find((i) => i.id === activeView.value) as ActivityItem | undefined)?.sidebar ?? true)
+)
 
 const sideBarTitle = computed(() => sideBarConfig[activeView.value]?.title ?? '侧边栏')
 const sideBarSections = computed(() => sideBarConfig[activeView.value]?.sections ?? [])

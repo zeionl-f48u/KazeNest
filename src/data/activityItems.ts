@@ -17,8 +17,8 @@ export const activityItems = [
   { id: 'files',    label: '文件管理', icon: 'folder' },
   { id: 'ai',       label: 'AI 助手',  icon: 'sparkles', badge: 2 },
   { id: 'browser',  label: '浏览器',   icon: 'globe' },
-  { id: 'settings', label: '设置',     icon: 'cog', position: 'bottom' },
-  { id: 'account',  label: '账户',     icon: 'user', position: 'bottom' },
+  { id: 'settings', label: '设置',     icon: 'cog', position: 'bottom', sidebar: false },
+  { id: 'account',  label: '账户',     icon: 'user', position: 'bottom', sidebar: false },
 ] as const satisfies ActivityItem[]
 
 /**
