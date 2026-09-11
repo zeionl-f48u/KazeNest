@@ -1,13 +1,13 @@
 <!--
-  CodeView：代码编辑区（VS Code 风格，前端演示版）
-  - 可编辑：透明 textarea 叠加在语法高亮层上，原生光标/选区/撤销/拼写
-  - 行号栏 + 活动行高亮 + 滚动三向同步（gutter / 高亮层 / textarea）
-  - 查找/替换面板（Ctrl+F 打开，Enter 下一个，Shift+Enter 上一个，Esc 关闭）
-  - 内容通过 update 事件回传父级（Editor.vue 持有真实数据与未保存标记）
+  CodeView：代码编辑区（逐行编辑，VS Code 风格，前端演示版）
+  - 每行 = 高亮 <span> + 透明 textarea 完全重叠，天然逐字对齐（无需任何字体/滚动同步）
+  - 行操作：Enter 分行、行首 Backspace 合并、↑/↓ 跨行移光标、Tab 插 2 空格
+  - 查找/替换（Ctrl+F，Enter 下一个，Shift+Enter 上一个，Esc 关闭）
+  - 内容通过 update 事件回传父级（Editor.vue 持有数据与未保存标记）
 -->
 <template>
-  <div class="ed-code" @keydown.stop="onGlobalKeydown">
-    <!-- 行号栏（与代码区同步滚动） -->
+  <div class="ed-code" @keydown.stop="onEditorKeydown">
+    <!-- 行号栏（固定不横滚，垂直随 scroller 同步） -->
     <div class="ed-gutter" aria-hidden="true">
       <div class="ed-gutter-inner" :style="{ transform: `translateY(${-scrollTop}px)` }">
         <div
@@ -19,33 +19,42 @@
       </div>
     </div>
 
-    <!-- 代码区 -->
-    <div class="ed-body">
-      <!-- 高亮层（垫底，不接收事件；随 textarea 滚动同步） -->
-      <pre class="ed-hl" ref="hlRef" aria-hidden="true"><code v-html="highlightedLines"></code></pre>
+    <!-- 滚动容器：行内容一起滚动，行内高亮与输入框自动同步 -->
+    <div class="ed-scroll" ref="scrollRef" @scroll="onScroll">
+      <div class="ed-lines">
+        <div
+          v-for="(line, i) in lines"
+          :key="i"
+          class="ed-line"
+          :class="{ 'is-active': i + 1 === activeLine }"
+        >
+          <!-- 高亮层（不接收事件；v-html 每敲键重渲，不影响输入框光标） -->
+          <span class="ed-hl-text" v-html="highlightLine(line, marksForLine(i))" />
+          <!-- 编辑层：透明文字 + 可见光标，单行原生编辑 -->
+          <textarea
+            :ref="(el) => setLineRef(i, el)"
+            class="ed-line-input"
+            rows="1"
+            :value="line"
+            spellcheck="false"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            wrap="off"
+            @input="onLineInput(i, $event)"
+            @keydown="onLineKeydown(i, $event)"
+            @keyup="(e) => onCursorEvent(i, e)"
+            @mouseup="(e) => onCursorEvent(i, e)"
+            @select="(e) => onCursorEvent(i, e)"
+            @focus="(e) => onCursorEvent(i, e)"
+          ></textarea>
+        </div>
 
-      <!-- 编辑层（文字透明 + 可见光标/选区，原生编辑） -->
-      <textarea
-        ref="taRef"
-        class="ed-input"
-        :value="content"
-        spellcheck="false"
-        autocomplete="off"
-        autocorrect="off"
-        autocapitalize="off"
-        wrap="off"
-        @input="onInput"
-        @keydown="onKeydown"
-        @keyup="onCursorChange"
-        @mouseup="onCursorChange"
-        @select="onCursorChange"
-        @scroll="onScroll"
-      ></textarea>
-
-      <div v-if="content === ''" class="ed-empty">空文件</div>
+        <div v-if="content === ''" class="ed-empty">空文件</div>
+      </div>
     </div>
 
-    <!-- 查找/替换面板（VS Code 风格，悬浮右下角） -->
+    <!-- 查找/替换面板 -->
     <div v-if="findOpen" class="ed-find" @keydown.stop="onFindKeydown">
       <div class="ed-find-row">
         <input
@@ -103,119 +112,149 @@ const emit = defineEmits<{
 }>()
 
 const content = computed(() => props.file.content)
-const lineCount = computed(() => (content.value === '' ? 1 : content.value.split('\n').length))
+/** 数据模型：逐行数组，改动时以 \n 拼回整体 emit */
+const lines = computed(() => content.value.split('\n'))
+const lineCount = computed(() => Math.max(1, lines.value.length))
 
-/* =================== 行号 / 高亮 =================== */
+/* =================== 滚动 / 行号 =================== */
 
-const taRef = ref<HTMLTextAreaElement | null>(null)
-const hlRef = ref<HTMLPreElement | null>(null)
+const scrollRef = ref<HTMLElement>()
 const scrollTop = ref(0)
 const activeLine = ref(1)
 
-/** 每行起始偏移（字符序号 → 行列换算用） */
-const lineOffsets = computed(() => {
-  const offs: number[] = []
-  let acc = 0
-  for (const line of content.value.split('\n')) {
-    offs.push(acc)
-    acc += line.length + 1
-  }
-  return offs
-})
+/** 行高（px，滚动计算用；运行时从 --ed-line-height 读取，避免与 token 漂移） */
+let LINE_H = 21
 
-const highlightedLines = computed(() => {
-  const marksByLine = new Map<number, MarkRange[]>()
-  for (const m of matches.value) {
-    const arr = marksByLine.get(m.line) ?? []
-    arr.push({ start: m.start, end: m.end, current: m === matches.value[activeIndex.value] })
-    marksByLine.set(m.line, arr)
-  }
-  return content.value
-    .split('\n')
-    .map((ln, i) => `<div class="ed-hl-line"${i + 1 === activeLine.value ? ' is-active' : ''}>${highlightLine(ln, marksByLine.get(i))}</div>`)
-    .join('\n')
-})
+function onScroll() {
+  const sc = scrollRef.value
+  if (sc) scrollTop.value = sc.scrollTop
+}
+
+/* =================== 行 refs =================== */
+
+const lineRefs: (HTMLTextAreaElement | null)[] = []
+function setLineRef(i: number, el: unknown) {
+  lineRefs[i] = el ? (el as HTMLTextAreaElement) : null
+}
 
 /* =================== 光标 / 选区 =================== */
 
-function cursorPos(): { line: number; col: number; selected: number } {
-  const ta = taRef.value
-  if (!ta) return { line: 1, col: 1, selected: 0 }
-  const selStart = ta.selectionStart
-  const selEnd = ta.selectionEnd
-  const offs = lineOffsets.value
-  let line = 1
-  for (let i = 0; i < offs.length; i++) {
-    if (offs[i] > selStart) break
-    line = i + 1
-  }
-  const col = selStart - (offs[line - 1] ?? 0) + 1
-  return { line, col, selected: selEnd - selStart }
+function onCursorEvent(i: number, e: Event) {
+  emitCursor(i, e.target as HTMLTextAreaElement)
 }
 
-function onCursorChange() {
-  const p = cursorPos()
-  activeLine.value = p.line
-  emit('cursor', p)
-}
-
-/* =================== 滚动同步 =================== */
-
-function onScroll() {
-  const ta = taRef.value
+function emitCursor(i: number, ta: HTMLTextAreaElement) {
   if (!ta) return
-  scrollTop.value = ta.scrollTop
-  const hl = hlRef.value
-  if (hl) {
-    hl.scrollTop = ta.scrollTop
-    hl.scrollLeft = ta.scrollLeft
-  }
+  activeLine.value = i + 1
+  emit('cursor', {
+    line: i + 1,
+    col: ta.selectionStart + 1,
+    selected: ta.selectionEnd - ta.selectionStart,
+  })
 }
 
 /* =================== 编辑 =================== */
 
-function onInput() {
-  const ta = taRef.value
-  if (!ta) return
-  emit('update', ta.value)
-  onScroll()
-  onCursorChange()
+function onLineInput(i: number, e: Event) {
+  const ta = e.target as HTMLTextAreaElement
+  const next = lines.value.slice()
+  next[i] = ta.value
+  emit('update', next.join('\n'))
+  emitCursor(i, ta)
 }
 
-function onKeydown(e: KeyboardEvent) {
-  // 焦点在查找面板内时不处理编辑快捷键
-  if ((e.target as HTMLElement | null)?.closest?.('.ed-find')) return
+function onLineKeydown(i: number, e: KeyboardEvent) {
+  const ta = lineRefs[i]
+  if (!ta) return
+  const len = lines.value.length
+  const s = ta.selectionStart
+  const eSel = ta.selectionEnd
+
+  // 查找面板内的按键由面板自己处理，不走到这里（面板已 @keydown.stop）
   if (e.key === 'Tab') {
     e.preventDefault()
-    insertText('  ')
-  } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+    insertIntoLine(i, '  ', s, eSel)
+  } else if (e.key === 'Enter') {
     e.preventDefault()
-    openFind()
+    splitLine(i, s, eSel)
+  } else if (e.key === 'Backspace' && s === 0 && eSel === 0 && i > 0) {
+    e.preventDefault()
+    mergeLines(i)
+  } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    const target = i + (e.key === 'ArrowUp' ? -1 : 1)
+    if (target < 0 || target >= len) return
+    e.preventDefault()
+    const col = s
+    nextTick(() => {
+      const tta = lineRefs[target]
+      if (!tta) return
+      const pos = Math.min(col, tta.value.length)
+      tta.focus()
+      tta.setSelectionRange(pos, pos)
+      emitCursor(target, tta)
+      scrollLineIntoView(target)
+    })
   }
 }
 
-function onGlobalKeydown(e: KeyboardEvent) {
-  // 输入框里按 Ctrl+F 由 onKeydown 处理，这里只兜底全局（如焦点在状态栏）
-  if ((e.target as HTMLElement | null)?.closest?.('textarea, input')) return
+/** 在行内指定区间插入文本（Tab 用） */
+function insertIntoLine(i: number, text: string, s: number, e: number) {
+  const next = lines.value.slice()
+  next[i] = next[i].slice(0, s) + text + next[i].slice(e)
+  emit('update', next.join('\n'))
+  nextTick(() => {
+    const ta = lineRefs[i]
+    if (!ta) return
+    const pos = s + text.length
+    ta.focus()
+    ta.setSelectionRange(pos, pos)
+    emitCursor(i, ta)
+  })
+}
+
+/** Enter：把当前行从光标处拆成两行 */
+function splitLine(i: number, s: number, e: number) {
+  const next = lines.value.slice()
+  const head = next[i].slice(0, s)
+  const tail = next[i].slice(e)
+  next[i] = head
+  next.splice(i + 1, 0, tail)
+  emit('update', next.join('\n'))
+  nextTick(() => {
+    const nta = lineRefs[i + 1]
+    if (!nta) return
+    nta.focus()
+    nta.setSelectionRange(0, 0)
+    emitCursor(i + 1, nta)
+  })
+}
+
+/** 行首 Backspace：与上一行合并 */
+function mergeLines(i: number) {
+  const next = lines.value.slice()
+  const cur = next[i]
+  next[i - 1] += cur
+  next.splice(i, 1)
+  // 光标落在合并后行的前段末尾（= 上一行原长度），必须在 emit 前算好
+  const mergePos = next[i - 1].length - cur.length
+  emit('update', next.join('\n'))
+  nextTick(() => {
+    const pta = lineRefs[i - 1]
+    if (!pta) return
+    pta.focus()
+    pta.setSelectionRange(mergePos, mergePos)
+    emitCursor(i - 1, pta)
+  })
+}
+
+/** 编辑器级按键（冒泡到外层）：Ctrl+F 打开查找 */
+function onEditorKeydown(e: KeyboardEvent) {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
     e.preventDefault()
     openFind()
+  } else if (e.key === 'Escape') {
+    findOpen.value = false
   }
-}
-
-/** Tab 键插入两个空格（VS Code 默认 tabSize=2） */
-function insertText(text: string) {
-  const ta = taRef.value
-  if (!ta) return
-  const s = ta.selectionStart
-  const e = ta.selectionEnd
-  emit('update', content.value.slice(0, s) + text + content.value.slice(e))
-  nextTick(() => {
-    ta.focus()
-    const pos = s + text.length
-    ta.setSelectionRange(pos, pos)
-    onCursorChange()
-  })
 }
 
 /* =================== 查找 / 替换 =================== */
@@ -231,10 +270,14 @@ const findInputRef = ref<HTMLInputElement | null>(null)
 
 function openFind() {
   findOpen.value = true
-  if (!findQuery.value && taRef.value) {
-    // 打开时自动带上当前选中词
-    const sel = taRef.value.value.slice(taRef.value.selectionStart, taRef.value.selectionEnd)
-    findQuery.value = sel
+  if (!findQuery.value) {
+    // 打开时自动带上当前选中词（取焦点行的选区）
+    for (const ta of lineRefs) {
+      if (ta && document.activeElement === ta && ta.selectionStart !== ta.selectionEnd) {
+        findQuery.value = ta.value.slice(ta.selectionStart, ta.selectionEnd)
+        break
+      }
+    }
   }
   nextTick(() => {
     findInputRef.value?.focus()
@@ -247,7 +290,7 @@ function computeMatches(q: string): Match[] {
   const query = q.toLowerCase()
   if (!query) return []
   const res: Match[] = []
-  content.value.split('\n').forEach((ln, li) => {
+  lines.value.forEach((ln, li) => {
     const low = ln.toLowerCase()
     let idx = low.indexOf(query)
     while (idx !== -1) {
@@ -278,25 +321,23 @@ function findPrev() {
 
 function selectMatch() {
   const m = matches.value[activeIndex.value]
-  const ta = taRef.value
-  if (!m || !ta) return
-  const pos = lineOffsets.value[m.line] + m.start
+  if (!m) return
+  const ta = lineRefs[m.line]
+  if (!ta) return
   ta.focus()
-  ta.setSelectionRange(pos, pos + (m.end - m.start))
-  scrollToMatch(m)
-  onCursorChange()
+  ta.setSelectionRange(m.start, m.end)
+  scrollLineIntoView(m.line)
+  emitCursor(m.line, ta)
 }
 
-function scrollToMatch(m: Match) {
-  const ta = taRef.value
-  if (!ta) return
-  const cs = getComputedStyle(ta)
-  const lh = parseFloat(cs.lineHeight) || 21
-  const topPad = parseFloat(cs.paddingTop) || 10
-  const y = m.line * lh + topPad
-  const cur = ta.scrollTop
-  const h = ta.clientHeight
-  if (y < cur || y + lh > cur + h) ta.scrollTop = Math.max(0, y - lh * 2)
+/** 让某行滚入可视区（行高固定，纯数学计算，无需字体度量） */
+function scrollLineIntoView(li: number) {
+  const sc = scrollRef.value
+  if (!sc) return
+  const y = li * LINE_H
+  if (y < sc.scrollTop || y + LINE_H > sc.scrollTop + sc.clientHeight) {
+    sc.scrollTop = Math.max(0, y - LINE_H * 2)
+  }
   onScroll()
 }
 
@@ -306,46 +347,74 @@ function onFindKeydown(e: KeyboardEvent) {
   else if (e.key === 'Escape') { e.preventDefault(); findOpen.value = false }
 }
 
+/** 当前行的查找命中区段（current 标记当前匹配） */
+function marksForLine(li: number): MarkRange[] | undefined {
+  const arr = matches.value.filter((m) => m.line === li)
+  if (!arr.length) return undefined
+  return arr.map((m) => ({
+    start: m.start,
+    end: m.end,
+    current: m === matches.value[activeIndex.value],
+  }))
+}
+
 function replaceCurrent() {
   const m = matches.value[activeIndex.value]
   if (!m) return
-  const pos = lineOffsets.value[m.line] + m.start
-  const len = m.end - m.start
-  emit('update', content.value.slice(0, pos) + replaceText.value + content.value.slice(pos + len))
-  // 内容变化后重算匹配；活动项前进到替换位置之后最近的匹配
+  const next = lines.value.slice()
+  const ln = next[m.line]
+  next[m.line] = ln.slice(0, m.start) + replaceText.value + ln.slice(m.end)
+  emit('update', next.join('\n'))
   onFindInput()
-  const nextPos = lineOffsets.value[m.line] + m.start + replaceText.value.length
-  const idx = matches.value.findIndex((x) => lineOffsets.value[x.line] + x.start >= nextPos)
+  // 活动项前进到替换位置之后最近的匹配
+  const after = m.start + replaceText.value.length
+  const idx = matches.value.findIndex((x) => x.line > m.line || (x.line === m.line && x.start >= after))
   activeIndex.value = idx >= 0 ? idx : Math.max(0, matches.value.length - 1)
   selectMatch()
 }
 
 function replaceAll() {
   if (!matches.value.length) return
-  const lines = content.value.split('\n')
+  const next = lines.value.slice()
   // 从后往前替换，保证行内索引不偏移
   for (let i = matches.value.length - 1; i >= 0; i--) {
     const m = matches.value[i]
-    const ln = lines[m.line]
-    lines[m.line] = ln.slice(0, m.start) + replaceText.value + ln.slice(m.end)
+    next[m.line] = next[m.line].slice(0, m.start) + replaceText.value + next[m.line].slice(m.end)
   }
-  emit('update', lines.join('\n'))
+  emit('update', next.join('\n'))
   matches.value = computeMatches(findQuery.value)
   activeIndex.value = matches.value.length ? 0 : -1
 }
 
-/* =================== 内容外部变化（如 Replace）后重算匹配 =================== */
-watch(content, () => {
+onMounted(() => {
+  // 行高从 token 读取（--ed-line-height），保证滚动计算与渲染一致
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--ed-line-height')
+  const n = parseFloat(v)
+  if (n > 0) LINE_H = n
+  lineRefs[0]?.focus()
+})
+
+/* =================== 内容/文件变化 =================== */
+
+/** 编辑代码后，查找命中的行内位置会失效，需要重算（否则高亮/跳转错位） */
+watch(lines, () => {
   if (findQuery.value) {
     matches.value = computeMatches(findQuery.value)
     if (activeIndex.value > matches.value.length - 1) activeIndex.value = matches.value.length - 1
   }
 })
 
-onMounted(() => {
-  // 进入编辑器自动聚焦，可立即输入
-  taRef.value?.focus()
-})
+/** 切换文件（KeepAlive 下组件常驻）：重置滚动与焦点 */
+watch(
+  () => props.file.id,
+  () => {
+    activeLine.value = 1
+    scrollTop.value = 0
+    const sc = scrollRef.value
+    if (sc) sc.scrollTop = 0
+    lineRefs[0]?.focus()
+  }
+)
 </script>
 
 <style scoped>
@@ -353,10 +422,10 @@ onMounted(() => {
   position: relative;
   flex: 1;
   min-height: 0;
+  display: flex;
   overflow: hidden;
   background: var(--ed-bg);
   color: var(--ed-fg);
-  display: flex;
   cursor: text;
 }
 
@@ -369,7 +438,6 @@ onMounted(() => {
   -webkit-user-select: none;
 }
 .ed-gutter-inner {
-  padding: 10px 0 16px;
   will-change: transform;
 }
 .ed-ln {
@@ -383,83 +451,67 @@ onMounted(() => {
 .ed-gutter:hover .ed-ln { color: var(--ed-gutter-fg-hover); }
 .ed-ln.is-active { color: var(--ed-gutter-fg-active); }
 
-/* ==================== 代码区（高亮层 + 编辑层） ==================== */
-.ed-body {
-  position: relative;
+/* ==================== 滚动容器 / 行 ==================== */
+.ed-scroll {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
+  overflow: auto;
+}
+.ed-lines {
+  width: max-content;
+  min-width: 100%;
+}
+.ed-line {
+  position: relative;
+  height: var(--ed-line-height);
+}
+.ed-line.is-active {
+  background: var(--ed-line-active-bg);
 }
 
-/* 高亮层：垫底，不接收事件；与 textarea 相同的字体/行距/内边距保证逐字对齐 */
-.ed-hl {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  padding: 10px 0 16px;
-  box-sizing: border-box;
-  overflow: hidden;
-  pointer-events: none;
+/* 高亮层：留在文档流内（inline-block），让行的固有宽度=文本宽度，
+   这样长行能被外层容器横向滚动；textarea 绝对定位覆盖它 */
+.ed-hl-text {
+  display: inline-block;
+  height: var(--ed-line-height);
+  line-height: var(--ed-line-height);
   font-family: var(--ed-font);
   font-size: var(--ed-font-size);
-  line-height: var(--ed-line-height);
+  font-variant-ligatures: none;
+  letter-spacing: normal;
   tab-size: 2;
   white-space: pre;
   word-break: normal;
   overflow-wrap: normal;
-  font-variant-ligatures: none;
-  letter-spacing: normal;
-}
-.ed-hl code {
-  display: block;
-  white-space: pre;
-  /* 关键：浏览器 UA 默认给 <code> 指定 monospace，会覆盖继承的 --ed-font，
-     必须显式 inherit，否则高亮文字与 textarea 字体不同 → 逐字错位 */
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  font-variant-ligatures: inherit;
-}
-.ed-hl-line {
-  min-height: var(--ed-line-height);
-}
-.ed-hl-line.is-active {
-  background: var(--ed-line-active-bg);
+  pointer-events: none;
 }
 
-/* 编辑层：文字透明 + 可见光标，覆盖整个代码区
-   注意：必须与 .ed-hl 完全相同的 box-sizing / padding / 字体度量，
-   否则 textarea 的可滚动范围与高亮层不一致 → 底部行错位 */
-.ed-input {
+/* 编辑层：透明文字 + 可见光标，单行、不内滚（滚动交给外层容器） */
+.ed-line-input {
   position: absolute;
-  inset: 0;
-  margin: 0;
-  padding: 10px 0 16px;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--ed-line-height);
+  padding: 0;
   border: 0;
   outline: 0;
+  margin: 0;
   resize: none;
+  overflow: hidden;
   background: transparent;
   color: transparent;
   caret-color: var(--ed-fg);
   font-family: var(--ed-font);
   font-size: var(--ed-font-size);
   line-height: var(--ed-line-height);
-  tab-size: 2;
-  white-space: pre;
-  word-break: normal;
-  overflow-wrap: normal;
-  overflow: auto;
-  box-sizing: border-box;
   font-variant-ligatures: none;
   letter-spacing: normal;
-  /* 隐藏滚动条：滚动条会占布局空间，导致与高亮层最底行错位；
-     滚动仍可用（滚轮/键盘），与 VS Code 悬浮滚动条一致 */
-  scrollbar-width: none;
+  tab-size: 2;
+  white-space: pre;
+  box-sizing: border-box;
 }
-.ed-input::-webkit-scrollbar {
-  display: none;
-}
-.ed-input::selection {
+.ed-line-input::selection {
   background: rgba(99, 102, 241, 0.25);
   color: transparent;
 }
@@ -506,7 +558,7 @@ onMounted(() => {
   padding: 4px 8px;
   border: 1px solid var(--ed-find-border);
   border-radius: var(--kn-radius-sm);
-  background: var(--ed-bg-elev, var(--kn-bg-elev));
+  background: var(--kn-bg-elev);
   color: var(--ed-fg);
   font: inherit;
   font-size: var(--kn-text-sm);
