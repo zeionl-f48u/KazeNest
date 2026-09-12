@@ -5,7 +5,11 @@
   - 纯受控组件：files / modelValue / close 及批操作事件
 -->
 <template>
-  <div class="ed-tabs" role="tablist">
+  <div
+    class="ed-tabs"
+    role="tablist"
+    data-tauri-drag-region="deep"
+  >
     <button
       v-for="f in files"
       :key="f.id"
@@ -36,8 +40,14 @@
       </button>
     </button>
 
-    <!-- ⋯ 批量关闭菜单 -->
-    <div class="ed-tabs-more" ref="moreRef" title="更多标签" @click.stop="toggleMore">
+    <!-- ⋯ 批量关闭菜单（role=button：让 tauri 拖拽逻辑识别为可点击元素，不触发窗口拖动） -->
+    <div
+      class="ed-tabs-more"
+      ref="moreRef"
+      title="更多标签"
+      role="button"
+      @click.stop="toggleMore"
+    >
       <Icon name="ellipsis-h" :size="13" />
     </div>
 
@@ -173,7 +183,8 @@ function onItem(action: 'closeOthers' | 'closeAll' | 'closeSaved') {
 .ed-tab-icon { flex-shrink: 0; }
 .ed-tab-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; } /* 调节：标签文字最长宽度 */
 
-/* 修改点：悬停时隐藏，露出 × */
+/* 修改点：始终可见（包括悬停时），保证未保存状态不会被光标盖住；
+   悬停时右侧的 × 一并出现，可关闭标签 */
 .ed-tab-dot {
   display: inline-flex;
   width: 8px;
@@ -183,8 +194,6 @@ function onItem(action: 'closeOthers' | 'closeAll' | 'closeSaved') {
   background: var(--ed-tab-dot);
   flex-shrink: 0;
 }
-.ed-tab:hover .ed-tab-dot,
-.ed-tab.is-active:hover .ed-tab-dot { display: none; }
 
 .ed-tab-close {
   display: inline-flex;
