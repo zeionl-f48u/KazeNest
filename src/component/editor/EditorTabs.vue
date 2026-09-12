@@ -6,6 +6,7 @@
 -->
 <template>
   <div
+    ref="tabsRef"
     class="ed-tabs"
     role="tablist"
     data-tauri-drag-region="deep"
@@ -100,9 +101,16 @@ const emit = defineEmits<{
 }>()
 
 /* =================== 拖拽排序 ===================
- * 方案：拖拽中的标签跟随鼠标（translateX），其余标签让位（向拖拽方向位移一个标签宽度），
+ * 方案：拖拽中的标签跟随鼠标（translateX，每帧更新），其余标签让位（位移一个标签宽度），
  * 松手后 emit reorder，父级重排 files。
+ * 防频闪的两个关键点：
+ *  1) 拖拽标签的位置在每次 mousemove 都更新，不能只在"目标变化"时更新
+ *  2) 目标下标用"布局坐标"（offsetLeft + 滚动偏移）计算——它不受 transform 影响；
+ *     若用 getBoundingClientRect（含 transform），让位后的标签 rect 会反过来
+ *     影响目标判定，形成"目标↔位移"振荡循环，标签来回跳
  */
+
+const tabsRef = ref<HTMLElement>()
 
 const tabEls: (HTMLElement | null)[] = []
 function setTabEl(i: number, el: unknown) {
@@ -111,9 +119,9 @@ function setTabEl(i: number, el: unknown) {
 
 const dragIndex = ref<number | null>(null)
 const overIndex = ref<number | null>(null)
-const dragX = ref(0)
-const startX = ref(0)
-const draggedW = ref(0)
+let startX = 0
+let dragOffset = 0
+let draggedW = 0
 /** 是否真的拖动过（用于抑制拖动后的 click 切换标签） */
 let didDrag = false
 
@@ -122,50 +130,65 @@ function onTabMousedown(i: number, e: MouseEvent) {
   if ((e.target as HTMLElement).closest('.ed-tab-close')) return
   dragIndex.value = i
   overIndex.value = i
-  startX.value = e.clientX
-  dragX.value = 0
-  draggedW.value = tabEls[i]?.offsetWidth ?? 100
+  startX = e.clientX
+  dragOffset = 0
+  draggedW = tabEls[i]?.offsetWidth ?? 100
   didDrag = false
   window.addEventListener('mousemove', onDragMove)
   window.addEventListener('mouseup', onDragEnd)
 }
 
 function onDragMove(e: MouseEvent) {
-  if (dragIndex.value == null) return
-  const dx = e.clientX - startX.value
-  dragX.value = dx
-  if (Math.abs(dx) > 3) didDrag = true
+  const from = dragIndex.value
+  if (from == null) return
+  dragOffset = e.clientX - startX
+  if (Math.abs(dragOffset) > 3) didDrag = true
 
-  // 按鼠标 x 落在哪个标签的前半段决定目标位置
-  let target = dragIndex.value
-  for (let i = 0; i < tabEls.length; i++) {
-    const el = tabEls[i]
-    if (!el) continue
-    const r = el.getBoundingClientRect()
-    if (e.clientX < r.left + r.width / 2) { target = i; break }
-    target = i
+  // 1) 拖拽标签持续跟随鼠标（每帧更新，避免跳变）
+  const dragged = tabEls[from]
+  if (dragged) {
+    dragged.style.transform = `translateX(${dragOffset}px)`
   }
+
+  // 2) 仅当目标下标变化时，才重排其余标签（避免每帧重排）
+  const target = computeTarget(e.clientX)
   if (target !== overIndex.value) {
     overIndex.value = target
     applyTransforms()
   }
 }
 
+/** 目标下标：用布局坐标（offsetLeft 不受 transform 影响）+ 标签栏滚动偏移换算 */
+function computeTarget(clientX: number): number {
+  const from = dragIndex.value ?? 0
+  const bar = tabsRef.value
+  if (!bar) return from
+  const x = clientX - bar.getBoundingClientRect().left + bar.scrollLeft
+  let target = from
+  for (let i = 0; i < tabEls.length; i++) {
+    const el = tabEls[i]
+    if (!el) continue
+    const mid = el.offsetLeft + el.offsetWidth / 2
+    if (x < mid) { target = i; break }
+    target = i
+  }
+  return target
+}
+
 function applyTransforms() {
   const from = dragIndex.value
   const to = overIndex.value
   if (from == null || to == null) return
-  const w = draggedW.value
   for (let i = 0; i < tabEls.length; i++) {
     const el = tabEls[i]
     if (!el) continue
     if (i === from) {
-      el.style.transform = `translateX(${dragX.value}px)`
+      el.style.transform = `translateX(${dragOffset}px)`
       el.style.zIndex = '5'
     } else if (from < to && i > from && i <= to) {
-      el.style.transform = `translateX(${-w}px)`   // 向右拖：中间标签向左让位
+      el.style.transform = `translateX(${-draggedW}px)`   // 向右拖：中间标签向左让位
     } else if (to < from && i >= to && i < from) {
-      el.style.transform = `translateX(${w}px)`    // 向左拖：中间标签向右让位
+      el.style.transform = `translateX(${draggedW}px)`    // 向左拖：中间标签向右让位
     } else {
       el.style.transform = ''
       el.style.zIndex = ''
@@ -270,13 +293,15 @@ function onItem(action: 'closeOthers' | 'closeAll' | 'closeSaved') {
 .ed-tab:hover { background: var(--ed-tab-hover); }
 .ed-tab:active { background: var(--kn-active); }
 
-/* 拖拽中的标签：跟随鼠标、浮起、淡化 */
+/* 拖拽中的标签：跟随鼠标、浮起、淡化；will-change 让 transform 走合成层，避免闪动 */
 .ed-tab.is-dragging {
   opacity: 0.75;
   box-shadow: var(--kn-shadow-md);
   cursor: grabbing;
   background: var(--ed-tab-active-bg);
   color: var(--ed-tab-active-fg);
+  will-change: transform;
+  transition: none;
 }
 
 .ed-tab.is-active {
