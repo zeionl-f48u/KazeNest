@@ -121,7 +121,42 @@ export const sideBarConfig: Record<ViewId, SideBarConfig> = {
   ai: {
     title: 'AI 助手',
     sections: [
-      { id: 'sec-sessions', title: '对话', count: 2, items: [{ id: 'ses-1', label: '重构顶栏为 VS Code 风格', icon: 'sparkles' }] },
+      /* 最近对话（DeepSeek harness 风格：会话列表 + 时间/元信息） */
+      {
+        id: 'sec-chat-sessions',
+        title: '对话',
+        count: 6,
+        items: [
+          { id: 'ai-ses-1', label: '重构顶栏为 VS Code 风格', icon: 'sparkles', meta: '2m' },
+          { id: 'ai-ses-2', label: '解释设计 token 系统',     icon: 'sparkles', meta: '1h' },
+          { id: 'ai-ses-3', label: '帮我写查找替换',          icon: 'sparkles', meta: '3h' },
+          { id: 'ai-ses-4', label: '逐行编辑器对齐方案',      icon: 'sparkles', meta: '昨天' },
+          { id: 'ai-ses-5', label: 'Store 插件接入',          icon: 'sparkles', meta: '昨天' },
+          { id: 'ai-ses-6', label: '前端模块化建议',          icon: 'sparkles', meta: '2 天前' },
+        ],
+      },
+      /* 模型选择（选中态由 meta 标识；后续接真实模型列表） */
+      {
+        id: 'sec-models',
+        title: '模型',
+        items: [
+          { id: 'ai-model-reasoner', label: 'DeepSeek-R1',    icon: 'sparkles', meta: '推理', color: 'var(--kn-brand-500)' },
+          { id: 'ai-model-chat',     label: 'DeepSeek-Chat',  icon: 'sparkles', meta: '通用', color: 'var(--kn-magenta-500)' },
+          { id: 'ai-model-coder',    label: 'DeepSeek-Coder', icon: 'sparkles', meta: '代码', color: 'var(--kn-emerald-500)' },
+        ],
+      },
+      /* 常用提示词模板（默认折叠，点击即填入输入框） */
+      {
+        id: 'sec-prompts',
+        title: '提示词库',
+        collapsed: true,
+        items: [
+          { id: 'ai-prompt-review',   label: '代码评审',   icon: 'check' },
+          { id: 'ai-prompt-refactor', label: '重构建议',   icon: 'refresh' },
+          { id: 'ai-prompt-explain',  label: '解释代码',   icon: 'file-text' },
+          { id: 'ai-prompt-test',     label: '写单元测试', icon: 'terminal' },
+        ],
+      },
     ],
   },
   browser: {

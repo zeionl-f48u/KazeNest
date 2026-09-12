@@ -15,6 +15,7 @@
       @close-others="onCloseOthers"
       @close-all="onCloseAll"
       @close-saved="onCloseSaved"
+      @reorder="onReorder"
     />
 
     <CodeView :file="activeFile" @update="onContentUpdate" @cursor="onCursor" />
@@ -94,6 +95,14 @@ function onCloseTab(id: string) {
     activeFileId.value = next?.id ?? ''
   }
   openFiles.value.splice(idx, 1)
+}
+
+/** 拖拽排序标签：把 from 移到 to */
+function onReorder({ from, to }: { from: number; to: number }) {
+  const arr = openFiles.value.slice()
+  const [item] = arr.splice(from, 1)
+  arr.splice(to, 0, item)
+  openFiles.value = arr
 }
 
 /** ⋯ 菜单：关闭其他标签 */

@@ -11,14 +11,16 @@
     data-tauri-drag-region="deep"
   >
     <button
-      v-for="f in files"
+      v-for="(f, i) in files"
       :key="f.id"
       type="button"
       class="ed-tab"
-      :class="{ 'is-active': f.id === modelValue }"
+      :class="{ 'is-active': f.id === modelValue, 'is-dragging': i === dragIndex }"
       role="tab"
       :aria-selected="f.id === modelValue"
-      @click="$emit('update:modelValue', f.id)"
+      :ref="(el) => setTabEl(i, el)"
+      @click="onTabClick(f.id)"
+      @mousedown.left="onTabMousedown(i, $event)"
       @mousedown.middle.prevent="$emit('close', f.id)"
     >
       <Icon
@@ -93,7 +95,109 @@ const emit = defineEmits<{
   closeOthers: []
   closeAll: []
   closeSaved: []
+  /** 拖拽排序：从 from 移到 to */
+  reorder: [{ from: number; to: number }]
 }>()
+
+/* =================== 拖拽排序 ===================
+ * 方案：拖拽中的标签跟随鼠标（translateX），其余标签让位（向拖拽方向位移一个标签宽度），
+ * 松手后 emit reorder，父级重排 files。
+ */
+
+const tabEls: (HTMLElement | null)[] = []
+function setTabEl(i: number, el: unknown) {
+  tabEls[i] = el ? (el as HTMLElement) : null
+}
+
+const dragIndex = ref<number | null>(null)
+const overIndex = ref<number | null>(null)
+const dragX = ref(0)
+const startX = ref(0)
+const draggedW = ref(0)
+/** 是否真的拖动过（用于抑制拖动后的 click 切换标签） */
+let didDrag = false
+
+function onTabMousedown(i: number, e: MouseEvent) {
+  if (e.button !== 0) return
+  if ((e.target as HTMLElement).closest('.ed-tab-close')) return
+  dragIndex.value = i
+  overIndex.value = i
+  startX.value = e.clientX
+  dragX.value = 0
+  draggedW.value = tabEls[i]?.offsetWidth ?? 100
+  didDrag = false
+  window.addEventListener('mousemove', onDragMove)
+  window.addEventListener('mouseup', onDragEnd)
+}
+
+function onDragMove(e: MouseEvent) {
+  if (dragIndex.value == null) return
+  const dx = e.clientX - startX.value
+  dragX.value = dx
+  if (Math.abs(dx) > 3) didDrag = true
+
+  // 按鼠标 x 落在哪个标签的前半段决定目标位置
+  let target = dragIndex.value
+  for (let i = 0; i < tabEls.length; i++) {
+    const el = tabEls[i]
+    if (!el) continue
+    const r = el.getBoundingClientRect()
+    if (e.clientX < r.left + r.width / 2) { target = i; break }
+    target = i
+  }
+  if (target !== overIndex.value) {
+    overIndex.value = target
+    applyTransforms()
+  }
+}
+
+function applyTransforms() {
+  const from = dragIndex.value
+  const to = overIndex.value
+  if (from == null || to == null) return
+  const w = draggedW.value
+  for (let i = 0; i < tabEls.length; i++) {
+    const el = tabEls[i]
+    if (!el) continue
+    if (i === from) {
+      el.style.transform = `translateX(${dragX.value}px)`
+      el.style.zIndex = '5'
+    } else if (from < to && i > from && i <= to) {
+      el.style.transform = `translateX(${-w}px)`   // 向右拖：中间标签向左让位
+    } else if (to < from && i >= to && i < from) {
+      el.style.transform = `translateX(${w}px)`    // 向左拖：中间标签向右让位
+    } else {
+      el.style.transform = ''
+      el.style.zIndex = ''
+    }
+  }
+}
+
+function onDragEnd() {
+  window.removeEventListener('mousemove', onDragMove)
+  window.removeEventListener('mouseup', onDragEnd)
+  const from = dragIndex.value
+  const to = overIndex.value
+  dragIndex.value = null
+  overIndex.value = null
+  for (const el of tabEls) {
+    if (el) { el.style.transform = ''; el.style.zIndex = '' }
+  }
+  if (from != null && to != null && from !== to && didDrag) {
+    emit('reorder', { from, to })
+  }
+}
+
+/** 点击切换标签；拖动结束时由 didDrag 抑制这次 click（避免误切） */
+function onTabClick(id: string) {
+  if (didDrag) {
+    didDrag = false
+    return
+  }
+  emit('update:modelValue', id)
+}
+
+/* =================== ⋯ 菜单 =================== */
 
 const moreOpen = ref(false)
 const moreRef = ref<HTMLElement>()
@@ -159,10 +263,21 @@ function onItem(action: 'closeOthers' | 'closeAll' | 'closeSaved') {
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
   transition: background var(--kn-dur-fast) var(--kn-ease-out), color var(--kn-dur-fast);
 }
 .ed-tab:hover { background: var(--ed-tab-hover); }
 .ed-tab:active { background: var(--kn-active); }
+
+/* 拖拽中的标签：跟随鼠标、浮起、淡化 */
+.ed-tab.is-dragging {
+  opacity: 0.75;
+  box-shadow: var(--kn-shadow-md);
+  cursor: grabbing;
+  background: var(--ed-tab-active-bg);
+  color: var(--ed-tab-active-fg);
+}
 
 .ed-tab.is-active {
   background: var(--ed-tab-active-bg);
