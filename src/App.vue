@@ -48,11 +48,12 @@
       <Transition name="sidebar" mode="out-in">
         <SideBar
           v-if="sideBarVisible"
-          :title="sideBarTitle"
-          :sections="sideBarSections"
-          v-model="selectedNodeId"
+          :title="activeSidebar?.title ?? '侧边栏'"
           @close="sideBarOpen = false"
-        />
+        >
+          <!-- 视图专属侧栏内容（component/sidebar/views 注册表） -->
+          <component :is="activeSidebar?.component" />
+        </SideBar>
       </Transition>
 
       <!-- 编辑器视图通栏铺满（VS Code 风格），其余视图保留内边距 -->
@@ -79,14 +80,14 @@ import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 
 import { Titlebar, TitlebarChrome } from './component/titlebar'
-import { ActivityBar, SideBar } from './component/sidebar'
+import { ActivityBar, SideBar, viewSidebars } from './component/sidebar'
+import type { ViewSidebarKey } from './component/sidebar'
 import type { ActivityItem } from './component/sidebar'
 
 import {
   searchItems,
   activityItems,
   topMenus,
-  sideBarConfig,
   comingSoonConfig,
 } from './data'
 import type { SearchItem, ViewId } from './data'
@@ -104,7 +105,6 @@ import ComingSoon from './component/common/ComingSoon.vue'
  * 视图 id 与 activityItems.ts 的 id 一一对应。 */
 const activeView = ref<ViewId>('editor')
 const sideBarOpen = ref(true)
-const selectedNodeId = ref('')
 const notifyCount = ref(3)
 const workspaceName = '我的工作区'
 
@@ -131,7 +131,7 @@ const viewComponent = computed(
 /** 占位视图的展示数据（非占位视图返回空对象，组件不接收多余 props） */
 const comingSoonProps = computed(() => comingSoonConfig[activeView.value] ?? {})
 
-/* =================== 侧边栏内容 =================== */
+/* =================== 侧边栏 =================== */
 
 /** 侧边栏是否显示：开关打开 且 当前视图未标记 sidebar:false（如设置/账户）
  * as const 字面量上多数条目没有 sidebar 字段，这里按 ActivityItem 结构取值 */
@@ -141,8 +141,12 @@ const sideBarVisible = computed(
     ((activityItems.find((i) => i.id === activeView.value) as ActivityItem | undefined)?.sidebar ?? true)
 )
 
-const sideBarTitle = computed(() => sideBarConfig[activeView.value]?.title ?? '侧边栏')
-const sideBarSections = computed(() => sideBarConfig[activeView.value]?.sections ?? [])
+/** 当前视图的专属侧栏（来自 component/sidebar/views 注册表；无则隐藏内容）
+ * 设置/账户等未注册视图走 undefined，配合 sideBarVisible 不渲染 */
+const activeSidebar = computed(() => {
+  const id = activeView.value
+  return id in viewSidebars ? viewSidebars[id as ViewSidebarKey] : undefined
+})
 
 /* =================== 顶栏 handler =================== */
 /* 这些目前只是打日志的占位。接真实逻辑时在这里替换：
@@ -178,11 +182,10 @@ function onAccount() {
 
 /* =================== 活动栏 handler =================== */
 
-/** 切视图：同时清空侧边栏选中、强制展开侧边栏（VS Code 行为）
+/** 切视图：强制展开侧边栏（VS Code 行为）
  * id 来自 activityItems，类型上直接收窄为 ViewId */
 function onActivitySelect(id: string) {
   activeView.value = id as ViewId
-  selectedNodeId.value = ''
   sideBarOpen.value = true
 }
 

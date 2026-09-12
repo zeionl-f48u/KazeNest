@@ -6,7 +6,7 @@ import type { ActivityItem } from '../component/sidebar'
  *
  * 调节指南：
  *  - 加一个视图：数组里加一条，然后在 App.vue 的 viewComponents 注册对应组件，
- *    在 sideBarConfig.ts 加该视图的侧边栏内容
+ *    在 component/sidebar/views/index.ts 注册对应侧栏组件
  *  - 调徽标：badge 数字（如 ai 的 2，改为 0 或去掉即不显示）
  *  - 放到底部：position: 'bottom'
  *  - 图标名来自 Icon.vue 的 ICONS 表（不认识的名字会退化成圆点）
@@ -23,7 +23,7 @@ export const activityItems = [
 
 /**
  * 视图 id 全集（视图的"单一事实来源"）。
- * App.vue 的 viewComponents / sideBarConfig 都引用它做类型约束，
+ * App.vue 的 viewComponents / component/sidebar/views 注册表都引用它做类型约束，
  * 新增/删除活动栏条目时，漏配组件或侧边栏配置会直接编译报错。
  */
 export type ViewId = (typeof activityItems)[number]['id']
