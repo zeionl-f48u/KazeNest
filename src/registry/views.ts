@@ -9,7 +9,7 @@
  *   - 占位页配置（comingSoon，仅建设中视图有）
  *   - 是否显示侧栏（sidebarVisible，设置/账户等全屏视图为 false）
  *
- * 类型守卫：`satisfies Record<ViewId, ...>` 保证——
+ * 类型守卫：`: Record<ViewId, ...>` 保证——
  *   - 活动栏加了新视图（ViewId 扩展）而这里漏配 → 编译报错
  *   - 视图 id 拼错 → 编译报错
  * 视图 id 的单一来源是 data/activityItems.ts 的 ViewId。
@@ -22,9 +22,8 @@
 import type { Component } from 'vue'
 import { markRaw } from 'vue'
 
-import type { ViewId } from '../data'
+import type { ViewId, ComingSoonConfig } from '../data'
 import { comingSoonConfig } from '../data'
-import type { ComingSoonConfig } from '../data'
 
 import Home from '../pages/Home.vue'
 import Editor from '../pages/Editor.vue'
@@ -54,9 +53,12 @@ export interface ViewDefinition {
 
 /**
  * 视图定义表：key = ViewId（活动栏条目 id）
+ * 显式标注 `: Record<ViewId, ViewDefinition>`（不用 satisfies）——
+ * 这样每个条目都是完整 ViewDefinition，App.vue 侧 `views[id].sidebar` 等属性
+ * 可直接访问（satisfies 会保留各条目的字面量类型，属性访问反而报错）。
  * markRaw：组件是静态引用，标记为非响应式避免 Vue 做深度代理（性能 + 语义）
  */
-export const views = {
+export const views: Record<ViewId, ViewDefinition> = {
   home: {
     page: markRaw(Home),
     sidebar: markRaw(HomeSidebar),
@@ -101,7 +103,7 @@ export const views = {
     sidebarVisible: false,
     comingSoon: comingSoonConfig.account,
   },
-} satisfies Record<ViewId, ViewDefinition>
+}
 
 /** 视图 id 集合（用于遍历/校验） */
 export type ViewKey = keyof typeof views

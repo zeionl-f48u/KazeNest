@@ -80,7 +80,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { Titlebar, TitlebarChrome } from './component/titlebar'
 import { ActivityBar, SideBar } from './component/sidebar'
-import { Home, Editor } from './pages'
 import { useAppSession, useAppBoot } from './composables'
 
 import { searchItems, activityItems, topMenus } from './data'
