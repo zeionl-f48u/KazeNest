@@ -14,10 +14,12 @@
  *   chat.selectSession(id)            // 切换会话
  *   chat.send({ text, attachments })  // 发送用户消息（触发模拟工作流）
  *   chat.pickWork(w)                  // 按工作模式发起
+ *
+ * 设计说明：所有状态都是模块级单例（useAppSession 的共享快照也一样），
+ * 因此不再包一层函数壳，直接导出函数引用即可——组件间天然共享同一份数据。
  */
 import { computed, ref, watch } from 'vue'
 import { useAppSession } from './useAppSession'
-import type { AiMessageSnapshot, AiSessionSnapshot } from '../utils'
 
 /* =================== 工作模式（均衡覆盖常见开发工作） =================== */
 
@@ -73,7 +75,7 @@ export interface AiSession {
   messages: AiMessage[]
 }
 
-/* =================== 状态 =================== */
+/* =================== 状态（模块级单例） =================== */
 
 const sessions = ref<AiSession[]>([])
 const activeSessionId = ref('')
@@ -101,7 +103,7 @@ function nowTime() {
 /* =================== 会话操作 =================== */
 
 /** 新建会话（默认名字按序号；输入清空由调用方做） */
-function newChat(): AiSession {
+function newChat() {
   const now = Date.now()
   const id = `s${++sessionSeq}`
   const colors = ['var(--kn-brand-500)', 'var(--kn-magenta-500)', 'var(--kn-sky-500)', 'var(--kn-emerald-500)', 'var(--kn-amber-500)']
@@ -118,7 +120,6 @@ function newChat(): AiSession {
   activeSessionId.value = id
   typing.value = false
   toolActivity.value = null
-  return session
 }
 
 function selectSession(id: string) {
@@ -251,7 +252,7 @@ watch([sessions, activeSessionId, activeModel], () => {
 }, { deep: true })
 
 /** 启动恢复：恢复模型 + 会话列表 + 各会话消息 */
-async function restoreAI(): Promise<void> {
+async function restoreAI() {
   const ai = (await restore())?.ai
   if (!ai) return
   activeModel.value = ai.activeModel || 'model-chat'
@@ -286,10 +287,29 @@ async function restoreAI(): Promise<void> {
   }
 }
 
-return { sessions, activeSession, activeSessionId, messages, activeModel, activeModelInfo, typing, toolActivity, workModes, models, newChat, selectSession, removeSession, send, pickWork, restore: restoreAI, flush }
-}
-
 /** 工作模式查询（渲染消息标签用） */
 export function workByKind(kind: WorkKind | undefined): WorkMode | undefined {
   return workModes.find((w) => w.kind === kind)
+}
+
+export function useAiChat() {
+  return {
+    sessions,
+    activeSession,
+    activeSessionId,
+    messages,
+    activeModel,
+    activeModelInfo,
+    typing,
+    toolActivity,
+    workModes,
+    models,
+    newChat,
+    selectSession,
+    removeSession,
+    send,
+    pickWork,
+    restore: restoreAI,
+    flush,
+  }
 }
