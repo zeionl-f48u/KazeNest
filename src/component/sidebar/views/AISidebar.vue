@@ -157,8 +157,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Icon } from '../../common'
+import { useAppSession } from '../../../composables'
 
 /* =================== 工作模式（均衡覆盖常见开发工作） =================== */
 
@@ -399,6 +400,40 @@ function toggleContext() {
   emojiOpen.value = false
 }
 
+/* =================== 会话持久化（模型 + 对话历史） =================== */
+
+const { session, restore, save, flush } = useAppSession()
+
+/** 把当前 AI 状态写回共享快照 */
+function syncSession() {
+  const s = session.value
+  if (!s) return
+  s.ai = {
+    activeModel: activeModel.value,
+    messages: messages.value.map(({ id, role, text, work, time }) => ({ id, role, text, work, time })),
+  }
+}
+
+/** 模型 / 消息任一变化 → 写回快照并防抖落盘 */
+watch([activeModel, messages], () => {
+  syncSession()
+  save()
+}, { deep: true })
+
+/** 启动恢复：恢复上次的模型与对话历史 */
+async function restoreAI() {
+  const ai = (await restore())?.ai
+  if (!ai) return
+  activeModel.value = ai.activeModel
+  messages.value = ai.messages.map((m) => ({
+    id: m.id,
+    role: m.role,
+    text: m.text,
+    work: m.work as WorkKind | undefined,
+    time: m.time,
+  }))
+}
+
 /** 点击输入框以外：关闭弹层 */
 function onClickOutside(e: MouseEvent) {
   if (!emojiOpen.value && !contextOpen.value) return
@@ -407,8 +442,17 @@ function onClickOutside(e: MouseEvent) {
   contextOpen.value = false
 }
 
-onMounted(() => document.addEventListener('mousedown', onClickOutside))
-onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
+onMounted(async () => {
+  document.addEventListener('mousedown', onClickOutside)
+  /* 恢复上次会话（模型 + 对话历史） */
+  await restoreAI()
+  /* 关闭窗口前立即落盘 */
+  window.addEventListener('beforeunload', flush)
+})
+onUnmounted(() => {
+  document.removeEventListener('mousedown', onClickOutside)
+  window.removeEventListener('beforeunload', flush)
+})
 </script>
 
 <style scoped>

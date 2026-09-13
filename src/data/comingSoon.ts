@@ -4,6 +4,9 @@
  *
  * 调节指南：改对应视图的 title / desc / tags 等字段即可，
  * 模板与样式完全共用，不用再复制整页代码。
+ *
+ * 类型：Partial<Record<ViewId, …>> —— 键受 ViewId 约束，
+ * 漏写某个占位视图配置或拼错键会直接编译报错。
  */
 export interface ComingSoonConfig {
   title: string
@@ -16,7 +19,9 @@ export interface ComingSoonConfig {
   tags: string[]
 }
 
-export const comingSoonConfig: Record<string, ComingSoonConfig> = {
+import type { ViewId } from './activityItems'
+
+export const comingSoonConfig: Partial<Record<ViewId, ComingSoonConfig>> = {
   files: {
     title: '文件管理',
     subtitle: '浏览、搜索与快速预览',

@@ -4,7 +4,7 @@
  * - CSS 变量的写入仍在组件里做（这是视图层的职责），这里只管"值"和"落盘"
  */
 import { ref } from 'vue'
-import { getSidebarWidth, setSidebarWidth } from '../utils/persist'
+import { getSidebarWidth, setSidebarWidth } from '../utils'
 
 /** 侧边栏宽度范围（px） */
 export const MIN_WIDTH = 180

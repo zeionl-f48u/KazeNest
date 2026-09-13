@@ -16,6 +16,7 @@ import type { Store } from '@tauri-apps/plugin-store'
 const KEYS = {
   sidebarWidth: 'sidebarWidth',
   recentFiles: 'recentFiles',
+  appSession: 'appSession',
 } as const
 
 /** 最近打开的文件项（name 去重键） */
@@ -102,4 +103,64 @@ export function formatRelativeTime(timestamp: number): string {
   if (day < 7) return `${day} 天前`
   const d = new Date(timestamp)
   return `${d.getMonth() + 1}月${d.getDate()}日`
+}
+
+/* =================== 全局会话快照（页面持久化） =================== */
+
+/** AI 消息快照（可 JSON 序列化的子集，只存展示所需字段） */
+export interface AiMessageSnapshot {
+  id: number
+  role: 'user' | 'assistant'
+  text: string
+  work?: string
+  time: string
+}
+
+/** 全局页面状态快照：关闭后重开恢复到与上次一致
+ *  - 由 App / Editor / AISidebar 各自维护自己那块（useAppSession 共享同一份对象）
+ *  - editor.contents 含未保存修改 → 重开不丢草稿
+ *  - 结构变更时升 version 做迁移（当前仅 v1） */
+export interface AppSessionSnapshot {
+  /** 快照结构版本 */
+  version: 1
+  /** 当前活动视图 id（activityItems 的 ViewId） */
+  activeView: string
+  /** 侧边栏是否展开 */
+  sideBarOpen: boolean
+  editor: {
+    /** 是否曾落盘过：区分"首次运行默认打开全部示例文件"与"用户关闭了全部标签" */
+    initialized: boolean
+    /** 打开的标签顺序（id 数组，顺序即标签栏顺序） */
+    openFileIds: string[]
+    /** 活动标签 id */
+    activeFileId: string
+    /** 文件内容（id → content，含未保存修改） */
+    contents: Record<string, string>
+    /** 带未保存标记的文件 id */
+    modifiedIds: string[]
+  }
+  ai: {
+    activeModel: string
+    messages: AiMessageSnapshot[]
+  }
+}
+
+export async function getAppSession(): Promise<AppSessionSnapshot | null> {
+  const s = await getStore()
+  if (!s) return null
+  try {
+    return (await s.get<AppSessionSnapshot>(KEYS.appSession)) ?? null
+  } catch {
+    return null
+  }
+}
+
+export async function setAppSession(snapshot: AppSessionSnapshot): Promise<void> {
+  const s = await getStore()
+  if (!s) return
+  try {
+    await s.set(KEYS.appSession, snapshot)
+  } catch {
+    /* 忽略持久化失败（如浏览器环境） */
+  }
 }

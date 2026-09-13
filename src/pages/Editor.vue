@@ -30,17 +30,67 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { EditorTabs, CodeView, StatusBar } from '../component/editor'
 import { editorFiles } from '../data/editorFiles'
 import type { EditorFile } from '../data/editorFiles'
-import { addRecentFile } from '../utils/persist'
+import { addRecentFile } from '../utils'
+import { useAppSession } from '../composables'
 
 /** 打开的标签（初始 = 全部示例文件；可关闭）
  * 调节：想让编辑器初始打开别的文件，改 data/editorFiles.ts，
  * 这里会自动跟随；初始活动标签 = 数组第一项。 */
 const openFiles = ref<EditorFile[]>([...editorFiles])
 const activeFileId = ref(editorFiles[0]?.id ?? '')
+
+/* =================== 会话持久化（标签/内容/未保存标记） =================== */
+
+const { session, restore, save, flush } = useAppSession()
+
+/** 把当前编辑器状态写回共享快照 */
+function syncSession() {
+  const s = session.value
+  if (!s) return
+  s.editor = {
+    initialized: true,
+    openFileIds: openFiles.value.map((f) => f.id),
+    activeFileId: activeFileId.value,
+    contents: Object.fromEntries(openFiles.value.map((f) => [f.id, f.content])),
+    modifiedIds: openFiles.value.filter((f) => f.modified).map((f) => f.id),
+  }
+}
+
+/** 标签/内容/未保存标记任一变化 → 写回快照并防抖落盘（deep 捕获 f.content/f.modified 原地改） */
+watch([openFiles, activeFileId], () => {
+  syncSession()
+  save()
+}, { deep: true })
+
+/** 启动恢复：有快照用快照，否则默认全部示例文件并初始化快照 */
+async function restoreEditor() {
+  const s = await restore()
+  if (!s) return
+  const ed = s.editor
+  if (ed?.initialized) {
+    const byId = new Map(editorFiles.map((f) => [f.id, f]))
+    openFiles.value = ed.openFileIds
+      .map((id) => byId.get(id))
+      .filter((f): f is EditorFile => Boolean(f))
+      .map((f) => ({
+        ...f,
+        content: ed.contents[f.id] ?? f.content,
+        modified: ed.modifiedIds.includes(f.id),
+      }))
+    activeFileId.value = openFiles.value.some((f) => f.id === ed.activeFileId)
+      ? ed.activeFileId
+      : (openFiles.value[0]?.id ?? '')
+  } else {
+    // 首次运行：默认打开全部示例文件（与无持久化时代行为一致）
+    openFiles.value = [...editorFiles]
+    activeFileId.value = editorFiles[0]?.id ?? ''
+    syncSession()
+  }
+}
 
 /** 无标签时的兜底空文件（CodeView 已有"空文件"空态展示） */
 const EMPTY_FILE: EditorFile = {
@@ -127,10 +177,19 @@ function onCloseSaved() {
   }
 }
 
-/* =================== 全局快捷键 =================== */
+/* =================== 全局快捷键 & 会话恢复 =================== */
 
-onMounted(() => window.addEventListener('keydown', onGlobalKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown))
+onMounted(async () => {
+  window.addEventListener('keydown', onGlobalKeydown)
+  /* 恢复上次会话（标签/内容/未保存标记；KeepAlive 下只在首次挂载时执行） */
+  await restoreEditor()
+  /* 关闭窗口前立即落盘 */
+  window.addEventListener('beforeunload', flush)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onGlobalKeydown)
+  window.removeEventListener('beforeunload', flush)
+})
 
 function onGlobalKeydown(e: KeyboardEvent) {
   const mod = e.metaKey || e.ctrlKey

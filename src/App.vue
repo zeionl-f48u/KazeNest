@@ -4,7 +4,8 @@
   - 边栏独立：./component/sidebar
   - 通用组件：./component/common
   - 业务数据：./data
-  - 视图组件：./pages/*
+  - 视图页面：./pages
+  - 视图注册表：./registry/views.ts（页面 + 侧栏 + 占位配置的单一来源）
 -->
 <template>
   <div class="app-shell">
@@ -48,11 +49,11 @@
       <Transition name="sidebar" mode="out-in">
         <SideBar
           v-if="sideBarVisible"
-          :title="activeSidebar?.title ?? '侧边栏'"
+          :title="sideBarTitle"
           @close="sideBarOpen = false"
         >
-          <!-- 视图专属侧栏内容（component/sidebar/views 注册表） -->
-          <component :is="activeSidebar?.component" />
+          <!-- 视图专属侧栏内容（来自 registry/views.ts 的 sidebar 组件） -->
+          <component :is="activeSidebar" />
         </SideBar>
       </Transition>
 
@@ -75,26 +76,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, markRaw, onMounted, ref } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
-import { getCurrentWindow } from '@tauri-apps/api/window'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import { Titlebar, TitlebarChrome } from './component/titlebar'
-import { ActivityBar, SideBar, viewSidebars } from './component/sidebar'
-import type { ViewSidebarKey } from './component/sidebar'
-import type { ActivityItem } from './component/sidebar'
+import { ActivityBar, SideBar } from './component/sidebar'
+import { Home, Editor } from './pages'
+import { useAppSession, useAppBoot } from './composables'
 
-import {
-  searchItems,
-  activityItems,
-  topMenus,
-  comingSoonConfig,
-} from './data'
+import { searchItems, activityItems, topMenus } from './data'
 import type { SearchItem, ViewId } from './data'
-
-import Home from './pages/Home.vue'
-import Editor from './pages/Editor.vue'
-import ComingSoon from './component/common/ComingSoon.vue'
+import { views } from './registry/views'
 
 /* =================== 视图状态 =================== */
 /* 调节入口（改这里的值即可调默认行为）：
@@ -108,44 +99,41 @@ const sideBarOpen = ref(true)
 const notifyCount = ref(3)
 const workspaceName = '我的工作区'
 
-/* =================== 视图组件映射 =================== */
+/* =================== 视图注册表驱动 =================== */
+/* 视图的完整定义（页面 / 侧栏 / 占位配置 / 侧栏可见性）在 registry/views.ts，
+ * 这里只做查找——改动/新增视图不需要再动 App.vue。 */
 
-/* satisfies Record<ViewId, …>：活动栏加了新视图而这里漏配组件 → 编译报错
- *（视图 id 的单一事实来源是 data/activityItems.ts 的 ViewId） */
-const viewComponents = {
-  home:     markRaw(Home),
-  editor:   markRaw(Editor),
-  // 占位视图（files/ai/browser/settings/account）统一走 ComingSoon 组件，
-  // 展示内容来自 data/comingSoon.ts 的 comingSoonConfig
-  files:    markRaw(ComingSoon),
-  ai:       markRaw(ComingSoon),
-  browser:  markRaw(ComingSoon),
-  settings: markRaw(ComingSoon),
-  account:  markRaw(ComingSoon),
-} as const satisfies Record<ViewId, unknown>
+/** 当前视图的完整定义 */
+const active = computed(() => views[activeView.value])
 
-const viewComponent = computed(
-  () => viewComponents[activeView.value] ?? Home
-)
+/** 主内容页面组件 */
+const viewComponent = computed(() => active.value.page)
 
 /** 占位视图的展示数据（非占位视图返回空对象，组件不接收多余 props） */
-const comingSoonProps = computed(() => comingSoonConfig[activeView.value] ?? {})
+const comingSoonProps = computed(() => active.value.comingSoon ?? {})
 
-/* =================== 侧边栏 =================== */
+/** 侧栏内容组件（设置/账户等无侧栏视图为 undefined） */
+const activeSidebar = computed(() => active.value.sidebar)
 
-/** 侧边栏是否显示：开关打开 且 当前视图未标记 sidebar:false（如设置/账户）
- * as const 字面量上多数条目没有 sidebar 字段，这里按 ActivityItem 结构取值 */
+/** 侧栏标题（SideBar 框架标题栏显示） */
+const sideBarTitle = computed(() => active.value.sidebarTitle ?? '侧边栏')
+
+/** 侧边栏是否显示：开关打开 且 该视图声明了侧栏（registry 的 sidebarVisible + sidebar） */
 const sideBarVisible = computed(
-  () =>
-    sideBarOpen.value &&
-    ((activityItems.find((i) => i.id === activeView.value) as ActivityItem | undefined)?.sidebar ?? true)
+  () => sideBarOpen.value && active.value.sidebarVisible && !!active.value.sidebar
 )
 
-/** 当前视图的专属侧栏（来自 component/sidebar/views 注册表；无则隐藏内容）
- * 设置/账户等未注册视图走 undefined，配合 sideBarVisible 不渲染 */
-const activeSidebar = computed(() => {
-  const id = activeView.value
-  return id in viewSidebars ? viewSidebars[id as ViewSidebarKey] : undefined
+/* =================== 全局会话持久化 =================== */
+
+const { session, restore, save, flush } = useAppSession()
+
+/** 活动视图 / 侧栏开关变化 → 写回快照并防抖落盘 */
+watch([activeView, sideBarOpen], () => {
+  const s = session.value
+  if (!s) return
+  s.activeView = activeView.value
+  s.sideBarOpen = sideBarOpen.value
+  save()
 })
 
 /* =================== 顶栏 handler =================== */
@@ -196,6 +184,8 @@ function onActivityToggle() {
 
 /* =================== 启动 =================== */
 
+const { boot } = useAppBoot()
+
 onMounted(async () => {
   /* 页面 → 外壳导航（首页卡片 / 快捷入口等派发 'kn:navigate'） */
   const onNavigate = (e: Event) => {
@@ -204,30 +194,19 @@ onMounted(async () => {
   }
   window.addEventListener('kn:navigate', onNavigate)
 
-  const win = getCurrentWindow()
-  try {
-    await invoke('init_custom_titlebar')
-    await waitForPluginActive(5000)
-    await win.show()
-  } catch (error) {
-    console.error('❌ 标题栏初始化失败:', error)
-    await win.show()
+  /* 恢复上次会话（窗口尚未显示，恢复动作用户不可见） */
+  const saved = await restore()
+  if (saved) {
+    activeView.value = saved.activeView as ViewId
+    sideBarOpen.value = saved.sideBarOpen
   }
-})
 
-function waitForPluginActive(timeoutMs: number): Promise<boolean> {
-  return new Promise((resolve) => {
-    const start = Date.now()
-    const tick = () => {
-      if (document.documentElement.hasAttribute('data-tauri-plugin-decoration-active')) {
-        return resolve(true)
-      }
-      if (Date.now() - start > timeoutMs) return resolve(false)
-      setTimeout(tick, 50)
-    }
-    tick()
-  })
-}
+  /* 关闭窗口前立即落盘（防抖窗口内的改动不丢） */
+  window.addEventListener('beforeunload', flush)
+
+  /* 初始化自定义标题栏并显示窗口 */
+  await boot()
+})
 </script>
 
 <style>

@@ -1,6 +1,7 @@
 /* Sidebar 模块共享类型 */
 
-/** 活动栏条目（对应 VS Code 活动栏里的一个视图切换图标） */
+/** 活动栏条目（对应 VS Code 活动栏里的一个视图切换图标）
+ * 注意：是否显示侧边栏不在这里声明 —— 统一由 registry/views.ts 的 sidebarVisible 决定 */
 export interface ActivityItem {
   id: string
   /** 悬停提示 / aria-label */
@@ -11,8 +12,6 @@ export interface ActivityItem {
   badge?: number
   /** 分组：top 顶部（视图切换）/ bottom 底部（设置/账户等） */
   position?: 'top' | 'bottom'
-  /** 该视图是否显示侧边栏（默认 true；设置/账户等全屏视图设 false 隐藏） */
-  sidebar?: boolean
 }
 
 /** 侧边栏树节点（对应 VS Code 资源管理器里的文件 / 文件夹） */

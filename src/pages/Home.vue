@@ -100,8 +100,8 @@
 import { onActivated, ref } from 'vue'
 import { GlassCard, Icon } from '../component/common'
 import { homeCards } from '../data/homeCards'
-import { getRecentFiles, formatRelativeTime } from '../utils/persist'
-import type { RecentFile } from '../utils/persist'
+import { getRecentFiles, formatRelativeTime } from '../utils'
+import type { RecentFile } from '../utils'
 
 const cards = homeCards
 
