@@ -2,9 +2,9 @@
  * AI 聊天共享状态（useAiChat）
  * - 侧栏（AISidebar：会话列表/模型/提示词库）与主区（AiWorkspace：对话工作台）
  *   共用同一份状态，保证两个视图看到同一份会话/消息。
- * - 会话模型：sessions[]（元信息）+ 每会话 messages[]；切换会话即切换当前对话。
+ * - 会话模型：sessions[]（元信息 + 各自的消息数组）；切换会话即切换当前对话。
  * - 模拟 agent 工作流：发送后按"工具卡片(读取/分析/生成) → 打字效果 → 回复"演示，
- *   接后端后把 simulateReply 替换为真实流式输出即可。
+ *   接后端后把 simulateWorkflow 替换为真实流式输出即可。
  * - 持久化走 useAppSession 的 ai 切片（防抖落盘 + beforeunload flush）。
  *
  * 用法（组件里）：
@@ -100,7 +100,7 @@ function nowTime() {
 
 /* =================== 会话操作 =================== */
 
-/** 新建会话（默认名字按序号；清空输入由调用方做） */
+/** 新建会话（默认名字按序号；输入清空由调用方做） */
 function newChat(): AiSession {
   const now = Date.now()
   const id = `s${++sessionSeq}`
@@ -170,7 +170,7 @@ function pickWork(w: WorkMode) {
 
 /**
  * 模拟 agent 工作流：工具卡片依次执行 → 打字效果 → 输出回复
- * 接后端后：替换为真实流式输出（工具调用卡片展示真实工具名/耗时）
+ * 接后端后：替换为真实流式输出（工具卡片展示真实工具名/耗时）
  */
 function simulateWorkflow(work?: WorkKind) {
   typing.value = true
@@ -264,14 +264,16 @@ async function restoreAI(): Promise<void> {
     for (const m of ai.messages) {
       const sid = m.sessionId ?? ai.sessions[0]?.id
       const sess = sessions.value.find((s) => s.id === sid)
-      if (sess) sess.messages.push({
-        id: m.id,
-        role: m.role,
-        text: m.text,
-        work: m.work as WorkKind | undefined,
-        time: m.time,
-        sessionId: sid ?? '',
-      })
+      if (sess) {
+        sess.messages.push({
+          id: m.id,
+          role: m.role,
+          text: m.text,
+          work: m.work as WorkKind | undefined,
+          time: m.time,
+          sessionId: sid ?? '',
+        })
+      }
     }
     sessionSeq = Math.max(0, ...sessions.value.map((s) => parseInt(s.id.replace(/\D/g, '') || '0', 10)))
     seq = Math.max(0, ...ai.messages.map((m) => m.id))
@@ -285,11 +287,6 @@ async function restoreAI(): Promise<void> {
 }
 
 return { sessions, activeSession, activeSessionId, messages, activeModel, activeModelInfo, typing, toolActivity, workModes, models, newChat, selectSession, removeSession, send, pickWork, restore: restoreAI, flush }
-}
-
-/** 工作模式查询（渲染消息标签用） */
-export function workByKind(kind: WorkKind | undefined): WorkMode | undefined {
-  return workModes.find((w) => w.kind === kind)
 }
 
 /** 工作模式查询（渲染消息标签用） */
