@@ -84,8 +84,8 @@
 import { onMounted, ref, watch } from 'vue'
 import { Icon } from '../../common'
 import { SidebarSection, SidebarRow } from './views'
-import { AiInputBar } from '../ai'
-import { useAiChat, workByKind } from '../../composables'
+import { AiInputBar } from '../../ai'
+import { useAiChat } from '../../../composables'
 
 const { sessions, activeSessionId, activeModel, models, workModes, newChat, selectSession, removeSession, send, restore, flush } = useAiChat()
 

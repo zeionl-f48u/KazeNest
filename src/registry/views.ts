@@ -27,6 +27,7 @@ import { comingSoonConfig } from '../data'
 
 import Home from '../pages/Home.vue'
 import Editor from '../pages/Editor.vue'
+import ComingSoon from '../component/common/ComingSoon.vue'
 import { AiWorkspace } from '../component/ai'
 
 import {
