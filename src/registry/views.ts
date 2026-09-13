@@ -27,7 +27,7 @@ import { comingSoonConfig } from '../data'
 
 import Home from '../pages/Home.vue'
 import Editor from '../pages/Editor.vue'
-import ComingSoon from '../component/common/ComingSoon.vue'
+import { AiWorkspace } from '../component/ai'
 
 import {
   HomeSidebar,
@@ -80,7 +80,7 @@ export const views: Record<ViewId, ViewDefinition> = {
     comingSoon: comingSoonConfig.files,
   },
   ai: {
-    page: markRaw(ComingSoon),
+    page: markRaw(AiWorkspace),
     sidebar: markRaw(AISidebar),
     sidebarTitle: 'AI 助手',
     sidebarVisible: true,

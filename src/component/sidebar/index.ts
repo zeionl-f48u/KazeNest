@@ -20,3 +20,4 @@ export {
   SidebarRow,
 } from './views'
 export type { ActivityItem, SideBarSection, SideBarSelection, TreeItem } from './types'
+export { AiWorkspace, AiMessageView, AiInputBar } from '../ai'

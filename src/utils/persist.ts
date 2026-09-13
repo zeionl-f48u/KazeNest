@@ -114,6 +114,19 @@ export interface AiMessageSnapshot {
   text: string
   work?: string
   time: string
+  /** 所属会话 id（多会话支持；旧数据无此字段视为默认会话） */
+  sessionId?: string
+}
+
+/** AI 会话快照（侧栏会话列表用） */
+export interface AiSessionSnapshot {
+  id: string
+  label: string
+  icon: string
+  color: string
+  meta: string
+  /** 创建时间戳（ms，列表排序用） */
+  createdAt: number
 }
 
 /** 全局页面状态快照：关闭后重开恢复到与上次一致
@@ -141,6 +154,11 @@ export interface AppSessionSnapshot {
   }
   ai: {
     activeModel: string
+    /** 会话列表（按创建时间降序排列） */
+    sessions: AiSessionSnapshot[]
+    /** 当前活动会话 id */
+    activeSessionId: string
+    /** 所有会话的消息（扁平数组，每条带 sessionId） */
     messages: AiMessageSnapshot[]
   }
 }

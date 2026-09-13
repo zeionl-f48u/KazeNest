@@ -156,7 +156,7 @@ function onWorkspace() {
 }
 
 function onAskAI() {
-  console.log('ask AI')
+  onActivitySelect('ai')
 }
 
 function onNotify() {
