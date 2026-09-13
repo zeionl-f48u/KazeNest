@@ -54,6 +54,22 @@
       </div>
     </div>
 
+    <!-- 行内补全提示（光标下方；Tab/Enter 接受，Esc 关闭） -->
+    <div
+      v-if="suggestion.active"
+      class="ed-suggest"
+      :style="suggestPos"
+      @mousedown.prevent
+    >
+      <div
+        v-for="(c, idx) in suggestion.candidates"
+        :key="c"
+        class="ed-suggest-item"
+        :class="{ 'is-active': idx === suggestion.index }"
+        @mousedown.prevent="() => acceptIndex(idx)"
+      >{{ c }}</div>
+    </div>
+
     <!-- 查找/替换面板 -->
     <div v-if="findOpen" class="ed-find" @keydown.stop="onFindKeydown">
       <div class="ed-find-row">
@@ -98,6 +114,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { Icon } from '../common'
 import { highlightLine } from './highlight'
 import type { MarkRange } from './highlight'
+import { indentFor, dedent, findBracketMatch, collectWords, wordBefore, candidatesFor } from './assist'
 import type { EditorFile } from '../../data/editorFiles'
 
 const props = defineProps<{
@@ -151,6 +168,8 @@ function emitCursor(i: number, ta: HTMLTextAreaElement) {
     col: ta.selectionStart + 1,
     selected: ta.selectionEnd - ta.selectionStart,
   })
+  // 智能辅助跟随光标：括号配对高亮 + 补全候选
+  refreshAssist(i, ta)
 }
 
 /* =================== 编辑 =================== */
@@ -169,11 +188,80 @@ function onLineKeydown(i: number, e: KeyboardEvent) {
   const len = lines.value.length
   const s = ta.selectionStart
   const eSel = ta.selectionEnd
+  const ln = lines.value[i]
+
+  // 补全弹层打开时：Tab/Enter 接受候选，↑/↓ 切换候选，Esc 关闭（优先于普通 Tab 缩进/行移动）
+  if (suggestion.value.active) {
+    if (e.key === 'Tab' || e.key === 'Enter') {
+      e.preventDefault()
+      acceptSuggestion()
+      return
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      cycleSuggestion(e.key === 'ArrowDown' ? 1 : -1)
+      return
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      closeSuggestion()
+      return
+    }
+  }
+
+  // 括号自动补全：输入开括号 → 成对插入，光标居中
+  if (s === eSel && OPEN[e.key]) {
+    e.preventDefault()
+    insertIntoLine(i, e.key + OPEN[e.key], s, eSel)
+    nextTick(() => {
+      const t = lineRefs[i]
+      if (t) t.setSelectionRange(s + 1, s + 1)
+    })
+    return
+  }
+  // 光标紧跟同类型右括号：输入时跳过（不重复插入）
+  if (s === eSel && CLOSE[e.key] && ln.charAt(s) === e.key) {
+    e.preventDefault()
+    ta.setSelectionRange(s + 1, s + 1)
+    return
+  }
+  // Backspace 删除左括号且后随配对右括号：成对删除
+  if (e.key === 'Backspace' && s > 0 && s === eSel && OPEN[ln.charAt(s - 1)] && ln.charAt(s) === OPEN[ln.charAt(s - 1)]) {
+    e.preventDefault()
+    const next = lines.value.slice()
+    next[i] = ln.slice(0, s - 1) + ln.slice(s + 1)
+    emit('update', next.join('\n'))
+    nextTick(() => {
+      const t = lineRefs[i]
+      if (t) {
+        t.focus()
+        t.setSelectionRange(s - 1, s - 1)
+        emitCursor(i, t)
+      }
+    })
+    return
+  }
 
   // 查找面板内的按键由面板自己处理，不走到这里（面板已 @keydown.stop）
   if (e.key === 'Tab') {
     e.preventDefault()
-    insertIntoLine(i, '  ', s, eSel)
+    if (e.shiftKey) {
+      // Shift+Tab：删除行首一段缩进（自动缩进功能的"反缩进"配套）
+      const next = lines.value.slice()
+      const orig = next[i]
+      next[i] = dedent(orig)
+      const diff = orig.length - next[i].length
+      emit('update', next.join('\n'))
+      nextTick(() => {
+        const t = lineRefs[i]
+        if (t) {
+          t.focus()
+          t.setSelectionRange(Math.max(0, s - diff), Math.max(0, s - diff))
+        }
+      })
+    } else {
+      insertIntoLine(i, '  ', s, eSel)
+    }
   } else if (e.key === 'Enter') {
     e.preventDefault()
     splitLine(i, s, eSel)
@@ -212,19 +300,20 @@ function insertIntoLine(i: number, text: string, s: number, e: number) {
   })
 }
 
-/** Enter：把当前行从光标处拆成两行 */
+/** Enter：把当前行从光标处拆成两行（自动继承缩进） */
 function splitLine(i: number, s: number, e: number) {
   const next = lines.value.slice()
   const head = next[i].slice(0, s)
   const tail = next[i].slice(e)
+  const indent = indentFor(lines.value[i - 1] ?? '', tail)
   next[i] = head
-  next.splice(i + 1, 0, tail)
+  next.splice(i + 1, 0, indent + tail)
   emit('update', next.join('\n'))
   nextTick(() => {
     const nta = lineRefs[i + 1]
     if (!nta) return
     nta.focus()
-    nta.setSelectionRange(0, 0)
+    nta.setSelectionRange(indent.length, indent.length)
     emitCursor(i + 1, nta)
   })
 }
@@ -347,15 +436,129 @@ function onFindKeydown(e: KeyboardEvent) {
   else if (e.key === 'Escape') { e.preventDefault(); findOpen.value = false }
 }
 
-/** 当前行的查找命中区段（current 标记当前匹配） */
+/** 当前行的查找命中区段 + 括号配对区段（current 标记当前匹配） */
 function marksForLine(li: number): MarkRange[] | undefined {
-  const arr = matches.value.filter((m) => m.line === li)
-  if (!arr.length) return undefined
-  return arr.map((m) => ({
-    start: m.start,
-    end: m.end,
-    current: m === matches.value[activeIndex.value],
-  }))
+  const arr: MarkRange[] = []
+  for (const m of matches.value.filter((x) => x.line === li)) {
+    arr.push({ start: m.start, end: m.end, current: m === matches.value[activeIndex.value], kind: 'find' })
+  }
+  if (activeBracket.value) {
+    if (activeBracket.value.open.line === li) {
+      arr.push({ start: activeBracket.value.open.col, end: activeBracket.value.open.col + 1, kind: 'bracket' })
+    }
+    if (activeBracket.value.close.line === li) {
+      arr.push({ start: activeBracket.value.close.col, end: activeBracket.value.close.col + 1, kind: 'bracket' })
+    }
+  }
+  return arr.length ? arr : undefined
+}
+
+/* =================== 智能辅助：括号配对 + 补全 =================== */
+
+const OPEN: Record<string, string> = { '(': ')', '[': ']', '{': '}' }
+const CLOSE: Record<string, string> = { ')': '(', ']': '[', '}': '{' }
+
+/** 当前光标处的括号配对（open/close 的 0 基行列位置；光标不在括号上为 null） */
+const activeBracket = ref<{ open: { line: number; col: number }; close: { line: number; col: number } } | null>(null)
+
+/** 补全候选词库：内容变化时重建（文件级词频） */
+const wordFreq = ref<Map<string, number>>(new Map())
+
+/** 补全弹层状态（active 时显示在光标下方；index 为高亮候选项） */
+const suggestion = ref<{ active: boolean; line: number; start: number; prefix: string; candidates: string[]; index: number }>({
+  active: false,
+  line: 0,
+  start: 0,
+  prefix: '',
+  candidates: [],
+  index: 0,
+})
+
+/** 光标事件后刷新：括号配对高亮 + 补全候选 */
+function refreshAssist(i: number, ta: HTMLTextAreaElement) {
+  const col = ta.selectionStart
+  const ln = lines.value[i] ?? ''
+
+  // 括号配对：光标停在括号字符上（无选区时）才找配对
+  if (ta.selectionStart === ta.selectionEnd) {
+    const hit = findBracketMatch(lines.value, i, col)
+    activeBracket.value = hit ? { open: { line: i, col }, close: hit } : null
+  } else {
+    activeBracket.value = null
+  }
+
+  // 补全候选：光标前有 1+ 字符的单词前缀 且 未打开查找面板
+  if (!findOpen.value) {
+    const { start, prefix } = wordBefore(ln, col)
+    const cands = prefix ? candidatesFor(wordFreq.value, prefix) : []
+    if (cands.length) {
+      suggestion.value = { active: true, line: i, start, prefix, candidates: cands, index: 0 }
+    } else {
+      closeSuggestion()
+    }
+  } else {
+    closeSuggestion()
+  }
+}
+
+/** 关闭补全弹层 */
+function closeSuggestion() {
+  suggestion.value = { active: false, line: 0, start: 0, prefix: '', candidates: [], index: 0 }
+}
+
+/** 接受当前高亮候选项：把前缀替换为完整词 */
+function acceptSuggestion() {
+  const sug = suggestion.value
+  if (!sug.active) return
+  const cand = sug.candidates[sug.index]
+  if (!cand) return
+  const next = lines.value.slice()
+  const ln = next[sug.line]
+  next[sug.line] = ln.slice(0, sug.start) + cand + ln.slice(sug.start + sug.prefix.length)
+  emit('update', next.join('\n'))
+  const caret = sug.start + cand.length
+  closeSuggestion()
+  nextTick(() => {
+    const t = lineRefs[sug.line]
+    if (t) {
+      t.focus()
+      t.setSelectionRange(caret, caret)
+      emitCursor(sug.line, t)
+    }
+  })
+}
+
+/** 切换补全候选（↑/↓；循环） */
+function cycleSuggestion(dir: number) {
+  const n = suggestion.value.candidates.length
+  if (!n) return
+  suggestion.value.index = (suggestion.value.index + dir + n) % n
+}
+
+/** 补全弹层在滚动容器内的定位（基于高亮 span 的真实像素宽度） */
+function suggestPosition() {
+  const sug = suggestion.value
+  const sc = scrollRef.value
+  if (!sug.active || !sc) return { left: 0, top: 0 }
+  // 测量前缀文本宽度：临时 span 复用 .ed-hl-text 的字体度量
+  const meas = document.createElement('span')
+  meas.className = 'ed-hl-text'
+  meas.style.position = 'absolute'
+  meas.style.visibility = 'hidden'
+  sc.appendChild(meas)
+  meas.textContent = lines.value[sug.line].slice(0, sug.start)
+  const w = meas.offsetWidth
+  meas.remove()
+  return { left: w - sc.scrollLeft, top: (sug.line + 1) * LINE_H - sc.scrollTop }
+}
+
+/** 弹层定位（模板用） */
+const suggestPos = computed(() => suggestPosition())
+
+/** 鼠标点选某个候选项（模板用） */
+function acceptIndex(idx: number) {
+  suggestion.value.index = idx
+  acceptSuggestion()
 }
 
 function replaceCurrent() {
@@ -413,7 +616,21 @@ watch(
     const sc = scrollRef.value
     if (sc) sc.scrollTop = 0
     lineRefs[0]?.focus()
+    wordFreq.value = collectWords(lines.value)
+    activeBracket.value = null
+    closeSuggestion()
   }
+)
+
+/** 内容变化：重建补全词库 + 失效括号配对/补全（编辑后位置会错位） */
+watch(
+  lines,
+  () => {
+    wordFreq.value = collectWords(lines.value)
+    activeBracket.value = null
+    if (!findQuery.value) closeSuggestion()
+  },
+  { deep: true }
 )
 </script>
 
@@ -526,6 +743,42 @@ watch(
   color: var(--ed-gutter-fg);
   font-family: var(--kn-font-sans);
   pointer-events: none;
+}
+
+/* 行内补全弹层：跟随光标（定位在光标下方），VS Code 风格候选列表 */
+.ed-suggest {
+  position: absolute;
+  z-index: 30;
+  min-width: 160px;
+  max-width: 280px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 4px;
+  background: var(--kn-bg-elev);
+  border: 1px solid var(--kn-border-strong);
+  border-radius: var(--kn-radius-lg);
+  box-shadow: var(--kn-shadow-lg);
+  font-family: var(--kn-font-sans);
+  font-size: var(--kn-text-sm);
+  animation: ed-suggest-in var(--kn-dur-base) var(--kn-ease-out);
+}
+@keyframes ed-suggest-in {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ed-suggest-item {
+  padding: 4px 8px;
+  border-radius: var(--kn-radius-sm);
+  color: var(--ed-fg);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--kn-font-mono);
+}
+.ed-suggest-item.is-active {
+  background: var(--kn-selected);
+  color: var(--kn-fg);
 }
 
 /* ==================== 查找/替换面板 ==================== */

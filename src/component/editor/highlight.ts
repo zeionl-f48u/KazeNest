@@ -30,6 +30,8 @@ export interface MarkRange {
   start: number
   end: number
   current?: boolean
+  /** 高亮类型：find = 查找命中（黄底）/ bracket = 括号配对（浅蓝底） */
+  kind?: 'find' | 'bracket'
 }
 
 /**
@@ -67,12 +69,12 @@ function emitSegment(text: string, offset: number, marks: MarkRange[] | undefine
   if (!marks || marks.length === 0) {
     return cls ? `<span class="${cls}">${escapeHtml(text)}</span>` : escapeHtml(text)
   }
-  // 逐字符覆盖率：null=未命中，''=命中，'is-current'=当前匹配
+  // 逐字符覆盖率：null=未命中，'f'=查找命中，'fc'=当前查找匹配，'b'=括号配对
   const cover: (string | null)[] = new Array(text.length).fill(null)
   for (const r of marks) {
     const s = Math.max(r.start - offset, 0)
     const e = Math.min(r.end - offset, text.length)
-    for (let i = s; i < e; i++) cover[i] = r.current ? 'is-current' : ''
+    for (let i = s; i < e; i++) cover[i] = r.kind === 'bracket' ? 'b' : r.current ? 'fc' : 'f'
   }
   let out = ''
   let i = 0
@@ -81,7 +83,10 @@ function emitSegment(text: string, offset: number, marks: MarkRange[] | undefine
     while (j < text.length && cover[j] === cover[i]) j++
     const piece = escapeHtml(text.slice(i, j))
     if (cover[i] !== null) {
-      const inner = `<mark class="hl-find ${cover[i]}">${piece}</mark>`
+      const inner =
+        cover[i] === 'b'
+          ? `<mark class="hl-bracket">${piece}</mark>`
+          : `<mark class="hl-find ${cover[i] === 'fc' ? 'is-current' : ''}">${piece}</mark>`
       out += cls ? `<span class="${cls}">${inner}</span>` : inner
     } else {
       out += cls ? `<span class="${cls}">${piece}</span>` : piece
