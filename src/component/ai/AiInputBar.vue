@@ -102,7 +102,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { Icon } from '../../common'
+import { Icon } from '../common'
 
 const props = withDefaults(defineProps<{
   /** 输入框占位文案（侧栏/主区可各自定制） */
@@ -114,6 +114,7 @@ const emit = defineEmits<{ send: [payload: { text: string; attachments: string[]
 /* =================== 输入文本 =================== */
 
 const text = ref('')
+const inputRef = ref<HTMLTextAreaElement | null>(null)
 
 const canSend = computed(() => text.value.trim().length > 0 || attachments.value.length > 0)
 

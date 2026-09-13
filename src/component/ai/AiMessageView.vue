@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '../../common'
+import { Icon } from '../common'
 import { renderMessage, toolIcon } from './render'
 import type { AiMessage } from '../../composables/useAiChat'
 import { workByKind } from '../../composables/useAiChat'

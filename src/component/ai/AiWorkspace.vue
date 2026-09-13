@@ -77,8 +77,9 @@ import { nextTick, onMounted, ref, watch } from 'vue'
 import { Icon } from '../common'
 import { AiMessageView, AiInputBar } from './index'
 import { useAiChat } from '../../composables'
+import type { WorkMode } from '../../composables'
 
-const { sessions, activeSession, activeSessionId, messages, activeModel, models, workModes, typing, toolActivity, newChat, selectSession, send, pickWork, restore, flush } = useAiChat()
+const { activeSession, activeSessionId, messages, activeModel, models, workModes, typing, toolActivity, newChat, send, pickWork, restore, flush } = useAiChat()
 
 const chatRef = ref<HTMLElement | null>(null)
 
@@ -99,7 +100,7 @@ function onClear() {
   if (sess) sess.messages = []
 }
 
-function onPickWork(w: { kind: Parameters<typeof pickWork>[0] }) {
+function onPickWork(w: WorkMode) {
   pickWork(w)
   scrollToBottom()
 }

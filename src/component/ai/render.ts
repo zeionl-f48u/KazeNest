@@ -9,7 +9,7 @@
  * 设计说明：这是为 AI 演示准备的轻量渲染器，只覆盖常见子集。
  * 若需要完整 Markdown 支持，接入 marked + highlight.js 替代本文件即可。
  */
-import { highlightLine } from './highlight'
+import { highlightLine } from '../editor/highlight'
 
 /* =================== 转义 =================== */
 
@@ -38,11 +38,11 @@ function inline(text: string): string {
 /* =================== 块级解析 =================== */
 
 interface Block {
-  type: 'code' | 'html' | 'text'
+  type: 'code' | 'text'
   lang?: string
   code?: string
-  /** 文本块按空行分段的段落数组 */
-  lines: string[]
+  /** 文本块按空行分段的段落数组（code 块无此字段） */
+  lines?: string[]
 }
 
 /** 把消息按代码块/普通文本切块（代码块识别 ``` 围栏） */
@@ -115,7 +115,7 @@ export function renderMessage(text: string): string {
       const hl = highlightLine(b.code ?? '')
       out += `<div class="ai-code"><div class="ai-code-head"><span class="ai-code-lang">${b.lang || 'text'}</span><button type="button" class="ai-code-copy" data-copy="${escapeHtml(b.code ?? '')}">复制</button></div><pre class="ai-code-body">${hl}</pre></div>`
     } else {
-      out += renderParagraphs(b.lines)
+      out += renderParagraphs(b.lines ?? [])
     }
   }
   return out

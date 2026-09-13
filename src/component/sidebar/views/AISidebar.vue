@@ -81,9 +81,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onMounted } from 'vue'
 import { Icon } from '../../common'
-import { SidebarSection, SidebarRow } from './views'
+import SidebarSection from './SidebarSection.vue'
+import SidebarRow from './SidebarRow.vue'
 import { AiInputBar } from '../../ai'
 import { useAiChat } from '../../../composables'
 
