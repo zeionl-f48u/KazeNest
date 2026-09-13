@@ -291,3 +291,8 @@ return { sessions, activeSession, activeSessionId, messages, activeModel, active
 export function workByKind(kind: WorkKind | undefined): WorkMode | undefined {
   return workModes.find((w) => w.kind === kind)
 }
+
+/** 工作模式查询（渲染消息标签用） */
+export function workByKind(kind: WorkKind | undefined): WorkMode | undefined {
+  return workModes.find((w) => w.kind === kind)
+}
