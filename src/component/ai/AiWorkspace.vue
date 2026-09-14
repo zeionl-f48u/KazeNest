@@ -253,7 +253,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 16px;
+  padding: 0;
 }
 
 /* 空态引导 */

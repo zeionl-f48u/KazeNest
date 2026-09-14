@@ -57,10 +57,10 @@
         </SideBar>
       </Transition>
 
-      <!-- 编辑器视图通栏铺满（VS Code 风格），其余视图保留内边距 -->
+      <!-- 全宽视图（编辑器/AI 工作台）：通栏铺满，无外圈内边距，内部自滚动 -->
       <main
         class="app-content"
-        :class="{ 'is-flush': activeView === 'editor' }"
+        :class="{ 'is-flush': ['editor', 'ai'].includes(activeView) }"
       >
         <!-- 切换视图时安卓 Activity 风格过渡（淡入 + 上移）
              KeepAlive：切走不销毁，回来保留状态（编辑器标签/光标/滚动位置等）。
