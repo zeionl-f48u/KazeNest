@@ -17,7 +17,7 @@
         :class="{ 'is-active': modelValue === item.id }"
         :aria-label="item.label"
         :aria-pressed="modelValue === item.id"
-        :title="item.label"
+        :title="item.hideTooltip ? undefined : item.label"
         @click="onClick(item)"
       >
         <span class="ab-indicator" aria-hidden="true" />
@@ -36,7 +36,7 @@
         :class="{ 'is-active': modelValue === item.id }"
         :aria-label="item.label"
         :aria-pressed="modelValue === item.id"
-        :title="item.label"
+        :title="item.hideTooltip ? undefined : item.label"
         @click="onClick(item)"
       >
         <span class="ab-indicator" aria-hidden="true" />

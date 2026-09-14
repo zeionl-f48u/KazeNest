@@ -16,7 +16,7 @@ export const activityItems = [
   { id: 'home',     label: '首页',     icon: 'home' },
   { id: 'editor',   label: '编辑器',   icon: 'file-text' },
   { id: 'files',    label: '文件管理', icon: 'folder' },
-  { id: 'ai',       label: 'AI 助手',  icon: 'sparkles', badge: 2 },
+  { id: 'ai',       label: 'AI 助手',  icon: 'sparkles', badge: 2, hideTooltip: true },
   { id: 'browser',  label: '浏览器',   icon: 'globe' },
   { id: 'settings', label: '设置',     icon: 'cog', position: 'bottom' },
   { id: 'account',  label: '账户',     icon: 'user', position: 'bottom' },

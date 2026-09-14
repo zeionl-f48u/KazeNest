@@ -64,11 +64,7 @@
     </div>
 
     <!-- 输入区 -->
-    <AiInputBar class="aw-input-bar" @send="onSend">
-      <template #toolbar>
-        <span class="aw-input-hint">Ctrl+Enter 换行 · 支持粘贴代码块</span>
-      </template>
-    </AiInputBar>
+    <AiInputBar class="aw-input-bar" @send="onSend" />
   </div>
 </template>
 
@@ -300,12 +296,6 @@ onMounted(async () => {
   border-top: 1px solid var(--kn-border);
   background: var(--kn-bg-elev);
   flex-shrink: 0;
-}
-.aw-input-hint {
-  font-size: var(--kn-text-2xs);
-  color: var(--kn-fg-subtle);
-  align-self: center;
-  white-space: nowrap;
 }
 </style>
 

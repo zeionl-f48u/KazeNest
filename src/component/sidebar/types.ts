@@ -12,6 +12,8 @@ export interface ActivityItem {
   badge?: number
   /** 分组：top 顶部（视图切换）/ bottom 底部（设置/账户等） */
   position?: 'top' | 'bottom'
+  /** 是否隐藏鼠标悬停提示（title，可选；如 AI 助手图标） */
+  hideTooltip?: boolean
 }
 
 /** 侧边栏树节点（对应 VS Code 资源管理器里的文件 / 文件夹） */
