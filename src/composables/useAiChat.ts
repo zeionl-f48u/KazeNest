@@ -47,11 +47,25 @@ export const workModes: WorkMode[] = [
   { kind: 'translate', label: '翻译',     icon: 'globe',      color: 'var(--kn-sky-400)',     prompt: '请帮我翻译：' },
 ]
 
-/** 模型列表（演示用；接后端后从 API 拉取） */
-export const models = [
-  { id: 'model-r1',    label: 'DeepSeek-R1',    desc: '推理模型' },
-  { id: 'model-chat',  label: 'DeepSeek-Chat',  desc: '通用对话' },
-  { id: 'model-coder', label: 'DeepSeek-Coder', desc: '代码生成' },
+/** 模型列表（演示用；接后端后从 API 拉取）
+ * 计费：priceIn / priceOut 为每百万 token 价格（人民币元），
+ * 发送消息时按估算 token 数自动累计费用（见 usage / pushMessage）。
+ * 扩展点：新增模型只需加一条（计费栏/模型选择器自动跟随）；
+ * 未来可加 maxContext / 单位币种（unit）/ 折扣等字段。 */
+export interface ModelDef {
+  id: string
+  label: string
+  desc: string
+  /** 每百万 token 输入价格（元） */
+  priceIn: number
+  /** 每百万 token 输出价格（元） */
+  priceOut: number
+}
+
+export const models: ModelDef[] = [
+  { id: 'model-r1',    label: 'DeepSeek-R1',    desc: '推理模型', priceIn: 4,  priceOut: 16 },
+  { id: 'model-chat',  label: 'DeepSeek-Chat',  desc: '通用对话', priceIn: 2,  priceOut: 8 },
+  { id: 'model-coder', label: 'DeepSeek-Coder', desc: '代码生成', priceIn: 1,  priceOut: 2 },
 ]
 
 /* =================== 消息 / 会话类型 =================== */
@@ -82,6 +96,28 @@ const activeSessionId = ref('')
 const activeModel = ref('model-chat')
 const typing = ref(false)
 const toolActivity = ref<{ name: string; status: 'running' | 'done'; detail: string } | null>(null)
+
+/* =================== 计费用量 =================== */
+
+/** 累计用量（全局；token 为估算值，接后端后替换为真实 usage）
+ * 扩展点：未来可加 按会话账单 / 按日期统计 / 图表 等维度 */
+export interface Usage {
+  inputTokens: number
+  outputTokens: number
+  /** 总花费（元，按各模型单价累计） */
+  cost: number
+}
+
+const usage = ref<Usage>({ inputTokens: 0, outputTokens: 0, cost: 0 })
+
+/** 估算文本 token 数：中文约 1 token/1.6 字符，英文约 1 token/4 字符 */
+function estimateTokens(text: string): number {
+  const s = text.trim()
+  if (!s) return 0
+  const cjk = (s.match(/[\u4e00-\u9fff]/g) ?? []).length
+  const other = s.length - cjk
+  return Math.ceil(cjk / 1.6 + other / 4)
+}
 
 let seq = 0
 let sessionSeq = 0
@@ -146,6 +182,16 @@ function pushMessage(role: 'user' | 'assistant', text: string, work?: WorkKind) 
   sess.messages.push({ id: ++seq, role, text, work, time: nowTime(), sessionId: sess.id })
   const d = new Date()
   sess.meta = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  // 自动计费：按消息 token 估算 × 当前模型单价（输入/输出分开）
+  const m = activeModelInfo.value
+  const tokens = estimateTokens(text)
+  if (role === 'user') {
+    usage.value.inputTokens += tokens
+    usage.value.cost += (tokens * (m?.priceIn ?? 0)) / 1_000_000
+  } else {
+    usage.value.outputTokens += tokens
+    usage.value.cost += (tokens * (m?.priceOut ?? 0)) / 1_000_000
+  }
 }
 
 interface SendInput {
@@ -242,6 +288,7 @@ function syncSession() {
     messages: sessions.value.flatMap((sess) =>
       sess.messages.map((m) => ({ id: m.id, role: m.role, text: m.text, work: m.work, time: m.time, sessionId: sess.id }))
     ),
+    usage: usage.value,
   }
 }
 
@@ -256,6 +303,7 @@ async function restoreAI() {
   const ai = (await restore())?.ai
   if (!ai) return
   activeModel.value = ai.activeModel || 'model-chat'
+  if (ai.usage) usage.value = { inputTokens: ai.usage.inputTokens, outputTokens: ai.usage.outputTokens, cost: ai.usage.cost }
   if (Array.isArray(ai.sessions) && ai.sessions.length) {
     sessions.value = ai.sessions
       .slice()
@@ -302,6 +350,7 @@ export function useAiChat() {
     activeModelInfo,
     typing,
     toolActivity,
+    usage,
     workModes,
     models,
     newChat,

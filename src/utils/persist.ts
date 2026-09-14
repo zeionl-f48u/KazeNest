@@ -160,6 +160,8 @@ export interface AppSessionSnapshot {
     activeSessionId: string
     /** 所有会话的消息（扁平数组，每条带 sessionId） */
     messages: AiMessageSnapshot[]
+    /** 计费用量（旧快照无此字段，恢复时按缺省 0 处理） */
+    usage?: { inputTokens: number; outputTokens: number; cost: number }
   }
 }
 
