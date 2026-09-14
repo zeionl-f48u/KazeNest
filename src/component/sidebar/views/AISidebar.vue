@@ -5,7 +5,7 @@
   - 会话列表：切换/删除会话（选中态高亮，最新会话置顶）
   - 模型列表：勾选当前模型
   - 提示词库：点击将提示词作为消息发出
-  - 底部输入条：AiInputBar 通用输入组件（与主区共用）
+  - 对话输入在主区 AiWorkspace 完成（侧栏专注会话管理）
 -->
 <template>
   <div class="ai">
@@ -74,9 +74,6 @@
         </SidebarRow>
       </SidebarSection>
     </div>
-
-    <!-- 输入条 -->
-    <AiInputBar class="ai-input" @send="onSend" />
   </div>
 </template>
 
@@ -85,7 +82,6 @@ import { onMounted } from 'vue'
 import { Icon } from '../../common'
 import SidebarSection from './SidebarSection.vue'
 import SidebarRow from './SidebarRow.vue'
-import { AiInputBar } from '../../ai'
 import { useAiChat } from '../../../composables'
 
 const { sessions, activeSessionId, activeModel, models, workModes, newChat, selectSession, removeSession, send, restore, flush } = useAiChat()
@@ -104,10 +100,6 @@ function onNewChat() {
 function onPrompt(p: { id: string; label: string }) {
   const w = workModes.find((m) => m.prompt.includes(p.label.replace('代码', '')) || m.label === p.label)
   send({ text: p.label, work: w?.kind })
-}
-
-function onSend(payload: { text: string; attachments: string[] }) {
-  send(payload)
 }
 
 onMounted(async () => {
@@ -237,11 +229,5 @@ onMounted(async () => {
   color: var(--kn-emerald-500);
   flex-shrink: 0;
   margin-left: 6px;
-}
-
-/* ==================== 输入条 ==================== */
-.ai-input {
-  border-top: 1px solid var(--sb-border);
-  flex-shrink: 0;
 }
 </style>
