@@ -54,6 +54,17 @@ body.sb-resizing .sb {
   transition: none !important;
 }
 
+/* ---------- AI 右侧面板拖拽调节宽度 ---------- */
+/* 拖拽中：禁用主内容让位过渡（宽度跟手），光标与选中同侧栏 */
+body.ai-panel-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+body.ai-panel-resizing .app-content {
+  transition: none !important;
+}
+
 /* ---------- 全局滚动条美化 ---------- */
 * {
   scrollbar-width: thin;

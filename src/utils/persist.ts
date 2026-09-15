@@ -163,6 +163,13 @@ export interface AppSessionSnapshot {
     /** 计费用量（旧快照无此字段，恢复时按缺省 0 处理） */
     usage?: { inputTokens: number; outputTokens: number; cost: number }
   }
+  /** AI 右侧面板（旧快照无此字段：不自动打开面板） */
+  aiPanel?: {
+    /** 关闭窗口时是否开着 */
+    open: boolean
+    /** 面板宽度（px） */
+    width: number
+  }
 }
 
 export async function getAppSession(): Promise<AppSessionSnapshot | null> {

@@ -370,7 +370,12 @@ watch([sessions, activeSessionId, activeModel], () => {
 }, { deep: true })
 
 /** 启动恢复：恢复模型 + 会话列表 + 各会话消息 */
+let aiRestored = false
+
 async function restoreAI() {
+  /* 幂等：AI 主界面与右侧面板可能同时挂载（展开动画期间），只允许恢复一次 */
+  if (aiRestored) return
+  aiRestored = true
   const ai = (await restore())?.ai
   if (!ai) return
   activeModel.value = ai.activeModel || 'model-chat'

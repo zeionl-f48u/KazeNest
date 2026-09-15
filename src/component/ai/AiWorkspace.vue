@@ -1,6 +1,9 @@
 <!--
   AiWorkspace：AI 工作台（DeepSeek Harness 风格）
-  - 主内容区对话工作台，与侧栏 AISidebar 共享同一份聊天状态（useAiChat）
+  - 主内容区对话工作台，与侧栏 AISidebar / 右侧 AiPanel 共享同一份聊天状态（useAiChat）
+  - 两种形态（variant）：
+    · page  —— AI 主界面全宽形态（默认）
+    · panel —— 右侧 AI 面板紧凑形态（窄列、精简顶栏，含"展开为主界面/关闭"按钮）
   - 布局：消息流居中窄列（760px），大屏两侧留白；输入区同宽居中
   - 空态（DeepSeek 同款欢迎页）：大 Logo + 欢迎语 + 居中的输入卡片 + 建议卡片；
     开始对话后输入框落到底部
@@ -13,49 +16,68 @@
 -->
 <template>
   <div class="ai-workspace">
-    <!-- 工具栏 -->
-    <div class="aw-top">
+    <!-- 工具栏（panel 形态：紧凑图标行） -->
+    <div class="aw-top" :class="{ 'is-panel': isPanel }">
       <div class="aw-title">
-        <Icon name="sparkles" :size="15" class="aw-title-icon" />
-        <span>AI 工作台</span>
-        <span v-if="activeSession" class="aw-session-name">{{ activeSession.label }}</span>
+        <Icon name="sparkles" :size="isPanel ? 14 : 15" class="aw-title-icon" />
+        <span>{{ isPanel ? 'AI 助手' : 'AI 工作台' }}</span>
+        <span v-if="!isPanel && activeSession" class="aw-session-name">{{ activeSession.label }}</span>
       </div>
 
       <div class="aw-actions">
         <div class="aw-model">
           <Icon name="sparkles" :size="11" class="aw-model-icon" />
           <select v-model="activeModel" class="aw-model-select" aria-label="选择模型">
-            <option v-for="m in models" :key="m.id" :value="m.id">{{ m.label }} · {{ m.desc }}</option>
+            <option v-for="m in models" :key="m.id" :value="m.id">
+              {{ isPanel ? m.label : `${m.label} · ${m.desc}` }}
+            </option>
           </select>
         </div>
-        <button type="button" class="aw-btn" aria-label="新对话" @click="onNewChat">
-          <Icon name="plus" :size="13" />
-          <span>新对话</span>
-        </button>
-        <button type="button" class="aw-btn is-icon" aria-label="清空当前对话" @click="onClear">
-          <Icon name="refresh" :size="13" />
-        </button>
+
+        <!-- panel 形态：新对话 / 向左展开为主界面 / 关闭面板 -->
+        <template v-if="isPanel">
+          <button type="button" class="aw-btn is-icon" aria-label="新对话" @click="onNewChat">
+            <Icon name="plus" :size="13" />
+          </button>
+          <button type="button" class="aw-btn is-icon" aria-label="展开为主界面" @click="emit('expand')">
+            <Icon name="maximize" :size="13" />
+          </button>
+          <button type="button" class="aw-btn is-icon" aria-label="关闭面板" @click="emit('close')">
+            <Icon name="times" :size="13" />
+          </button>
+        </template>
+
+        <!-- page 形态：新对话（带文字）/ 清空当前对话 -->
+        <template v-else>
+          <button type="button" class="aw-btn" aria-label="新对话" @click="onNewChat">
+            <Icon name="plus" :size="13" />
+            <span>新对话</span>
+          </button>
+          <button type="button" class="aw-btn is-icon" aria-label="清空当前对话" @click="onClear">
+            <Icon name="refresh" :size="13" />
+          </button>
+        </template>
       </div>
     </div>
 
     <!-- 对话主体（滚动容器 + 居中窄列） -->
     <div class="aw-chat" ref="chatRef" @scroll="onChatScroll">
-      <div class="aw-thread" :class="{ 'is-hero': !messages.length }">
+      <div class="aw-thread" :class="{ 'is-hero': !messages.length, 'is-panel': isPanel }">
         <!-- 空态：DeepSeek 风格欢迎页（输入框居中） -->
-        <div v-if="!messages.length" class="aw-hero">
+        <div v-if="!messages.length" class="aw-hero" :class="{ 'is-panel': isPanel }">
           <div class="aw-hero-logo">
-            <Icon name="cloud" :size="34" />
+            <Icon name="cloud" :size="isPanel ? 26 : 34" />
           </div>
-          <h2 class="aw-hero-title">你好，我是 KazeNest 开发工作助手</h2>
-          <p class="aw-hero-sub">写代码 · 解释代码 · 重构 · 写测试 · 评审 · 文档 · 数据分析 · 翻译</p>
+          <h2 class="aw-hero-title">{{ isPanel ? '你好，我是 AI 助手' : '你好，我是 KazeNest 开发工作助手' }}</h2>
+          <p v-if="!isPanel" class="aw-hero-sub">写代码 · 解释代码 · 重构 · 写测试 · 评审 · 文档 · 数据分析 · 翻译</p>
 
           <!-- 居中输入卡片（开始对话后落到底部） -->
           <div class="aw-hero-input">
             <AiInputBar @send="onSend" @stop="onStop" />
           </div>
 
-          <!-- 建议卡片（点击即发送） -->
-          <div class="aw-suggests">
+          <!-- 建议卡片（点击即发送；panel 形态单列紧凑） -->
+          <div class="aw-suggests" :class="{ 'is-panel': isPanel }">
             <button
               v-for="s in suggests"
               :key="s.work"
@@ -91,6 +113,7 @@
       v-if="showScrollBtn"
       type="button"
       class="aw-scroll-btn"
+      :class="{ 'is-panel': isPanel }"
       aria-label="回到底部"
       @click="scrollToBottom(true)"
     >
@@ -98,14 +121,14 @@
     </button>
 
     <!-- 底部输入区（对话开始后显示）：输入卡片 + 免责小字 -->
-    <div v-if="messages.length" class="aw-input-area">
+    <div v-if="messages.length" class="aw-input-area" :class="{ 'is-panel': isPanel }">
       <AiInputBar
         class="aw-input-bar"
         :streaming="!!streaming"
         @send="onSend"
         @stop="onStop"
       />
-      <p class="aw-disclaimer">内容由 AI 生成，请仔细甄别</p>
+      <p v-if="!isPanel" class="aw-disclaimer">内容由 AI 生成，请仔细甄别</p>
     </div>
   </div>
 </template>
@@ -116,6 +139,20 @@ import { Icon } from '../common'
 import { AiMessageView, AiInputBar } from './index'
 import { useAiChat } from '../../composables'
 import type { WorkKind } from '../../composables'
+
+const props = withDefaults(defineProps<{
+  /** 形态：page = AI 主界面全宽；panel = 右侧面板紧凑（默认 page） */
+  variant?: 'page' | 'panel'
+}>(), { variant: 'page' })
+
+const emit = defineEmits<{
+  /** panel 形态：点击"展开为主界面"（App 侧播放向左扩展动画） */
+  expand: []
+  /** panel 形态：点击关闭面板 */
+  close: []
+}>()
+
+const isPanel = computed(() => props.variant === 'panel')
 
 const { activeSession, activeSessionId, messages, activeModel, activeModelInfo, models, thinking, streaming, workModes, newChat, send, pickWork, toggleThinking, stopStreaming, regenerate, restore, flush } = useAiChat()
 
@@ -476,6 +513,80 @@ onMounted(async () => {
   text-align: center;
   font-size: var(--kn-text-2xs);
   color: var(--kn-fg-subtle);
+}
+
+/* ============ panel 形态（右侧 AI 面板紧凑布局） ============ */
+.aw-top.is-panel {
+  padding: 8px 10px;
+  gap: 8px;
+}
+.aw-top.is-panel .aw-title {
+  font-size: var(--kn-text-md);
+  gap: 6px;
+  min-width: 0;
+}
+/* 标题文字过窄时省略 */
+.aw-top.is-panel .aw-title > span:last-of-type {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 面板顶栏：模型选择器弹性伸缩，控件不换行 */
+.aw-top.is-panel .aw-actions {
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-end;
+}
+.aw-top.is-panel .aw-model {
+  height: 26px;
+  padding: 0 8px;
+  flex: 1;
+  min-width: 0;
+}
+.aw-top.is-panel .aw-model-select {
+  flex: 1;
+  min-width: 0;
+}
+.aw-top.is-panel .aw-btn {
+  flex-shrink: 0;
+}
+
+/* 窄列内边距收紧 */
+.aw-thread.is-panel {
+  padding: 14px 12px 18px;
+  gap: 12px;
+}
+
+/* 空态：小 Logo + 短欢迎语 + 单列建议卡 */
+.aw-hero.is-panel {
+  gap: 8px;
+  padding-bottom: 4vh;
+}
+.aw-hero.is-panel .aw-hero-logo {
+  width: 54px;
+  height: 54px;
+  border-radius: var(--kn-radius-xl);
+}
+.aw-hero.is-panel .aw-hero-title {
+  margin-top: 6px;
+  font-size: var(--kn-text-lg);
+}
+.aw-hero.is-panel .aw-hero-input {
+  margin-top: 10px;
+}
+.aw-suggests.is-panel {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+/* 底部输入区：面板内不用免责小字，留白收紧 */
+.aw-input-area.is-panel :deep(.ai-input-bar) {
+  padding-bottom: 8px;
+}
+
+/* 回到底部：面板形态输入区更矮，按钮位置同步上移 */
+.aw-scroll-btn.is-panel {
+  bottom: 76px;
 }
 </style>
 

@@ -57,30 +57,56 @@
         </SideBar>
       </Transition>
 
-      <!-- 全宽视图（编辑器/AI 工作台）：通栏铺满，无外圈内边距，内部自滚动 -->
-      <main
-        class="app-content"
-        :class="{ 'is-flush': ['editor', 'ai'].includes(activeView) }"
-      >
-        <!-- 切换视图时安卓 Activity 风格过渡（淡入 + 上移）
-             KeepAlive：切走不销毁，回来保留状态（编辑器标签/光标/滚动位置等）。
-             同一组件类型（ComingSoon）靠 :key 区分实例，互不串数据。 -->
-        <Transition name="view" mode="out-in">
-          <KeepAlive>
-            <component :is="viewComponent" :key="activeView" v-bind="comingSoonProps" />
-          </KeepAlive>
+      <!-- 内容舞台：主内容 + AI 右侧面板
+           （面板绝对定位于舞台右缘，可拖宽；进入 AI 视图时向左扩展覆盖整个舞台，
+            动画完成后卸载面板，主内容无缝接管 —— 一个东西两种形式） -->
+      <div class="app-stage" ref="stageRef">
+        <!-- 全宽视图（编辑器/AI 工作台）：通栏铺满，无外圈内边距，内部自滚动 -->
+        <main
+          class="app-content"
+          :class="{ 'is-flush': ['editor', 'ai'].includes(activeView) }"
+          :style="{ marginRight: aiPanelDocking ? `${aiPanelWidth}px` : '0px' }"
+        >
+          <!-- 切换视图时安卓 Activity 风格过渡（淡入 + 上移）
+               KeepAlive：切走不销毁，回来保留状态（编辑器标签/光标/滚动位置等）。
+               同一组件类型（ComingSoon）靠 :key 区分实例，互不串数据。 -->
+          <Transition name="view" mode="out-in">
+            <KeepAlive>
+              <component :is="viewComponent" :key="activeView" v-bind="comingSoonProps" />
+            </KeepAlive>
+          </Transition>
+        </main>
+
+        <!-- AI 右侧面板（与 AI 主界面共享同一份聊天状态） -->
+        <Transition name="ai-panel">
+          <div
+            v-if="aiPanelOpen"
+            class="ai-panel-wrap"
+            :class="{ 'is-expanding': aiPanelExpanding }"
+            :style="aiPanelStyle"
+          >
+            <AiPanel
+              :width="aiPanelWidth"
+              :expanding="aiPanelExpanding"
+              @update:width="setAiPanelWidth"
+              @reset-width="resetAiPanelWidth"
+              @expand="expandAiPanel"
+              @close="hideAiPanel"
+            />
+          </div>
         </Transition>
-      </main>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { Titlebar, TitlebarChrome } from './component/titlebar'
 import { ActivityBar, SideBar } from './component/sidebar'
-import { useAppSession, useAppBoot } from './composables'
+import { AiPanel } from './component/ai'
+import { useAppSession, useAppBoot, useAiPanel } from './composables'
 
 import { searchItems, activityItems, topMenus } from './data'
 import type { SearchItem, ViewId } from './data'
@@ -122,6 +148,50 @@ const sideBarVisible = computed(
   () => sideBarOpen.value && active.value.sidebarVisible && !!active.value.sidebar
 )
 
+/* =================== AI 右侧面板 =================== */
+/* 面板与 AI 主界面（AiWorkspace）共享同一份聊天状态（useAiChat），
+ * 只是形式不同：窄侧栏 ↔ 全宽主界面；进入 AI 视图时播放"向左扩展"过渡。 */
+
+const {
+  open: aiPanelOpen,
+  expanding: aiPanelExpanding,
+  width: aiPanelWidth,
+  show: showAiPanel,
+  hide: hideAiPanel,
+  toggle: toggleAiPanel,
+  setWidth: setAiPanelWidth,
+  resetWidth: resetAiPanelWidth,
+} = useAiPanel()
+
+/** 面板是否正在"占位"（扩展动画中不占位，主内容铺满交给面板覆盖） */
+const aiPanelDocking = computed(() => aiPanelOpen.value && !aiPanelExpanding.value)
+
+/* 舞台宽度：面板 left 用 px 过渡（left: 舞台宽-面板宽 → 0）
+ * 用 px 而非 calc/% 过渡是为了兼容 WebKitGTK（calc 插值支持不稳） */
+const stageRef = ref<HTMLElement | null>(null)
+const stageWidth = ref(window.innerWidth)
+let stageObserver: ResizeObserver | null = null
+
+const aiPanelStyle = computed(() => ({
+  left: `${aiPanelExpanding.value ? 0 : Math.max(0, stageWidth.value - aiPanelWidth.value)}px`,
+}))
+
+/** 向左扩展成 AI 主界面：面板扫满内容区 → 切换到 AI 视图 → 卸载面板（无缝接管） */
+function expandAiPanel() {
+  if (!aiPanelOpen.value || aiPanelExpanding.value) return
+  aiPanelExpanding.value = true
+  /* 主内容同步切为 AI 工作台（面板覆盖中不可见；展开完成后正好接替） */
+  activeView.value = 'ai'
+  sideBarOpen.value = true
+  window.setTimeout(() => {
+    aiPanelOpen.value = false
+    /* 卸载完成后再解锁（保证卸载不播放退出动画） */
+    window.setTimeout(() => {
+      aiPanelExpanding.value = false
+    }, 60)
+  }, 400)
+}
+
 /* =================== 全局会话持久化 =================== */
 
 const { session, restore, save, flush } = useAppSession()
@@ -132,6 +202,14 @@ watch([activeView, sideBarOpen], () => {
   if (!s) return
   s.activeView = activeView.value
   s.sideBarOpen = sideBarOpen.value
+  save()
+})
+
+/** AI 面板开合 / 宽度变化 → 写回快照 */
+watch([aiPanelOpen, aiPanelWidth], () => {
+  const s = session.value
+  if (!s) return
+  s.aiPanel = { open: aiPanelOpen.value, width: aiPanelWidth.value }
   save()
 })
 
@@ -156,7 +234,9 @@ function onWorkspace() {
 }
 
 function onAskAI() {
-  onActivitySelect('ai')
+  /* AI 主界面已全屏，无需右侧面板；其余视图打开/收起面板 */
+  if (activeView.value === 'ai') return
+  toggleAiPanel()
 }
 
 function onNotify() {
@@ -170,8 +250,13 @@ function onAccount() {
 /* =================== 活动栏 handler =================== */
 
 /** 切视图：强制展开侧边栏（VS Code 行为）
- * id 来自 activityItems，类型上直接收窄为 ViewId */
+ * id 来自 activityItems，类型上直接收窄为 ViewId
+ * 特例：面板开着时进入 AI 视图 → 播放"向左扩展"变形动画（面板 → 主界面） */
 function onActivitySelect(id: string) {
+  if (id === 'ai' && aiPanelOpen.value && !aiPanelExpanding.value) {
+    expandAiPanel()
+    return
+  }
   activeView.value = id as ViewId
   sideBarOpen.value = true
 }
@@ -198,7 +283,18 @@ onMounted(async () => {
   if (saved) {
     activeView.value = saved.activeView as ViewId
     sideBarOpen.value = saved.sideBarOpen
+    if (saved.aiPanel) {
+      setAiPanelWidth(saved.aiPanel.width)
+      /* AI 主界面全屏时不需要右侧面板（同一内容）；其余视图按上次状态恢复 */
+      if (saved.aiPanel.open && saved.activeView !== 'ai') showAiPanel()
+    }
   }
+
+  /* 舞台宽度监听（AI 面板 left 定位换算用） */
+  stageObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) stageWidth.value = entry.contentRect.width
+  })
+  if (stageRef.value) stageObserver.observe(stageRef.value)
 
   /* 关闭窗口前立即落盘（防抖窗口内的改动不丢） */
   window.addEventListener('beforeunload', flush)
@@ -206,6 +302,8 @@ onMounted(async () => {
   /* 初始化自定义标题栏并显示窗口 */
   await boot()
 })
+
+onUnmounted(() => stageObserver?.disconnect())
 </script>
 
 <style>
@@ -272,12 +370,58 @@ body {
   overflow-y: auto;
   padding: var(--kn-space-6);
   box-sizing: border-box;
+  /* AI 面板开合时让位/收回（px 值过渡，兼容 WebKitGTK） */
+  transition: margin-right var(--kn-dur-slow) var(--kn-ease-out);
 }
 
 /* 编辑器等全屏视图：去掉内边距、内部自滚动 */
 .app-content.is-flush {
   padding: 0;
   overflow: hidden;
+}
+
+/* ============ AI 右侧面板（含向左扩展动画） ============ */
+/* 内容舞台：主内容与面板共用同一相对定位上下文 */
+.app-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+/* 面板容器：右缘贴舞台，left 由内联样式给出（舞台宽-面板宽，扩展时 → 0）
+ * left 用 px 过渡（非 calc/%）以兼容 WebKitGTK 的插值实现 */
+.ai-panel-wrap {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  transition: left var(--kn-dur-slow) var(--kn-ease-out);
+  will-change: left;
+}
+
+/* 向左扩展动画：更长的缓动，扫满整个内容舞台 */
+.ai-panel-wrap.is-expanding {
+  transition: left 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 面板开关：从右侧滑入/滑出
+ * （扩展完成后的卸载不播此动画 —— is-expanding 的选择器优先级更高，
+ *   只保留 left 过渡，opacity/transform 瞬变，视觉无缝接管） */
+.ai-panel-enter-active,
+.ai-panel-leave-active {
+  transition:
+    opacity var(--kn-dur-slow) var(--kn-ease-out),
+    transform var(--kn-dur-slow) var(--kn-ease-out);
+}
+.ai-panel-enter-from,
+.ai-panel-leave-to {
+  opacity: 0;
+  transform: translateX(24px);
 }
 
 /* ============ 侧边栏滑入/滑出过渡 ============ */
