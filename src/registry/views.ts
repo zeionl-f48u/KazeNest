@@ -36,6 +36,7 @@ import {
   FilesSidebar,
   AISidebar,
   BrowserSidebar,
+  MarketplaceSidebar,
 } from '../component/sidebar/views'
 
 /** 单个视图的完整定义（见文件头部注释） */
@@ -93,6 +94,13 @@ export const views: Record<ViewId, ViewDefinition> = {
     sidebarTitle: '浏览器',
     sidebarVisible: true,
     comingSoon: comingSoonConfig.browser,
+  },
+  marketplace: {
+    page: markRaw(ComingSoon),
+    sidebar: markRaw(MarketplaceSidebar),
+    sidebarTitle: '插件市场',
+    sidebarVisible: true,
+    comingSoon: comingSoonConfig.marketplace,
   },
   settings: {
     page: markRaw(ComingSoon),

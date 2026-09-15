@@ -13,13 +13,14 @@ import type { ActivityItem } from '../component/sidebar'
  *  - 图标名来自 Icon.vue 的 ICONS 表（不认识的名字会退化成圆点）
  */
 export const activityItems = [
-  { id: 'home',     label: '首页',     icon: 'home' },
-  { id: 'editor',   label: '编辑器',   icon: 'file-text' },
-  { id: 'files',    label: '文件管理', icon: 'folder' },
-  { id: 'ai',       label: 'AI 助手',  icon: 'sparkles', badge: 2, hideTooltip: true },
-  { id: 'browser',  label: '浏览器',   icon: 'globe' },
-  { id: 'settings', label: '设置',     icon: 'cog', position: 'bottom' },
-  { id: 'account',  label: '账户',     icon: 'user', position: 'bottom' },
+  { id: 'home',        label: '首页',     icon: 'home' },
+  { id: 'editor',      label: '编辑器',   icon: 'file-text' },
+  { id: 'files',       label: '文件管理', icon: 'folder' },
+  { id: 'ai',          label: 'AI 助手',  icon: 'sparkles', badge: 2, hideTooltip: true },
+  { id: 'browser',     label: '浏览器',   icon: 'globe' },
+  { id: 'marketplace', label: '插件市场', icon: 'extensions' },
+  { id: 'settings',    label: '设置',     icon: 'cog', position: 'bottom' },
+  { id: 'account',     label: '账户',     icon: 'user', position: 'bottom' },
 ] as const satisfies ActivityItem[]
 
 /**

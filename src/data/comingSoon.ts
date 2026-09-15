@@ -46,6 +46,14 @@ export const comingSoonConfig: Partial<Record<ViewId, ComingSoonConfig>> = {
     desc: '内嵌 Web 视图、标签页与浏览历史正在建设中',
     tags: ['Web 视图', '多标签', '历史记录'],
   },
+  marketplace: {
+    title: '插件市场',
+    subtitle: '发现、安装与管理插件',
+    icon: 'extensions',
+    tint: 'var(--kn-brand-500)',
+    desc: '插件浏览、搜索与一键安装能力正在建设中',
+    tags: ['插件浏览', '搜索筛选', '一键安装'],
+  },
   settings: {
     title: '设置',
     subtitle: '主题、快捷键与偏好',
