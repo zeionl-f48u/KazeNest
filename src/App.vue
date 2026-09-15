@@ -65,7 +65,7 @@
         <!-- 全宽视图（编辑器/AI 工作台）：通栏铺满，无外圈内边距，内部自滚动 -->
         <main
           class="app-content"
-          :class="{ 'is-flush': ['editor', 'ai'].includes(activeView) }"
+          :class="{ 'is-flush': ['editor', 'ai'].includes(activeView), 'margin-anim': marginAnim }"
           :style="{ marginRight: aiPanelDocking ? `${aiPanelWidth}px` : '0px' }"
         >
           <!-- 切换视图时安卓 Activity 风格过渡（淡入 + 上移）
@@ -180,6 +180,20 @@ const aiPanelActive = computed(() => aiPanelOpen.value || activeView.value === '
 /** 视图切换过渡名：从展开的 AI 面板切出时用 view-none（无过渡，见模板注释） */
 const skipViewTransition = ref(false)
 const viewTransitionName = computed(() => (skipViewTransition.value ? 'view-none' : 'view'))
+
+/* 主内容让位（margin-right）仅在"面板开/关"时用过渡；
+ * 展开/收回（切视图）时瞬时生效——让位区域此刻都被面板完整覆盖，
+ * 主内容一步到位、动画期间不再重排，面板收回更顺滑 */
+const marginAnim = ref(false)
+let marginAnimTimer: number | undefined
+
+watch(aiPanelOpen, () => {
+  marginAnim.value = true
+  window.clearTimeout(marginAnimTimer)
+  marginAnimTimer = window.setTimeout(() => {
+    marginAnim.value = false
+  }, 460)
+})
 
 /* 舞台宽度：面板 left 用 px 过渡（left: 舞台宽-面板宽 → 0）
  * 用 px 而非 calc/% 过渡是为了兼容 WebKitGTK（calc 插值支持不稳） */
@@ -321,6 +335,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stageObserver?.disconnect()
+  window.clearTimeout(marginAnimTimer)
   window.removeEventListener('keydown', onGlobalKeydown)
 })
 </script>
@@ -389,7 +404,11 @@ body {
   overflow-y: auto;
   padding: var(--kn-space-6);
   box-sizing: border-box;
-  /* AI 面板开合/展开收回时让位（与面板 left 同步：同曲线同时长，边界不露缝） */
+}
+
+/* 面板开/关时的让位过渡（与面板滑入/滑出同曲线同时长）；
+ * 展开/收回（切视图）不启用——瞬时让位，动画期间主内容不重排 */
+.app-content.margin-anim {
   transition: margin-right 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 

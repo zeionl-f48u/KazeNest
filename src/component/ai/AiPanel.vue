@@ -3,26 +3,36 @@
   - 内容即 AiWorkspace —— 同一份 useAiChat 状态，一个东西两种形式：
     · 未展开（其他视图）：panel 紧凑形态（窄侧栏）
     · 展开（AI 视图）：page 全宽形态（面板向左铺满内容区）
-  - 左边缘手柄拖拽调宽（双击恢复默认）；展开时手柄隐藏
-  - 拖拽期间 body 加 ai-panel-resizing，由 effects.css 禁用主内容让位过渡
-  - 展开/关闭事件交给 App：展开 = 切到 AI 视图（面板自动扩展）；
-    关闭 = 收起面板（AI 视图内关闭后露出主内容 AI 界面）
+  - 展开/收回动画由外层 .ai-panel-wrap 的 left 过渡驱动（时长/曲线在 App.vue）。
+    本组件只处理内容侧的稳定性：
+    · 收回中：冻结内容布局宽度（不参与收缩重排，只被裁剪）——消除每帧文本重排的卡顿
+    · 收尾：内容渐隐 → 沉默切换回紧凑形态 → 渐显（形态跳变被淡化掩盖）
+    · 展开：立即切 page 形态，内容随宽度"生长"（观感自然）
+  - 左边缘手柄拖拽调宽（双击恢复默认）；展开/收回中手柄隐藏
 -->
 <template>
-  <div class="ai-panel" :class="{ 'is-expanded': expanded }">
-    <!-- 左边缘：拖拽调宽手柄（双击恢复默认宽度；展开时隐藏） -->
+  <div
+    ref="rootRef"
+    class="ai-panel"
+    :class="{ 'is-expanded': expanded, 'is-retracting': retracting }"
+  >
+    <!-- 左边缘：拖拽调宽手柄（双击恢复默认宽度） -->
     <div
-      v-if="!expanded"
+      v-if="!expanded && !retracting"
       class="ai-panel-resize"
       @mousedown="onResizeStart"
       @dblclick="emit('reset-width')"
     />
-    <AiWorkspace
-      :variant="variant"
-      :closable="expanded"
-      @expand="emit('expand')"
-      @close="emit('close')"
-    />
+
+    <!-- 内容层：收回期间冻结为展开时宽度（外层裁剪），避免收缩重排 -->
+    <div class="ai-panel-freeze" :style="retracting ? { width: `${freezeWidth}px` } : undefined">
+      <AiWorkspace
+        :variant="variant"
+        :closable="expanded"
+        @expand="emit('expand')"
+        @close="emit('close')"
+      />
+    </div>
   </div>
 </template>
 
@@ -44,26 +54,42 @@ const emit = defineEmits<{
   close: []
 }>()
 
-/* =================== 内容形态（page ↔ panel） =================== */
-/* 展开立即切 page（配合向左扩展动画）；
- * 收回延迟到动画结束再切回 panel，避免收回过程中内容重排跳动 */
+/* =================== 内容形态与收回稳定性 =================== */
 
+const rootRef = ref<HTMLElement | null>(null)
+
+/** 内容形态：展开 page / 侧栏 panel */
 const variant = ref<'page' | 'panel'>(props.expanded ? 'page' : 'panel')
-let variantTimer: number | undefined
+/** 是否正在"收回"（冻结布局 + 渐隐，等动画结束再切面板形态） */
+const retracting = ref(false)
+/** 冻结宽度（收回开始时量取，即展开态的面板宽度） */
+const freezeWidth = ref(0)
+
+/** 收回动画时长（与 App.vue 的 left 过渡 0.4s 对齐，略留余量） */
+const RETRACT_MS = 430
+
+let settleTimer: number | undefined
 
 watch(() => props.expanded, (v) => {
-  window.clearTimeout(variantTimer)
+  window.clearTimeout(settleTimer)
   if (v) {
+    /* 展开：立即用全宽形态（内容随扩展动画生长） */
     variant.value = 'page'
-  } else {
-    /* 略大于 left 过渡时长（0.4s），等面板收回完成 */
-    variantTimer = window.setTimeout(() => {
-      variant.value = 'panel'
-    }, 420)
+    retracting.value = false
+    return
   }
+  /* 收回：先冻结当前（展开态）布局宽度——期间不发生任何收缩重排，
+   * 内容只是被逐渐变窄的面板裁剪；动画末尾内容渐隐，
+   * 到位后切换为紧凑形态再渐显（跳变不可见） */
+  freezeWidth.value = rootRef.value?.offsetWidth ?? 0
+  retracting.value = true
+  settleTimer = window.setTimeout(() => {
+    variant.value = 'panel'
+    retracting.value = false
+  }, RETRACT_MS)
 })
 
-onUnmounted(() => window.clearTimeout(variantTimer))
+onUnmounted(() => window.clearTimeout(settleTimer))
 
 /* =================== 拖拽调宽 =================== */
 
@@ -71,7 +97,7 @@ onUnmounted(() => window.clearTimeout(variantTimer))
 let stopResize: (() => void) | null = null
 
 function onResizeStart(e: MouseEvent) {
-  if (props.expanded) return
+  if (props.expanded || retracting.value) return
   e.preventDefault()
   const startX = e.clientX
   const startWidth = props.width
@@ -107,11 +133,29 @@ onUnmounted(() => stopResize?.())
   flex: 1;
   border-left: 1px solid var(--kn-border);
   background: var(--kn-bg);
-  overflow: hidden;
+  overflow: hidden; /* 收回冻结时裁剪内容（右侧被裁掉） */
 }
 /* 展开态：全宽接管内容区，边界线没有意义 */
 .ai-panel.is-expanded {
   border-left: 0;
+}
+
+/* ==================== 内容层（收回稳定性） ==================== */
+.ai-panel-freeze {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  flex: 1;
+  opacity: 1;
+  transition: opacity 0.14s var(--kn-ease-out);
+}
+/* 收回中：布局宽度冻结为展开值（不重排），收尾渐隐（掩盖形态切换） */
+.ai-panel.is-retracting .ai-panel-freeze {
+  flex: none;
+  opacity: 0;
+  /* 前 0.24s 保持可见（跟随宽度收回/裁剪），末尾 0.19s 淡出 */
+  transition: opacity 0.19s var(--kn-ease-out) 0.24s;
 }
 
 /* 拖拽调宽手柄（左边缘热区 + hover 高亮） */
