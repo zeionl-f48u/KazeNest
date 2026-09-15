@@ -64,14 +64,24 @@
         <Icon name="at-sign" :size="13" />
       </button>
       <button
+        v-if="!streaming"
         type="button"
         class="ai-send"
-        title="发送 (Enter)"
         aria-label="发送"
         :disabled="!canSend"
         @click="doSend"
       >
         <Icon name="arrow-up" :size="13" />
+      </button>
+      <!-- 流式输出中：发送键变为停止键 -->
+      <button
+        v-else
+        type="button"
+        class="ai-send is-stop"
+        aria-label="停止生成"
+        @click="emit('stop')"
+      >
+        <Icon name="stop" :size="12" />
       </button>
     </div>
 
@@ -107,9 +117,15 @@ import { Icon } from '../common'
 const props = withDefaults(defineProps<{
   /** 输入框占位文案（侧栏/主区可各自定制） */
   placeholder?: string
-}>(), { placeholder: '输入消息，Enter 发送，Shift+Enter 换行' })
+  /** 是否正在流式输出（true 时发送键变为停止键） */
+  streaming?: boolean
+}>(), { placeholder: '输入消息，Enter 发送，Shift+Enter 换行', streaming: false })
 
-const emit = defineEmits<{ send: [payload: { text: string; attachments: string[] }] }>()
+const emit = defineEmits<{
+  send: [payload: { text: string; attachments: string[] }]
+  /** 点击停止键（终止流式输出） */
+  stop: []
+}>()
 
 /* =================== 输入文本 =================== */
 
@@ -410,6 +426,9 @@ watch(() => props.placeholder, () => {
 .ai-send:disabled {
   opacity: 0.4;
   cursor: default;
+}
+.ai-send.is-stop {
+  background: var(--kn-fg-muted);
 }
 
 /* 弹层：表情 / 上下文引用（定位在输入框上方） */

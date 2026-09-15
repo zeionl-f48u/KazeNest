@@ -3,11 +3,13 @@
   - 主内容区对话工作台，与侧栏 AISidebar 共享同一份聊天状态（useAiChat）
   - 布局：消息流居中窄列（760px），大屏两侧留白；输入区同宽居中
   - 工具栏：会话标题 + 模型选择 + 新对话 + 清空
+  - 空态：建议卡片（点击即发送，DeepSeek 风格快捷入口）
   - 对话主体：思考过程折叠块（默认收起）→ 流式打字机回复 → 消息卡片
+    · 消息悬停操作：复制 / 重新生成
+    · 流式输出中显示"停止"键，可中断生成
+    · 用户上滚查看历史时停止自动跟随，显示"回到底部"按钮
   - 底部输入区：AiInputBar 通用输入条（附件/表情/引用/粘贴识别）
   - 纯前端演示：发送后模拟 agent 工作流（接后端后替换为真实流式输出）
-  - 说明：工作模式速选已从主区移除（界面更简洁），功能保留在
-    useAiChat 的 workModes/pickWork，由侧栏提示词库触发
 -->
 <template>
   <div class="ai-workspace">
@@ -37,15 +39,31 @@
     </div>
 
     <!-- 对话主体（滚动容器 + 居中窄列） -->
-    <div class="aw-chat" ref="chatRef">
+    <div class="aw-chat" ref="chatRef" @scroll="onChatScroll">
       <div class="aw-thread">
-        <!-- 空态：首次进入时的引导 -->
+        <!-- 空态：欢迎 + 建议卡片（点击即发送） -->
         <div v-if="!messages.length" class="aw-empty">
           <div class="aw-empty-icon">
             <Icon name="sparkles" :size="32" />
           </div>
           <h3>你好，我是 KazeNest 的开发工作助手</h3>
-          <p>直接在下方输入需求，或在侧栏提示词库选择场景。<br />我可以写代码、解释代码、重构、写测试、评审、文档、数据分析、翻译。</p>
+          <p>我可以写代码、解释代码、重构、写测试、评审、文档、数据分析、翻译</p>
+          <div class="aw-suggests">
+            <button
+              v-for="s in suggests"
+              :key="s.work"
+              type="button"
+              class="aw-suggest"
+              :style="{ '--tint': s.color }"
+              @click="onSuggest(s)"
+            >
+              <Icon :name="s.icon" :size="14" class="aw-suggest-icon" />
+              <span class="aw-suggest-body">
+                <span class="aw-suggest-label">{{ s.label }}</span>
+                <span class="aw-suggest-desc">{{ s.desc }}</span>
+              </span>
+            </button>
+          </div>
         </div>
 
         <AiMessageView
@@ -53,38 +71,107 @@
           :thinking="thinking"
           :streaming="streaming"
           :model-label="activeModelInfo?.label ?? ''"
+          :last-assistant-id="lastAssistantId"
           @toggle-thinking="toggleThinking"
+          @regenerate="onRegenerate"
         />
       </div>
     </div>
 
+    <!-- 回到底部（用户上滚查看历史时显示） -->
+    <button
+      v-if="showScrollBtn"
+      type="button"
+      class="aw-scroll-btn"
+      aria-label="回到底部"
+      @click="scrollToBottom(true)"
+    >
+      <Icon name="chevron-down" :size="14" />
+    </button>
+
     <!-- 输入区（分隔线全宽，内容居中窄列） -->
     <div class="aw-input-area">
-      <AiInputBar class="aw-input-bar" @send="onSend" />
+      <AiInputBar
+        class="aw-input-bar"
+        :streaming="!!streaming"
+        @send="onSend"
+        @stop="onStop"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { Icon } from '../common'
 import { AiMessageView, AiInputBar } from './index'
 import { useAiChat } from '../../composables'
+import type { WorkKind } from '../../composables'
 
-const { activeSession, activeSessionId, messages, activeModel, activeModelInfo, models, thinking, streaming, newChat, send, toggleThinking, restore, flush } = useAiChat()
+const { activeSession, activeSessionId, messages, activeModel, activeModelInfo, models, thinking, streaming, workModes, newChat, send, pickWork, toggleThinking, stopStreaming, regenerate, restore, flush } = useAiChat()
 
 const chatRef = ref<HTMLElement | null>(null)
 
-function scrollToBottom() {
+/* =================== 空态建议卡片（点击即发送） =================== */
+
+interface EmptySuggest {
+  label: string
+  desc: string
+  icon: string
+  color: string
+  work: WorkKind
+}
+
+const suggests: EmptySuggest[] = [
+  { label: '解释代码', desc: '按 思路 → 要点 → 风险 拆解', icon: 'file-text', color: 'var(--kn-emerald-500)', work: 'explain' },
+  { label: '编写代码', desc: '生成可直接使用的实现', icon: 'file-plus', color: 'var(--kn-sky-500)', work: 'coding' },
+  { label: '代码评审', desc: '正确性 / 健壮性 / 可读性', icon: 'check', color: 'var(--kn-rose-500)', work: 'review' },
+  { label: '写单元测试', desc: '正常路径 → 边界 → 异常', icon: 'terminal', color: 'var(--kn-amber-500)', work: 'test' },
+]
+
+function onSuggest(s: EmptySuggest) {
+  const w = workModes.find((x) => x.kind === s.work)
+  if (!w) return
+  pickWork(w)
+  scrollToBottom(true)
+}
+
+/* =================== 滚动跟随 =================== */
+
+/** 是否显示"回到底部"按钮（离底部超过 80px） */
+const showScrollBtn = ref(false)
+
+function onChatScroll() {
+  const el = chatRef.value
+  if (!el) return
+  showScrollBtn.value = el.scrollHeight - el.scrollTop - el.clientHeight > 80
+}
+
+/** 滚到底部；force=false 时仅在用户贴近底部时跟随（上滚查看历史不打扰） */
+function scrollToBottom(force = false) {
+  const el = chatRef.value
+  if (!el) return
+  if (!force && el.scrollHeight - el.scrollTop - el.clientHeight >= 80) return
   nextTick(() => {
-    const el = chatRef.value
-    if (el) el.scrollTop = el.scrollHeight
+    el.scrollTop = el.scrollHeight
+    showScrollBtn.value = false
   })
 }
 
+/* =================== 操作 =================== */
+
+/** 最后一条助手消息 id（该条显示"重新生成"） */
+const lastAssistantId = computed<number | null>(() => {
+  const arr = messages.value
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (arr[i].role === 'assistant') return arr[i].id
+  }
+  return null
+})
+
 function onNewChat() {
   newChat()
-  scrollToBottom()
+  scrollToBottom(true)
 }
 
 function onClear() {
@@ -94,22 +181,33 @@ function onClear() {
 
 function onSend(payload: { text: string; attachments: string[] }) {
   send(payload)
-  scrollToBottom()
+  scrollToBottom(true)
 }
 
-/* 切换会话 / 消息更新 / 流式增量：滚到底部 */
-watch([activeSessionId, messages], scrollToBottom)
-watch(() => streaming.value?.length, scrollToBottom)
+function onStop() {
+  stopStreaming()
+}
+
+function onRegenerate() {
+  regenerate()
+  scrollToBottom(true)
+}
+
+/* 切换会话 / 新消息：强制滚到底部；流式增量：仅在贴近底部时跟随 */
+watch(activeSessionId, () => scrollToBottom(true))
+watch(messages, () => scrollToBottom(true))
+watch(() => streaming.value?.length, () => scrollToBottom(false))
 
 onMounted(async () => {
   await restore()
-  scrollToBottom()
+  scrollToBottom(true)
   window.addEventListener('beforeunload', flush)
 })
 </script>
 
 <style scoped>
 .ai-workspace {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -223,7 +321,7 @@ onMounted(async () => {
   gap: 14px;
 }
 
-/* 空态引导 */
+/* ============ 空态：欢迎 + 建议卡片 ============ */
 .aw-empty {
   flex: 1;
   display: flex;
@@ -260,6 +358,82 @@ onMounted(async () => {
   margin: 0;
   font-size: var(--kn-text-sm);
   line-height: 1.7;
+}
+
+/* 建议卡片（2×2） */
+.aw-suggests {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  max-width: 520px;
+  margin-top: 10px;
+}
+.aw-suggest {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-lg);
+  background: var(--kn-bg-elev);
+  color: var(--kn-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--kn-dur-fast), border-color var(--kn-dur-fast), transform var(--kn-dur-fast);
+}
+.aw-suggest:hover {
+  background: color-mix(in srgb, var(--tint) 7%, transparent);
+  border-color: color-mix(in srgb, var(--tint) 35%, transparent);
+  transform: translateY(-1px);
+}
+.aw-suggest-icon {
+  color: var(--tint);
+  flex-shrink: 0;
+}
+.aw-suggest-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.aw-suggest-label {
+  font-size: var(--kn-text-sm);
+  font-weight: 600;
+}
+.aw-suggest-desc {
+  font-size: var(--kn-text-2xs);
+  color: var(--kn-fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============ 回到底部 ============ */
+.aw-scroll-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 84px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--kn-border);
+  border-radius: 50%;
+  background: var(--kn-bg-elev);
+  color: var(--kn-fg-muted);
+  box-shadow: var(--kn-shadow-md);
+  cursor: pointer;
+  z-index: 5;
+  transition: color var(--kn-dur-fast), border-color var(--kn-dur-fast), transform var(--kn-dur-fast);
+}
+.aw-scroll-btn:hover {
+  color: var(--kn-fg);
+  border-color: var(--kn-border-strong);
+  transform: translateX(-50%) translateY(-1px);
 }
 
 /* ============ 输入区 ============ */

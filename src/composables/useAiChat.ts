@@ -206,8 +206,9 @@ interface SendInput {
   work?: WorkKind
 }
 
-/** 发送用户消息并触发模拟 agent 工作流 */
+/** 发送用户消息并触发模拟 agent 工作流（流式输出期间不接受新消息） */
 function send(input: SendInput) {
+  if (streaming.value) return
   const text = input.text.trim()
   if (!text && !(input.attachments?.length)) return
   const attachNote = input.attachments?.length ? `\n[附件: ${input.attachments.join(', ')}]` : ''
@@ -248,6 +249,9 @@ function simulateWorkflow(work?: WorkKind) {
   }, 700)
 }
 
+/** 流式输出定时器（stopStreaming 需要提前取消） */
+let streamTimer: number | undefined
+
 /** 流式输出助手回复（逐字打字机；完成后计费并停止） */
 function streamAssistant(work: WorkKind | undefined, sessionId: string) {
   const sess = sessions.value.find((s) => s.id === sessionId)
@@ -256,22 +260,57 @@ function streamAssistant(work: WorkKind | undefined, sessionId: string) {
   const id = ++seq
   sess.messages.push({ id, role: 'assistant', text: '', work, time: nowTime(), sessionId })
   streaming.value = { messageId: id, length: 0 }
-  const timer = window.setInterval(() => {
+  streamTimer = window.setInterval(() => {
     const st = streaming.value
     const target = sess.messages.find((m) => m.id === id)
     if (!st || st.messageId !== id || !target || activeSessionId.value !== sessionId) {
-      window.clearInterval(timer)
+      window.clearInterval(streamTimer)
+      streamTimer = undefined
       return
     }
     st.length = Math.min(st.length + 2, full.length)
     target.text = full.slice(0, st.length)
     if (st.length >= full.length) {
-      window.clearInterval(timer)
+      window.clearInterval(streamTimer)
+      streamTimer = undefined
       target.text = full
       streaming.value = null
       billUsage('assistant', full)
     }
   }, 16)
+}
+
+/** 停止生成（保留已输出内容并按已输出部分计费；空占位消息则移除） */
+function stopStreaming() {
+  if (!streaming.value) return
+  window.clearInterval(streamTimer)
+  streamTimer = undefined
+  const st = streaming.value
+  const sess = activeSession.value
+  const target = sess?.messages.find((m) => m.id === st.messageId)
+  if (sess && target) {
+    if (target.text) {
+      billUsage('assistant', target.text)
+    } else {
+      const idx = sess.messages.findIndex((m) => m.id === st.messageId)
+      if (idx >= 0) sess.messages.splice(idx, 1)
+    }
+  }
+  streaming.value = null
+}
+
+/** 重新生成最后一条助手回复（DeepSeek Harness 的"重试"） */
+function regenerate() {
+  const sess = activeSession.value
+  if (!sess || streaming.value) return
+  for (let i = sess.messages.length - 1; i >= 0; i--) {
+    if (sess.messages[i].role === 'assistant') {
+      sess.messages.splice(i, 1)
+      break
+    }
+  }
+  const lastUser = [...sess.messages].reverse().find((m) => m.role === 'user')
+  simulateWorkflow(lastUser?.work)
 }
 
 /** 展开/收起思考过程 */
@@ -391,6 +430,8 @@ export function useAiChat() {
     send,
     pickWork,
     toggleThinking,
+    stopStreaming,
+    regenerate,
     restore: restoreAI,
     flush,
   }

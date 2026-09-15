@@ -38,10 +38,27 @@
     <p v-else class="ai-msg-text">{{ m.text }}</p>
     <!-- 流式输出光标（正在逐字打印的这条消息） -->
     <span v-if="streaming && streaming.messageId === m.id" class="ai-caret" />
+
+    <!-- 消息操作（悬停显示）：复制 / 重新生成 -->
+    <div v-if="m.role === 'assistant' && !(streaming && streaming.messageId === m.id)" class="ai-msg-actions">
+      <button type="button" class="ai-act" aria-label="复制" @click="copyMessage(m)">
+        <Icon :name="copiedId === m.id ? 'check' : 'copy'" :size="12" />
+      </button>
+      <button
+        v-if="m.id === lastAssistantId"
+        type="button"
+        class="ai-act"
+        aria-label="重新生成"
+        @click="$emit('regenerate')"
+      >
+        <Icon name="refresh" :size="12" />
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { Icon } from '../common'
 import { renderMessage } from './render'
 import type { AiMessage } from '../../composables/useAiChat'
@@ -55,9 +72,24 @@ defineProps<{
   streaming: { messageId: number; length: number } | null
   /** 当前模型名（消息头展示） */
   modelLabel: string
+  /** 最后一条助手消息 id（该条显示"重新生成"按钮；无则 null） */
+  lastAssistantId: number | null
 }>()
 
-defineEmits<{ 'toggle-thinking': [] }>()
+defineEmits<{ 'toggle-thinking': []; regenerate: [] }>()
+
+/** 复制反馈：刚复制的消息 id（按钮短暂显示对勾） */
+const copiedId = ref<number | null>(null)
+
+/** 复制整条消息文本到剪贴板 */
+function copyMessage(m: AiMessage) {
+  navigator.clipboard?.writeText(m.text).then(() => {
+    copiedId.value = m.id
+    setTimeout(() => {
+      if (copiedId.value === m.id) copiedId.value = null
+    }, 1200)
+  })
+}
 
 /** 点击复制按钮：把代码写入剪贴板（按钮 data-copy 存的是代码原文） */
 function onMarkdownClick(e: MouseEvent) {
@@ -211,6 +243,36 @@ function onMarkdownClick(e: MouseEvent) {
 @keyframes ai-caret-blink {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0; }
+}
+
+/* 消息操作（悬停显示）：复制 / 重新生成 */
+.ai-msg-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  margin-top: 2px;
+  opacity: 0;
+  transition: opacity var(--kn-dur-fast);
+}
+.ai-msg:hover .ai-msg-actions {
+  opacity: 1;
+}
+.ai-act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: var(--kn-radius-sm);
+  background: transparent;
+  color: var(--kn-fg-subtle);
+  cursor: pointer;
+  transition: background var(--kn-dur-fast), color var(--kn-dur-fast);
+}
+.ai-act:hover {
+  background: var(--kn-hover);
+  color: var(--kn-fg);
 }
 
 /* 思考中：三点跳动 */
