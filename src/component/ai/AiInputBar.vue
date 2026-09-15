@@ -1,29 +1,22 @@
 <!--
-  AiInputBar：AI 输入条（侧栏 AISidebar 与主区 AiWorkspace 共用）
-  - 附件：回形针按钮选文件，附件芯片显示在输入框上方（可移除）
+  AiInputBar：AI 输入条（DeepSeek Harness 风格一体化卡片）
+  - 卡片结构：上方文本编辑区 + 下方工具行（附件 / 表情 / 引用 …… 发送）
+  - 聚焦时卡片边框品牌色 + 外发光；发送键为圆形主按钮
+  - 流式输出中发送键变为停止键；附件芯片显示在卡片内文本上方（可移除）
   - 粘贴智能识别：多行内容自动包成 ```代码块``` 并猜语言
-  - 自动增高：粘贴多行也能平滑撑开（最多 8 行）
-  - 表情选择器 + 上下文引用（@当前文件/@选中代码/@工作区）
-  - 发送走 useAiChat.send（主区/侧栏各自持有自己的输入文本）
-  - 插槽：顶部工具条（新对话/模型等）由父级通过 #toolbar 传入
+  - 自动增高：最多 8 行；Enter 发送 / Shift+Enter 换行
 -->
 <template>
   <div class="ai-input-bar">
-    <slot name="toolbar" />
-
-    <!-- 附件按钮：触发隐藏的 file input -->
-    <button type="button" class="ai-ibar-btn" title="添加附件" aria-label="添加附件" @click="fileInputRef?.click()">
-      <Icon name="paperclip" :size="13" />
-    </button>
-
-    <div class="ai-input-wrap">
+    <!-- 一体化输入卡片 -->
+    <div class="ai-box" :class="{ 'is-focus': focused }">
       <!-- 附件芯片 -->
       <div v-if="attachments.length" class="ai-attach-row">
         <span v-for="a in attachments" :key="a.id" class="ai-attach-chip">
           <Icon name="file" :size="11" class="ai-attach-icon" />
           <span class="ai-attach-name">{{ a.name }}</span>
           <span class="ai-attach-size">{{ formatSize(a.size) }}</span>
-          <button type="button" class="ai-attach-x" :title="`移除 ${a.name}`" aria-label="移除附件" @click="removeAttachment(a.id)">
+          <button type="button" class="ai-attach-x" aria-label="移除附件" @click="removeAttachment(a.id)">
             <Icon name="times" :size="9" />
           </button>
         </span>
@@ -36,53 +29,59 @@
         rows="1"
         :placeholder="placeholder"
         spellcheck="false"
+        @focus="focused = true"
+        @blur="focused = false"
         @keydown.enter.exact.prevent="doSend"
         @input="autoGrow"
         @paste="onPaste"
       ></textarea>
-    </div>
 
-    <div class="ai-ibar-right">
-      <button
-        type="button"
-        class="ai-ibar-btn"
-        :class="{ 'is-on': emojiOpen }"
-        title="表情"
-        aria-label="表情"
-        @click="toggleEmoji"
-      >
-        <Icon name="smile" :size="13" />
-      </button>
-      <button
-        type="button"
-        class="ai-ibar-btn"
-        :class="{ 'is-on': contextOpen }"
-        title="引用上下文"
-        aria-label="引用上下文"
-        @click="toggleContext"
-      >
-        <Icon name="at-sign" :size="13" />
-      </button>
-      <button
-        v-if="!streaming"
-        type="button"
-        class="ai-send"
-        aria-label="发送"
-        :disabled="!canSend"
-        @click="doSend"
-      >
-        <Icon name="arrow-up" :size="13" />
-      </button>
-      <!-- 流式输出中：发送键变为停止键 -->
-      <button
-        v-else
-        type="button"
-        class="ai-send is-stop"
-        aria-label="停止生成"
-        @click="emit('stop')"
-      >
-        <Icon name="stop" :size="12" />
-      </button>
+      <!-- 工具行：左侧功能按钮，右侧发送/停止 -->
+      <div class="ai-tools">
+        <button type="button" class="ai-tool-btn" aria-label="添加附件" @click="fileInputRef?.click()">
+          <Icon name="paperclip" :size="14" />
+        </button>
+        <button
+          type="button"
+          class="ai-tool-btn"
+          :class="{ 'is-on': emojiOpen }"
+          aria-label="表情"
+          @click="toggleEmoji"
+        >
+          <Icon name="smile" :size="14" />
+        </button>
+        <button
+          type="button"
+          class="ai-tool-btn"
+          :class="{ 'is-on': contextOpen }"
+          aria-label="引用上下文"
+          @click="toggleContext"
+        >
+          <Icon name="at-sign" :size="14" />
+        </button>
+
+        <span class="ai-tools-spacer" />
+
+        <button
+          v-if="!streaming"
+          type="button"
+          class="ai-send"
+          aria-label="发送"
+          :disabled="!canSend"
+          @click="doSend"
+        >
+          <Icon name="arrow-up" :size="14" />
+        </button>
+        <button
+          v-else
+          type="button"
+          class="ai-send is-stop"
+          aria-label="停止生成"
+          @click="emit('stop')"
+        >
+          <Icon name="stop" :size="13" />
+        </button>
+      </div>
     </div>
 
     <!-- 表情选择器 -->
@@ -119,7 +118,7 @@ const props = withDefaults(defineProps<{
   placeholder?: string
   /** 是否正在流式输出（true 时发送键变为停止键） */
   streaming?: boolean
-}>(), { placeholder: '输入消息，Enter 发送，Shift+Enter 换行', streaming: false })
+}>(), { placeholder: '给 KazeNest 发送消息，Enter 发送，Shift+Enter 换行', streaming: false })
 
 const emit = defineEmits<{
   send: [payload: { text: string; attachments: string[] }]
@@ -131,6 +130,8 @@ const emit = defineEmits<{
 
 const text = ref('')
 const inputRef = ref<HTMLTextAreaElement | null>(null)
+/** 聚焦态（卡片边框高亮 + 外发光） */
+const focused = ref(false)
 
 const canSend = computed(() => text.value.trim().length > 0 || attachments.value.length > 0)
 
@@ -180,8 +181,8 @@ function formatSize(bytes: number) {
 
 /* =================== 自动增高 =================== */
 
-/** 最大高度：8 行 ≈ 8 × 20px 行高 + 12px 上下 padding */
-const MAX_INPUT_H = 172
+/** 最大高度：8 行 ≈ 8 × 20px 行高 */
+const MAX_INPUT_H = 160
 
 function autoGrow() {
   const ta = inputRef.value
@@ -283,25 +284,29 @@ watch(() => props.placeholder, () => {
 <style scoped>
 .ai-input-bar {
   position: relative;
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  padding: 8px 10px;
-  border-top: 1px solid var(--sb-border);
+  padding: 10px 12px;
   flex-shrink: 0;
+}
+
+/* ==================== 一体化输入卡片 ==================== */
+.ai-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 8px;
+  border: 1px solid var(--sb-border);
+  border-radius: var(--kn-radius-xl);
+  background: var(--kn-bg-elev);
+  transition: border-color var(--kn-dur-fast), box-shadow var(--kn-dur-fast);
+}
+.ai-box.is-focus {
+  border-color: color-mix(in srgb, var(--kn-brand-500) 55%, transparent);
+  box-shadow: var(--kn-shadow-focus);
 }
 
 /* 隐藏的 file input（由回形针按钮触发） */
 .ai-file-input {
   display: none;
-}
-
-.ai-input-wrap {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 /* 附件芯片 */
@@ -356,55 +361,37 @@ watch(() => props.placeholder, () => {
   color: var(--sb-fg);
 }
 
+/* 文本编辑区（无边框，融入卡片） */
 .ai-input {
-  flex: 1;
-  min-height: 28px;
-  max-height: 172px;
-  padding: 6px 10px;
-  border: 1px solid var(--sb-border);
-  border-radius: var(--kn-radius-lg);
-  background: var(--kn-bg-elev);
+  width: 100%;
+  min-height: 22px;
+  max-height: 160px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
   color: var(--sb-fg);
   font: inherit;
   font-size: var(--kn-text-sm);
-  line-height: 1.5;
+  line-height: 1.55;
   resize: none;
-  outline: none;
   box-sizing: border-box;
   overflow-y: auto;
 }
-.ai-input:focus {
-  border-color: var(--kn-brand-500);
+.ai-input::placeholder {
+  color: var(--kn-fg-subtle);
 }
 
-.ai-ibar-right {
+/* 工具行：左功能按钮 + 右发送 */
+.ai-tools {
   display: flex;
   align-items: center;
   gap: 2px;
-  flex-shrink: 0;
 }
-.ai-ibar-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: 0;
-  border-radius: var(--kn-radius-md);
-  background: transparent;
-  color: var(--sb-fg-muted);
-  cursor: pointer;
-  transition: background var(--sb-transition-fast), color var(--sb-transition-fast);
+.ai-tools-spacer {
+  flex: 1;
 }
-.ai-ibar-btn:hover {
-  background: var(--sb-hover);
-  color: var(--sb-fg);
-}
-.ai-ibar-btn.is-on {
-  background: color-mix(in srgb, var(--kn-brand-500) 18%, transparent);
-  color: var(--kn-brand-500);
-}
-.ai-send {
+.ai-tool-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -412,30 +399,52 @@ watch(() => props.placeholder, () => {
   height: 28px;
   border: 0;
   border-radius: var(--kn-radius-md);
+  background: transparent;
+  color: var(--sb-fg-muted);
+  cursor: pointer;
+  transition: background var(--kn-dur-fast), color var(--kn-dur-fast);
+}
+.ai-tool-btn:hover {
+  background: var(--sb-hover);
+  color: var(--sb-fg);
+}
+.ai-tool-btn.is-on {
+  background: color-mix(in srgb, var(--kn-brand-500) 18%, transparent);
+  color: var(--kn-brand-500);
+}
+
+/* 发送键：圆形主按钮（流式中变停止） */
+.ai-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
   background: linear-gradient(135deg, var(--kn-brand-500), var(--kn-magenta-500));
   color: #fff;
   cursor: pointer;
   flex-shrink: 0;
-  margin-left: 2px;
-  transition: filter var(--kn-dur-fast), transform var(--kn-dur-fast);
+  transition: filter var(--kn-dur-fast), transform var(--kn-dur-fast), opacity var(--kn-dur-fast);
 }
 .ai-send:hover:not(:disabled) {
   filter: brightness(1.1);
   transform: translateY(-1px);
 }
 .ai-send:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: default;
 }
 .ai-send.is-stop {
   background: var(--kn-fg-muted);
 }
 
-/* 弹层：表情 / 上下文引用（定位在输入框上方） */
+/* ==================== 弹层：表情 / 上下文引用 ==================== */
 .ai-pop {
   position: absolute;
-  bottom: calc(100% + 4px);
-  left: 8px;
+  bottom: calc(100% + 2px);
+  left: 12px;
   z-index: 30;
   display: flex;
   flex-direction: column;

@@ -2,13 +2,13 @@
   AiWorkspace：AI 工作台（DeepSeek Harness 风格）
   - 主内容区对话工作台，与侧栏 AISidebar 共享同一份聊天状态（useAiChat）
   - 布局：消息流居中窄列（760px），大屏两侧留白；输入区同宽居中
-  - 工具栏：会话标题 + 模型选择 + 新对话 + 清空
-  - 空态：建议卡片（点击即发送，DeepSeek 风格快捷入口）
+  - 空态（DeepSeek 同款欢迎页）：大 Logo + 欢迎语 + 居中的输入卡片 + 建议卡片；
+    开始对话后输入框落到底部
   - 对话主体：思考过程折叠块（默认收起）→ 流式打字机回复 → 消息卡片
     · 消息悬停操作：复制 / 重新生成
     · 流式输出中显示"停止"键，可中断生成
     · 用户上滚查看历史时停止自动跟随，显示"回到底部"按钮
-  - 底部输入区：AiInputBar 通用输入条（附件/表情/引用/粘贴识别）
+  - 底部输入区：一体化输入卡片 + 免责小字
   - 纯前端演示：发送后模拟 agent 工作流（接后端后替换为真实流式输出）
 -->
 <template>
@@ -40,14 +40,21 @@
 
     <!-- 对话主体（滚动容器 + 居中窄列） -->
     <div class="aw-chat" ref="chatRef" @scroll="onChatScroll">
-      <div class="aw-thread">
-        <!-- 空态：欢迎 + 建议卡片（点击即发送） -->
-        <div v-if="!messages.length" class="aw-empty">
-          <div class="aw-empty-icon">
-            <Icon name="sparkles" :size="32" />
+      <div class="aw-thread" :class="{ 'is-hero': !messages.length }">
+        <!-- 空态：DeepSeek 风格欢迎页（输入框居中） -->
+        <div v-if="!messages.length" class="aw-hero">
+          <div class="aw-hero-logo">
+            <Icon name="cloud" :size="34" />
           </div>
-          <h3>你好，我是 KazeNest 的开发工作助手</h3>
-          <p>我可以写代码、解释代码、重构、写测试、评审、文档、数据分析、翻译</p>
+          <h2 class="aw-hero-title">你好，我是 KazeNest 开发工作助手</h2>
+          <p class="aw-hero-sub">写代码 · 解释代码 · 重构 · 写测试 · 评审 · 文档 · 数据分析 · 翻译</p>
+
+          <!-- 居中输入卡片（开始对话后落到底部） -->
+          <div class="aw-hero-input">
+            <AiInputBar @send="onSend" @stop="onStop" />
+          </div>
+
+          <!-- 建议卡片（点击即发送） -->
           <div class="aw-suggests">
             <button
               v-for="s in suggests"
@@ -67,6 +74,7 @@
         </div>
 
         <AiMessageView
+          v-else
           :messages="messages"
           :thinking="thinking"
           :streaming="streaming"
@@ -89,14 +97,15 @@
       <Icon name="chevron-down" :size="14" />
     </button>
 
-    <!-- 输入区（分隔线全宽，内容居中窄列） -->
-    <div class="aw-input-area">
+    <!-- 底部输入区（对话开始后显示）：输入卡片 + 免责小字 -->
+    <div v-if="messages.length" class="aw-input-area">
       <AiInputBar
         class="aw-input-bar"
         :streaming="!!streaming"
         @send="onSend"
         @stop="onStop"
       />
+      <p class="aw-disclaimer">内容由 AI 生成，请仔细甄别</p>
     </div>
   </div>
 </template>
@@ -320,54 +329,67 @@ onMounted(async () => {
   flex-direction: column;
   gap: 14px;
 }
+/* 空态：内容整体垂直居中（输入框居中，DeepSeek 同款） */
+.aw-thread.is-hero {
+  justify-content: center;
+}
 
-/* ============ 空态：欢迎 + 建议卡片 ============ */
-.aw-empty {
-  flex: 1;
+/* ============ 空态：欢迎页 ============ */
+.aw-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  gap: 10px;
+  width: 100%;
   text-align: center;
-  color: var(--kn-fg-muted);
+  padding-bottom: 7vh; /* 视觉重心略偏上 */
 }
-.aw-empty-icon {
+.aw-hero-logo {
   width: 72px;
   height: 72px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--kn-radius-2xl);
-  background: color-mix(in srgb, var(--kn-brand-500) 12%, transparent);
-  color: var(--kn-brand-500);
-  box-shadow: var(--kn-shadow-md);
+  background: linear-gradient(135deg, var(--kn-brand-500), var(--kn-magenta-500));
+  color: #fff;
+  box-shadow: var(--kn-shadow-lg);
   animation: aw-float 3.5s var(--kn-ease-in-out) infinite;
 }
 @keyframes aw-float {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-6px); }
 }
-.aw-empty h3 {
-  margin: 0;
-  font-size: var(--kn-text-xl);
-  font-weight: 600;
+.aw-hero-title {
+  margin: 8px 0 0;
+  font-size: var(--kn-text-3xl);
+  font-weight: 700;
   color: var(--kn-fg);
 }
-.aw-empty p {
+.aw-hero-sub {
   margin: 0;
   font-size: var(--kn-text-sm);
-  line-height: 1.7;
+  color: var(--kn-fg-muted);
 }
 
-/* 建议卡片（2×2） */
+/* 居中输入卡片（与消息流同宽） */
+.aw-hero-input {
+  width: 100%;
+  max-width: 640px;
+  margin-top: 16px;
+}
+.aw-hero-input :deep(.ai-input-bar) {
+  padding: 0;
+}
+
+/* 建议卡片（2×2，位于输入框下方） */
 .aw-suggests {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   width: 100%;
-  max-width: 520px;
-  margin-top: 10px;
+  max-width: 640px;
+  margin-top: 4px;
 }
 .aw-suggest {
   display: flex;
@@ -436,18 +458,24 @@ onMounted(async () => {
   transform: translateX(-50%) translateY(-1px);
 }
 
-/* ============ 输入区 ============ */
+/* ============ 底部输入区 ============ */
 .aw-input-area {
   border-top: 1px solid var(--kn-border);
   background: var(--kn-bg-elev);
   flex-shrink: 0;
+  padding-bottom: 2px;
 }
-/* AiInputBar 自带 border-top，这里由外层提供分隔线（全宽），
-   内容限制为与消息流同宽的居中窄列 */
+/* 输入卡片与消息流同宽的居中窄列 */
 .aw-input-area :deep(.ai-input-bar) {
-  border-top: 0;
   max-width: 760px;
   margin: 0 auto;
+}
+/* 免责小字（DeepSeek 同款） */
+.aw-disclaimer {
+  margin: 0 0 6px;
+  text-align: center;
+  font-size: var(--kn-text-2xs);
+  color: var(--kn-fg-subtle);
 }
 </style>
 
