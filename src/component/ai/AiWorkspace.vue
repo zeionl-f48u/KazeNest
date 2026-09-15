@@ -26,7 +26,7 @@
 
       <div class="aw-actions">
         <div class="aw-model">
-          <Icon name="sparkles" :size="11" class="aw-model-icon" />
+          <Icon v-if="!isPanel" name="sparkles" :size="11" class="aw-model-icon" />
           <select v-model="activeModel" class="aw-model-select" aria-label="选择模型">
             <option v-for="m in models" :key="m.id" :value="m.id">
               {{ isPanel ? m.label : `${m.label} · ${m.desc}` }}
@@ -34,27 +34,43 @@
           </select>
         </div>
 
-        <!-- panel 形态：新对话 / 向左展开为主界面 / 关闭面板 -->
+        <!-- panel 形态（侧栏定位）：新对话 / 在 AI 界面打开 / 关闭，统一 24px ghost 图标键 -->
         <template v-if="isPanel">
-          <button type="button" class="aw-btn is-icon" aria-label="新对话" @click="onNewChat">
-            <Icon name="plus" :size="13" />
+          <button type="button" class="aw-btn is-icon" aria-label="新对话" title="新对话" @click="onNewChat">
+            <Icon name="plus" :size="14" />
           </button>
-          <button type="button" class="aw-btn is-icon" aria-label="展开为主界面" @click="emit('expand')">
-            <Icon name="maximize" :size="13" />
+          <button
+            type="button"
+            class="aw-btn is-icon is-expand"
+            aria-label="在 AI 界面打开"
+            title="在 AI 界面打开"
+            @click="emit('expand')"
+          >
+            <Icon name="angle-double-left" :size="13" />
           </button>
-          <button type="button" class="aw-btn is-icon" aria-label="关闭面板" @click="emit('close')">
-            <Icon name="times" :size="13" />
+          <button type="button" class="aw-btn is-icon is-close" aria-label="关闭面板" title="关闭面板" @click="emit('close')">
+            <Icon name="times" :size="14" />
           </button>
         </template>
 
-        <!-- page 形态：新对话（带文字）/ 清空当前对话 -->
+        <!-- page 形态：新对话（带文字）/ 清空当前对话 / 关闭（面板展开态提供） -->
         <template v-else>
           <button type="button" class="aw-btn" aria-label="新对话" @click="onNewChat">
             <Icon name="plus" :size="13" />
             <span>新对话</span>
           </button>
-          <button type="button" class="aw-btn is-icon" aria-label="清空当前对话" @click="onClear">
+          <button type="button" class="aw-btn is-icon" aria-label="清空当前对话" title="清空当前对话" @click="onClear">
             <Icon name="refresh" :size="13" />
+          </button>
+          <button
+            v-if="closable"
+            type="button"
+            class="aw-btn is-icon is-close"
+            aria-label="关闭面板"
+            title="关闭面板"
+            @click="emit('close')"
+          >
+            <Icon name="times" :size="14" />
           </button>
         </template>
       </div>
@@ -143,7 +159,9 @@ import type { WorkKind } from '../../composables'
 const props = withDefaults(defineProps<{
   /** 形态：page = AI 主界面全宽；panel = 右侧面板紧凑（默认 page） */
   variant?: 'page' | 'panel'
-}>(), { variant: 'page' })
+  /** page 形态：是否显示关闭按钮（由面板展开态传入） */
+  closable?: boolean
+}>(), { variant: 'page', closable: false })
 
 const emit = defineEmits<{
   /** panel 形态：点击"展开为主界面"（App 侧播放向左扩展动画） */
@@ -345,6 +363,12 @@ onMounted(async () => {
   padding: 0;
   justify-content: center;
 }
+/* 关闭键：hover 变警示色（面板开关语义，两种形态一致） */
+.aw-btn.is-close:hover {
+  background: color-mix(in srgb, var(--kn-rose-500) 14%, transparent);
+  color: var(--kn-rose-500);
+  border-color: color-mix(in srgb, var(--kn-rose-500) 30%, transparent);
+}
 
 /* ============ 对话主体（滚动容器） ============ */
 .aw-chat {
@@ -515,10 +539,11 @@ onMounted(async () => {
   color: var(--kn-fg-subtle);
 }
 
-/* ============ panel 形态（右侧 AI 面板紧凑布局） ============ */
+/* ============ panel 形态（右侧 AI 面板，侧栏密度） ============ */
+/* 顶栏：标题 + 模型胶囊 + 一组 24px ghost 图标键（新对话 / 展开 / 关闭） */
 .aw-top.is-panel {
-  padding: 8px 10px;
-  gap: 8px;
+  padding: 6px 8px;
+  gap: 6px;
 }
 .aw-top.is-panel .aw-title {
   font-size: var(--kn-text-md);
@@ -531,24 +556,55 @@ onMounted(async () => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* 面板顶栏：模型选择器弹性伸缩，控件不换行 */
 .aw-top.is-panel .aw-actions {
   flex: 1;
   min-width: 0;
+  gap: 2px;
   justify-content: flex-end;
 }
+/* 模型胶囊：默认透明低干扰，hover 才浮现 */
 .aw-top.is-panel .aw-model {
-  height: 26px;
-  padding: 0 8px;
-  flex: 1;
+  height: 24px;
+  padding: 0 6px;
+  gap: 0;
+  border-color: transparent;
+  background: transparent;
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: 120px;
+}
+.aw-top.is-panel .aw-model:hover {
+  background: var(--kn-hover);
 }
 .aw-top.is-panel .aw-model-select {
   flex: 1;
   min-width: 0;
+  font-size: var(--kn-text-xs);
 }
+/* 图标键：24px 方形 ghost（侧栏密度；不再是"窗口控制"三件套的观感） */
 .aw-top.is-panel .aw-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--kn-fg-muted);
+  justify-content: center;
   flex-shrink: 0;
+}
+.aw-top.is-panel .aw-btn:hover {
+  background: var(--kn-hover);
+  color: var(--kn-fg);
+}
+/* 展开：hover 品牌色（"在 AI 界面打开"的语义色） */
+.aw-top.is-panel .aw-btn.is-expand:hover {
+  background: color-mix(in srgb, var(--kn-brand-500) 14%, transparent);
+  color: var(--kn-brand-500);
+}
+/* 关闭：hover 警示色（与 page 形态一致） */
+.aw-top.is-panel .aw-btn.is-close:hover {
+  background: color-mix(in srgb, var(--kn-rose-500) 14%, transparent);
+  color: var(--kn-rose-500);
 }
 
 /* 窄列内边距收紧 */

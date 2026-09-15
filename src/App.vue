@@ -78,17 +78,17 @@
           </Transition>
         </main>
 
-        <!-- AI 右侧面板（与 AI 主界面共享同一份聊天状态） -->
+        <!-- AI 右侧面板（常驻：打开后不随视图切换卸载；
+             位于 AI 视图时向左扩展铺满内容区） -->
         <Transition name="ai-panel">
           <div
             v-if="aiPanelOpen"
             class="ai-panel-wrap"
-            :class="{ 'is-expanding': aiPanelExpanding }"
             :style="aiPanelStyle"
           >
             <AiPanel
               :width="aiPanelWidth"
-              :expanding="aiPanelExpanding"
+              :expanded="aiPanelExpanded"
               @update:width="setAiPanelWidth"
               @reset-width="resetAiPanelWidth"
               @expand="expandAiPanel"
@@ -151,11 +151,12 @@ const sideBarVisible = computed(
 
 /* =================== AI 右侧面板 =================== */
 /* 面板与 AI 主界面（AiWorkspace）共享同一份聊天状态（useAiChat），
- * 只是形式不同：窄侧栏 ↔ 全宽主界面；进入 AI 视图时播放"向左扩展"过渡。 */
+ * 只是形式不同：窄侧栏 ↔ 全宽主界面。
+ * 面板打开后常驻：进入 AI 视图时它向左扩展铺满内容区（形态切为 page），
+ * 离开 AI 视图自动收回右侧栏宽度 —— 扩展/收回只是 left/margin 过渡。 */
 
 const {
   open: aiPanelOpen,
-  expanding: aiPanelExpanding,
   width: aiPanelWidth,
   show: showAiPanel,
   hide: hideAiPanel,
@@ -164,8 +165,11 @@ const {
   resetWidth: resetAiPanelWidth,
 } = useAiPanel()
 
-/** 面板是否正在"占位"（扩展动画中不占位，主内容铺满交给面板覆盖） */
-const aiPanelDocking = computed(() => aiPanelOpen.value && !aiPanelExpanding.value)
+/** 是否展开为 AI 主界面：面板打开 且 位于 AI 视图 */
+const aiPanelExpanded = computed(() => aiPanelOpen.value && activeView.value === 'ai')
+
+/** 面板是否占用内容区宽度（展开时铺满，不占位） */
+const aiPanelDocking = computed(() => aiPanelOpen.value && !aiPanelExpanded.value)
 
 /** Ask AI 按钮激活态：面板打开或位于 AI 主界面（与顶栏联动） */
 const aiPanelActive = computed(() => aiPanelOpen.value || activeView.value === 'ai')
@@ -177,23 +181,14 @@ const stageWidth = ref(window.innerWidth)
 let stageObserver: ResizeObserver | null = null
 
 const aiPanelStyle = computed(() => ({
-  left: `${aiPanelExpanding.value ? 0 : Math.max(0, stageWidth.value - aiPanelWidth.value)}px`,
+  left: `${aiPanelExpanded.value ? 0 : Math.max(0, stageWidth.value - aiPanelWidth.value)}px`,
 }))
 
-/** 向左扩展成 AI 主界面：面板扫满内容区 → 切换到 AI 视图 → 卸载面板（无缝接管） */
+/** 展开为 AI 主界面（面板顶栏的展开按钮）：切到 AI 视图即可，
+ *  面板的 left 过渡（右侧栏宽 → 0）自动播放"向左扩展"动画 */
 function expandAiPanel() {
-  if (!aiPanelOpen.value || aiPanelExpanding.value) return
-  aiPanelExpanding.value = true
-  /* 主内容同步切为 AI 工作台（面板覆盖中不可见；展开完成后正好接替） */
   activeView.value = 'ai'
   sideBarOpen.value = true
-  window.setTimeout(() => {
-    aiPanelOpen.value = false
-    /* 卸载完成后再解锁（保证卸载不播放退出动画） */
-    window.setTimeout(() => {
-      aiPanelExpanding.value = false
-    }, 60)
-  }, 400)
 }
 
 /* =================== 全局会话持久化 =================== */
@@ -238,8 +233,7 @@ function onWorkspace() {
 }
 
 function onAskAI() {
-  /* AI 主界面已全屏，无需右侧面板；其余视图打开/收起面板 */
-  if (activeView.value === 'ai') return
+  /* 开合 AI 面板（面板常驻：在 AI 视图内关闭后露出 AI 主界面，再按重新覆盖） */
   toggleAiPanel()
 }
 
@@ -265,12 +259,8 @@ function onGlobalKeydown(e: KeyboardEvent) {
 
 /** 切视图：强制展开侧边栏（VS Code 行为）
  * id 来自 activityItems，类型上直接收窄为 ViewId
- * 特例：面板开着时进入 AI 视图 → 播放"向左扩展"变形动画（面板 → 主界面） */
+ * 面板开着时进入 AI 视图：面板自动向左扩展为全宽（由 aiPanelExpanded 驱动） */
 function onActivitySelect(id: string) {
-  if (id === 'ai' && aiPanelOpen.value && !aiPanelExpanding.value) {
-    expandAiPanel()
-    return
-  }
   activeView.value = id as ViewId
   sideBarOpen.value = true
 }
@@ -299,8 +289,8 @@ onMounted(async () => {
     sideBarOpen.value = saved.sideBarOpen
     if (saved.aiPanel) {
       setAiPanelWidth(saved.aiPanel.width)
-      /* AI 主界面全屏时不需要右侧面板（同一内容）；其余视图按上次状态恢复 */
-      if (saved.aiPanel.open && saved.activeView !== 'ai') showAiPanel()
+      /* 面板常驻：上次开着就恢复（AI 视图下会直接以展开形态出现） */
+      if (saved.aiPanel.open) showAiPanel()
     }
   }
 
@@ -411,8 +401,9 @@ body {
   overflow: hidden;
 }
 
-/* 面板容器：右缘贴舞台，left 由内联样式给出（舞台宽-面板宽，扩展时 → 0）
- * left 用 px 过渡（非 calc/%）以兼容 WebKitGTK 的插值实现 */
+/* 面板容器：右缘贴舞台，left 由内联样式给出（舞台宽-面板宽，展开时 → 0）
+ * left 用 px 过渡（非 calc/%）以兼容 WebKitGTK 的插值实现；
+ * 展开/收起动画（进入 AI 视图 ↔ 离开）都由这条 left 过渡完成 */
 .ai-panel-wrap {
   position: absolute;
   top: 0;
@@ -420,21 +411,15 @@ body {
   bottom: 0;
   z-index: 20;
   display: flex;
-  transition: left var(--kn-dur-slow) var(--kn-ease-out);
+  transition: left 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: left;
 }
 
-/* 向左扩展动画：更长的缓动，扫满整个内容舞台 */
-.ai-panel-wrap.is-expanding {
-  transition: left 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* 面板开关：从右侧滑入/滑出
- * （扩展完成后的卸载不播此动画 —— is-expanding 的选择器优先级更高，
- *   只保留 left 过渡，opacity/transform 瞬变，视觉无缝接管） */
+/* 面板开关：从右侧滑入/滑出 */
 .ai-panel-enter-active,
 .ai-panel-leave-active {
   transition:
+    left 0.4s cubic-bezier(0.22, 1, 0.36, 1),
     opacity var(--kn-dur-slow) var(--kn-ease-out),
     transform var(--kn-dur-slow) var(--kn-ease-out);
 }

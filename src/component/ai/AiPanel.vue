@@ -1,22 +1,25 @@
 <!--
-  AiPanel：AI 右侧面板（主流 AI 侧栏形态）
-  - 内容即 AiWorkspace 的 panel 形态——同一份 useAiChat 状态，一个东西两种形式
-  - 左边缘手柄拖拽调宽（双击恢复默认）；拖拽期间 body 加 is-ai-panel-resizing
-    由 App 侧禁用主内容让位过渡，保证跟手
-  - 顶部控制（模型 / 新对话 / 展开 / 关闭）由 AiWorkspace panel 顶栏提供
-  - "展开"事件交给 App：播放向左扩展动画后切换为 AI 主界面
+  AiPanel：AI 右侧面板（常驻式，主流 AI 侧栏形态）
+  - 内容即 AiWorkspace —— 同一份 useAiChat 状态，一个东西两种形式：
+    · 未展开（其他视图）：panel 紧凑形态（窄侧栏）
+    · 展开（AI 视图）：page 全宽形态（面板向左铺满内容区）
+  - 左边缘手柄拖拽调宽（双击恢复默认）；展开时手柄隐藏
+  - 拖拽期间 body 加 ai-panel-resizing，由 effects.css 禁用主内容让位过渡
+  - 展开/关闭事件交给 App：展开 = 切到 AI 视图（面板自动扩展）；
+    关闭 = 收起面板（AI 视图内关闭后露出主内容 AI 界面）
 -->
 <template>
-  <div class="ai-panel">
-    <!-- 左边缘：拖拽调宽手柄（双击恢复默认宽度） -->
+  <div class="ai-panel" :class="{ 'is-expanded': expanded }">
+    <!-- 左边缘：拖拽调宽手柄（双击恢复默认宽度；展开时隐藏） -->
     <div
+      v-if="!expanded"
       class="ai-panel-resize"
-      :class="{ 'is-disabled': expanding }"
       @mousedown="onResizeStart"
       @dblclick="emit('reset-width')"
     />
     <AiWorkspace
-      variant="panel"
+      :variant="expanded ? 'page' : 'panel'"
+      :closable="expanded"
       @expand="emit('expand')"
       @close="emit('close')"
     />
@@ -30,8 +33,8 @@ import AiWorkspace from './AiWorkspace.vue'
 const props = defineProps<{
   /** 当前面板宽度（px，App 侧持有并负责钳制/持久化） */
   width: number
-  /** 是否正在向左扩展动画中（期间禁止拖拽） */
-  expanding: boolean
+  /** 是否已展开为全宽 AI 主界面（展开时不可拖拽、内容切为 page 形态） */
+  expanded: boolean
 }>()
 
 const emit = defineEmits<{
@@ -47,7 +50,7 @@ const emit = defineEmits<{
 let stopResize: (() => void) | null = null
 
 function onResizeStart(e: MouseEvent) {
-  if (props.expanding) return
+  if (props.expanded) return
   e.preventDefault()
   const startX = e.clientX
   const startWidth = props.width
@@ -85,6 +88,10 @@ onUnmounted(() => stopResize?.())
   background: var(--kn-bg);
   overflow: hidden;
 }
+/* 展开态：全宽接管内容区，边界线没有意义 */
+.ai-panel.is-expanded {
+  border-left: 0;
+}
 
 /* 拖拽调宽手柄（左边缘热区 + hover 高亮） */
 .ai-panel-resize {
@@ -100,9 +107,5 @@ onUnmounted(() => stopResize?.())
 .ai-panel-resize:hover,
 .ai-panel-resize:active {
   background: color-mix(in srgb, var(--kn-brand-500) 45%, transparent);
-}
-.ai-panel-resize.is-disabled {
-  cursor: default;
-  pointer-events: none;
 }
 </style>
