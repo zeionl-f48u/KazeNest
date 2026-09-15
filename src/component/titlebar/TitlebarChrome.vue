@@ -74,12 +74,15 @@
     <button
       type="button"
       class="tb-ai"
-      :aria-label="'Ask AI'"
+      :class="{ 'is-active': aiActive }"
+      :aria-label="`Ask AI（${aiShortcutLabel}）`"
+      :aria-pressed="aiActive"
+      :title="`Ask AI（${aiShortcutLabel}）`"
       @click="$emit('askAi')"
     >
       <Icon name="sparkles" :size="15" class="tb-ai-icon" />
       <span class="tb-ai-text">Ask AI</span>
-      <kbd class="tb-ai-kbd">⌘ I</kbd>
+      <kbd class="tb-ai-kbd">{{ aiShortcutLabel }}</kbd>
     </button>
 
     <span class="tb-sep" aria-hidden="true" />
@@ -121,11 +124,14 @@ const props = withDefaults(
     menus?: readonly string[]
     /** trailing：通知徽标数（App.vue 的 notifyCount） */
     notifyCount?: number
+    /** trailing：Ask AI 是否处于激活态（AI 面板打开 / AI 视图） */
+    aiActive?: boolean
   }>(),
   {
     workspaceName: '我的工作区',
     menus: () => [],
     notifyCount: 0,
+    aiActive: false,
   }
 )
 
@@ -136,6 +142,11 @@ const emit = defineEmits<{
   notify: []
   account: []
 }>()
+
+/* ============ Ask AI 快捷键提示（与 App.vue 的全局快捷键保持一致） ============ */
+/* 打开/收起 AI 面板：Ctrl+Alt+I（macOS 为 ⌘⌥I），与 VS Code Copilot Chat 同款 */
+const isMac = /mac/i.test(navigator.userAgent)
+const aiShortcutLabel = computed(() => (isMac ? '⌘⌥I' : 'Ctrl+Alt+I'))
 
 /* ============ 溢出布局（参考 VS Code menubar 的 updateOverflowAction） ============ */
 
@@ -409,6 +420,13 @@ onBeforeUnmount(() => {
 .tb-ai:active {
   filter: brightness(0.95);
   transform: translateY(0);
+}
+/* 激活态（AI 面板打开 / 位于 AI 视图）：外圈光环 + 轻微提亮 */
+.tb-ai.is-active {
+  filter: brightness(1.06);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--kn-brand-500) 45%, transparent),
+    0 2px 10px color-mix(in srgb, var(--kn-brand-500) 50%, transparent);
 }
 .tb-ai-icon { color: #fff; }
 .tb-ai-text { line-height: 1; }

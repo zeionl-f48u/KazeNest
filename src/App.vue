@@ -30,6 +30,7 @@
         <TitlebarChrome
           part="trailing"
           :notify-count="notifyCount"
+          :ai-active="aiPanelActive"
           @ask-ai="onAskAI"
           @notify="onNotify"
           @account="onAccount"
@@ -166,6 +167,9 @@ const {
 /** 面板是否正在"占位"（扩展动画中不占位，主内容铺满交给面板覆盖） */
 const aiPanelDocking = computed(() => aiPanelOpen.value && !aiPanelExpanding.value)
 
+/** Ask AI 按钮激活态：面板打开或位于 AI 主界面（与顶栏联动） */
+const aiPanelActive = computed(() => aiPanelOpen.value || activeView.value === 'ai')
+
 /* 舞台宽度：面板 left 用 px 过渡（left: 舞台宽-面板宽 → 0）
  * 用 px 而非 calc/% 过渡是为了兼容 WebKitGTK（calc 插值支持不稳） */
 const stageRef = ref<HTMLElement | null>(null)
@@ -247,6 +251,16 @@ function onAccount() {
   console.log('account clicked')
 }
 
+/* =================== 全局快捷键 =================== */
+
+/** Ctrl/Cmd + Alt + I：开合 AI 面板（与顶栏 Ask AI 按钮同一入口，VS Code Copilot Chat 同款） */
+function onGlobalKeydown(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.altKey && !e.shiftKey && e.code === 'KeyI') {
+    e.preventDefault()
+    onAskAI()
+  }
+}
+
 /* =================== 活动栏 handler =================== */
 
 /** 切视图：强制展开侧边栏（VS Code 行为）
@@ -299,11 +313,17 @@ onMounted(async () => {
   /* 关闭窗口前立即落盘（防抖窗口内的改动不丢） */
   window.addEventListener('beforeunload', flush)
 
+  /* 全局快捷键（AI 面板开合等） */
+  window.addEventListener('keydown', onGlobalKeydown)
+
   /* 初始化自定义标题栏并显示窗口 */
   await boot()
 })
 
-onUnmounted(() => stageObserver?.disconnect())
+onUnmounted(() => {
+  stageObserver?.disconnect()
+  window.removeEventListener('keydown', onGlobalKeydown)
+})
 </script>
 
 <style>
