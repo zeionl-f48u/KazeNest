@@ -43,6 +43,13 @@
   transform: scale(0.985);
 }
 
+/* 无过渡变体（view-none）：从展开的 AI 面板切出时使用 —— 
+ * 过渡由面板收回动画承担，主内容直接切换，避免两套动画叠加 */
+.view-none-enter-active,
+.view-none-leave-active {
+  transition: none;
+}
+
 /* ---------- 侧边栏拖拽调节宽度 ---------- */
 /* 拖拽中：全局 col-resize 光标 + 禁用文本选择 + 禁用宽度过渡（更跟手） */
 body.sb-resizing {

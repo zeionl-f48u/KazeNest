@@ -69,9 +69,12 @@
           :style="{ marginRight: aiPanelDocking ? `${aiPanelWidth}px` : '0px' }"
         >
           <!-- 切换视图时安卓 Activity 风格过渡（淡入 + 上移）
+               从展开的 AI 面板切出时取消该过渡（skipViewTransition）：
+               由面板收回动画承担全部过渡，避免在面板底下看到"中间一块"的
+               淡出/缩放与面板收回各行其是。
                KeepAlive：切走不销毁，回来保留状态（编辑器标签/光标/滚动位置等）。
                同一组件类型（ComingSoon）靠 :key 区分实例，互不串数据。 -->
-          <Transition name="view" mode="out-in">
+          <Transition :name="viewTransitionName" mode="out-in">
             <KeepAlive>
               <component :is="viewComponent" :key="activeView" v-bind="comingSoonProps" />
             </KeepAlive>
@@ -174,6 +177,10 @@ const aiPanelDocking = computed(() => aiPanelOpen.value && !aiPanelExpanded.valu
 /** Ask AI 按钮激活态：面板打开或位于 AI 主界面（与顶栏联动） */
 const aiPanelActive = computed(() => aiPanelOpen.value || activeView.value === 'ai')
 
+/** 视图切换过渡名：从展开的 AI 面板切出时用 view-none（无过渡，见模板注释） */
+const skipViewTransition = ref(false)
+const viewTransitionName = computed(() => (skipViewTransition.value ? 'view-none' : 'view'))
+
 /* 舞台宽度：面板 left 用 px 过渡（left: 舞台宽-面板宽 → 0）
  * 用 px 而非 calc/% 过渡是为了兼容 WebKitGTK（calc 插值支持不稳） */
 const stageRef = ref<HTMLElement | null>(null)
@@ -259,8 +266,10 @@ function onGlobalKeydown(e: KeyboardEvent) {
 
 /** 切视图：强制展开侧边栏（VS Code 行为）
  * id 来自 activityItems，类型上直接收窄为 ViewId
- * 面板开着时进入 AI 视图：面板自动向左扩展为全宽（由 aiPanelExpanded 驱动） */
+ * - 面板开着时进入 AI 视图：面板自动向左扩展为全宽（由 aiPanelExpanded 驱动）
+ * - 从展开的面板切出：主内容直接切换（跳过视图过渡），过渡交给面板收回动画 */
 function onActivitySelect(id: string) {
+  skipViewTransition.value = aiPanelExpanded.value && id !== 'ai'
   activeView.value = id as ViewId
   sideBarOpen.value = true
 }
@@ -380,8 +389,8 @@ body {
   overflow-y: auto;
   padding: var(--kn-space-6);
   box-sizing: border-box;
-  /* AI 面板开合时让位/收回（px 值过渡，兼容 WebKitGTK） */
-  transition: margin-right var(--kn-dur-slow) var(--kn-ease-out);
+  /* AI 面板开合/展开收回时让位（与面板 left 同步：同曲线同时长，边界不露缝） */
+  transition: margin-right 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* 编辑器等全屏视图：去掉内边距、内部自滚动 */

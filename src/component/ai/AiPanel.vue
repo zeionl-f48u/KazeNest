@@ -18,7 +18,7 @@
       @dblclick="emit('reset-width')"
     />
     <AiWorkspace
-      :variant="expanded ? 'page' : 'panel'"
+      :variant="variant"
       :closable="expanded"
       @expand="emit('expand')"
       @close="emit('close')"
@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { onUnmounted } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 import AiWorkspace from './AiWorkspace.vue'
 
 const props = defineProps<{
@@ -43,6 +43,27 @@ const emit = defineEmits<{
   expand: []
   close: []
 }>()
+
+/* =================== 内容形态（page ↔ panel） =================== */
+/* 展开立即切 page（配合向左扩展动画）；
+ * 收回延迟到动画结束再切回 panel，避免收回过程中内容重排跳动 */
+
+const variant = ref<'page' | 'panel'>(props.expanded ? 'page' : 'panel')
+let variantTimer: number | undefined
+
+watch(() => props.expanded, (v) => {
+  window.clearTimeout(variantTimer)
+  if (v) {
+    variant.value = 'page'
+  } else {
+    /* 略大于 left 过渡时长（0.4s），等面板收回完成 */
+    variantTimer = window.setTimeout(() => {
+      variant.value = 'panel'
+    }, 420)
+  }
+})
+
+onUnmounted(() => window.clearTimeout(variantTimer))
 
 /* =================== 拖拽调宽 =================== */
 
