@@ -94,8 +94,9 @@ export interface AiSession {
 const sessions = ref<AiSession[]>([])
 const activeSessionId = ref('')
 const activeModel = ref('model-chat')
-const typing = ref(false)
-const toolActivity = ref<{ name: string; status: 'running' | 'done'; detail: string } | null>(null)
+const thinking = ref<{ open: boolean; text: string } | null>(null)
+/** 流式输出状态（打字机逐字打印中的消息 id + 已打印长度） */
+const streaming = ref<{ messageId: number; length: number } | null>(null)
 
 /* =================== 计费用量 =================== */
 
@@ -154,15 +155,15 @@ function newChat() {
   }
   sessions.value.unshift(session)
   activeSessionId.value = id
-  typing.value = false
-  toolActivity.value = null
+  thinking.value = null
+  streaming.value = null
 }
 
 function selectSession(id: string) {
   if (activeSessionId.value === id) return
   activeSessionId.value = id
-  typing.value = false
-  toolActivity.value = null
+  thinking.value = null
+  streaming.value = null
 }
 
 function removeSession(id: string) {
@@ -176,13 +177,8 @@ function removeSession(id: string) {
 
 /* =================== 消息 / 模拟工作流 =================== */
 
-function pushMessage(role: 'user' | 'assistant', text: string, work?: WorkKind) {
-  const sess = activeSession.value
-  if (!sess) return
-  sess.messages.push({ id: ++seq, role, text, work, time: nowTime(), sessionId: sess.id })
-  const d = new Date()
-  sess.meta = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  // 自动计费：按消息 token 估算 × 当前模型单价（输入/输出分开）
+/** 自动计费：按消息 token 估算 × 当前模型单价（输入/输出分开） */
+function billUsage(role: 'user' | 'assistant', text: string) {
   const m = activeModelInfo.value
   const tokens = estimateTokens(text)
   if (role === 'user') {
@@ -192,6 +188,15 @@ function pushMessage(role: 'user' | 'assistant', text: string, work?: WorkKind) 
     usage.value.outputTokens += tokens
     usage.value.cost += (tokens * (m?.priceOut ?? 0)) / 1_000_000
   }
+}
+
+function pushMessage(role: 'user' | 'assistant', text: string, work?: WorkKind) {
+  const sess = activeSession.value
+  if (!sess) return
+  sess.messages.push({ id: ++seq, role, text, work, time: nowTime(), sessionId: sess.id })
+  const d = new Date()
+  sess.meta = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  billUsage(role, text)
 }
 
 interface SendInput {
@@ -215,36 +220,63 @@ function pickWork(w: WorkMode) {
   send({ text: w.prompt, work: w.kind })
 }
 
+/** 模拟思考文本（演示推理要点；接后端后替换为真实 reasoning 内容） */
+function thinkingFor(work?: WorkKind): string {
+  const w = work ? workModes.find((x) => x.kind === work)?.label : ''
+  return [
+    '读取工作区上下文（当前文件 / 打开的编辑器 / 项目结构）',
+    w ? `识别任务类型：${w}` : '识别任务类型：通用对话',
+    '梳理约束条件与期望输出',
+    '规划内容结构，准备生成',
+  ].join('\n')
+}
+
 /**
- * 模拟 agent 工作流：工具卡片依次执行 → 打字效果 → 输出回复
- * 接后端后：替换为真实流式输出（工具卡片展示真实工具名/耗时）
+ * 模拟 agent 工作流（DeepSeek Harness 风格）：
+ * 思考阶段（产出默认收起的思考块）→ 流式打字机输出回复
+ * 接后端后：思考块接真实 reasoning 内容，流式接真实 SSE 增量
  */
 function simulateWorkflow(work?: WorkKind) {
-  typing.value = true
-  const steps: { name: string; detail: string; ms: number }[] = [
-    { name: '读取上下文', detail: '解析当前文件与工作区', ms: 350 },
-    { name: work ? workModes.find((w) => w.kind === work)?.label ?? '执行任务' : '分析任务', detail: '理解意图与约束', ms: 400 },
-    { name: '生成回复', detail: '组织内容输出', ms: 450 },
-  ]
-  let idx = 0
-  const runStep = () => {
-    const step = steps[idx]
-    toolActivity.value = { name: step.name, status: 'running', detail: step.detail }
-    window.setTimeout(() => {
-      toolActivity.value = { name: step.name, status: 'done', detail: step.detail }
-      idx++
-      if (idx < steps.length) {
-        window.setTimeout(runStep, 150)
-      } else {
-        window.setTimeout(() => {
-          typing.value = false
-          toolActivity.value = null
-          pushMessage('assistant', replyFor(work), work)
-        }, 150)
-      }
-    }, step.ms)
-  }
-  runStep()
+  const sess = activeSession.value
+  if (!sess) return
+  const sessionId = sess.id
+  thinking.value = { open: false, text: '' }
+  window.setTimeout(() => {
+    if (activeSessionId.value !== sessionId) return
+    thinking.value = { open: false, text: thinkingFor(work) }
+    streamAssistant(work, sessionId)
+  }, 700)
+}
+
+/** 流式输出助手回复（逐字打字机；完成后计费并停止） */
+function streamAssistant(work: WorkKind | undefined, sessionId: string) {
+  const sess = sessions.value.find((s) => s.id === sessionId)
+  if (!sess) return
+  const full = replyFor(work)
+  const id = ++seq
+  sess.messages.push({ id, role: 'assistant', text: '', work, time: nowTime(), sessionId })
+  streaming.value = { messageId: id, length: 0 }
+  const timer = window.setInterval(() => {
+    const st = streaming.value
+    const target = sess.messages.find((m) => m.id === id)
+    if (!st || st.messageId !== id || !target || activeSessionId.value !== sessionId) {
+      window.clearInterval(timer)
+      return
+    }
+    st.length = Math.min(st.length + 2, full.length)
+    target.text = full.slice(0, st.length)
+    if (st.length >= full.length) {
+      window.clearInterval(timer)
+      target.text = full
+      streaming.value = null
+      billUsage('assistant', full)
+    }
+  }, 16)
+}
+
+/** 展开/收起思考过程 */
+function toggleThinking() {
+  if (thinking.value) thinking.value.open = !thinking.value.open
 }
 
 /** 按工作模式返回演示回复（含 markdown 代码块，渲染器会展示语言/复制） */
@@ -348,8 +380,8 @@ export function useAiChat() {
     messages,
     activeModel,
     activeModelInfo,
-    typing,
-    toolActivity,
+    thinking,
+    streaming,
     usage,
     workModes,
     models,
@@ -358,6 +390,7 @@ export function useAiChat() {
     removeSession,
     send,
     pickWork,
+    toggleThinking,
     restore: restoreAI,
     flush,
   }

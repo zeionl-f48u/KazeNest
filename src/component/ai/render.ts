@@ -120,15 +120,3 @@ export function renderMessage(text: string): string {
   }
   return out
 }
-
-/* =================== 工具卡片 =================== */
-
-/** 模拟 agent 工具卡片渲染（readFile/search/generate 等） */
-export function toolIcon(name: string): string {
-  if (/读取|read/i.test(name)) return 'file-text'
-  if (/搜索|search/i.test(name)) return 'search'
-  if (/生成|generate/i.test(name)) return 'sparkles'
-  if (/分析|analy/i.test(name)) return 'chart-line'
-  if (/测试|test/i.test(name)) return 'check'
-  return 'cog'
-}

@@ -1,11 +1,13 @@
 <!--
-  AiWorkspace：AI 工作台（harness 设计）
-  - 主内容区大屏对话工作台，与侧栏 AISidebar 共享同一份聊天状态（useAiChat）
-  - 工具栏：模型选择 + 新对话 + 清空当前对话
-  - 工作模式条：8 种工作速选（编码/解释/重构/测试/评审/文档/分析/翻译）
-  - 对话主体：消息流（Markdown/代码块渲染 + 复制 + 工具卡片 + 打字效果）
+  AiWorkspace：AI 工作台（DeepSeek Harness 风格）
+  - 主内容区对话工作台，与侧栏 AISidebar 共享同一份聊天状态（useAiChat）
+  - 布局：消息流居中窄列（760px），大屏两侧留白；输入区同宽居中
+  - 工具栏：会话标题 + 模型选择 + 新对话 + 清空
+  - 对话主体：思考过程折叠块（默认收起）→ 流式打字机回复 → 消息卡片
   - 底部输入区：AiInputBar 通用输入条（附件/表情/引用/粘贴识别）
   - 纯前端演示：发送后模拟 agent 工作流（接后端后替换为真实流式输出）
+  - 说明：工作模式速选已从主区移除（界面更简洁），功能保留在
+    useAiChat 的 workModes/pickWork，由侧栏提示词库触发
 -->
 <template>
   <div class="ai-workspace">
@@ -24,47 +26,42 @@
             <option v-for="m in models" :key="m.id" :value="m.id">{{ m.label }} · {{ m.desc }}</option>
           </select>
         </div>
-        <button type="button" class="aw-btn" title="新对话" aria-label="新对话" @click="onNewChat">
+        <button type="button" class="aw-btn" aria-label="新对话" @click="onNewChat">
           <Icon name="plus" :size="13" />
           <span>新对话</span>
         </button>
-        <button type="button" class="aw-btn is-icon" title="清空当前对话" aria-label="清空当前对话" @click="onClear">
+        <button type="button" class="aw-btn is-icon" aria-label="清空当前对话" @click="onClear">
           <Icon name="refresh" :size="13" />
         </button>
       </div>
     </div>
 
-    <!-- 工作模式条 -->
-    <div class="aw-modes">
-      <button
-        v-for="w in workModes"
-        :key="w.kind"
-        type="button"
-        class="aw-mode-chip"
-        :style="{ '--tint': w.color }"
-        @click="onPickWork(w)"
-      >
-        <Icon :name="w.icon" :size="12" />
-        {{ w.label }}
-      </button>
-    </div>
-
-    <!-- 对话主体 -->
+    <!-- 对话主体（滚动容器 + 居中窄列） -->
     <div class="aw-chat" ref="chatRef">
-      <!-- 空态：首次进入时的引导 -->
-      <div v-if="!messages.length" class="aw-empty">
-        <div class="aw-empty-icon">
-          <Icon name="sparkles" :size="32" />
+      <div class="aw-thread">
+        <!-- 空态：首次进入时的引导 -->
+        <div v-if="!messages.length" class="aw-empty">
+          <div class="aw-empty-icon">
+            <Icon name="sparkles" :size="32" />
+          </div>
+          <h3>你好，我是 KazeNest 的开发工作助手</h3>
+          <p>直接在下方输入需求，或在侧栏提示词库选择场景。<br />我可以写代码、解释代码、重构、写测试、评审、文档、数据分析、翻译。</p>
         </div>
-        <h3>你好，我是 KazeNest 的开发工作助手</h3>
-        <p>选择上方的工作模式，或直接在下方输入需求。<br />我可以写代码、解释代码、重构、写测试、评审、文档、数据分析、翻译。</p>
-      </div>
 
-      <AiMessageView :messages="messages" :typing="typing" :tool-activity="toolActivity" />
+        <AiMessageView
+          :messages="messages"
+          :thinking="thinking"
+          :streaming="streaming"
+          :model-label="activeModelInfo?.label ?? ''"
+          @toggle-thinking="toggleThinking"
+        />
+      </div>
     </div>
 
-    <!-- 输入区 -->
-    <AiInputBar class="aw-input-bar" @send="onSend" />
+    <!-- 输入区（分隔线全宽，内容居中窄列） -->
+    <div class="aw-input-area">
+      <AiInputBar class="aw-input-bar" @send="onSend" />
+    </div>
   </div>
 </template>
 
@@ -73,9 +70,8 @@ import { nextTick, onMounted, ref, watch } from 'vue'
 import { Icon } from '../common'
 import { AiMessageView, AiInputBar } from './index'
 import { useAiChat } from '../../composables'
-import type { WorkMode } from '../../composables'
 
-const { activeSession, activeSessionId, messages, activeModel, models, workModes, typing, toolActivity, newChat, send, pickWork, restore, flush } = useAiChat()
+const { activeSession, activeSessionId, messages, activeModel, activeModelInfo, models, thinking, streaming, newChat, send, toggleThinking, restore, flush } = useAiChat()
 
 const chatRef = ref<HTMLElement | null>(null)
 
@@ -96,18 +92,14 @@ function onClear() {
   if (sess) sess.messages = []
 }
 
-function onPickWork(w: WorkMode) {
-  pickWork(w)
-  scrollToBottom()
-}
-
 function onSend(payload: { text: string; attachments: string[] }) {
   send(payload)
   scrollToBottom()
 }
 
-/* 切换会话/消息更新：滚到底部 */
+/* 切换会话 / 消息更新 / 流式增量：滚到底部 */
 watch([activeSessionId, messages], scrollToBottom)
+watch(() => streaming.value?.length, scrollToBottom)
 
 onMounted(async () => {
   await restore()
@@ -210,56 +202,35 @@ onMounted(async () => {
   justify-content: center;
 }
 
-/* ============ 工作模式条 ============ */
-.aw-modes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 10px 16px 0;
-  flex-shrink: 0;
-}
-.aw-mode-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 24px;
-  padding: 0 10px;
-  border: 1px solid var(--kn-border);
-  border-radius: var(--kn-radius-pill);
-  background: var(--kn-bg-elev);
-  color: var(--kn-fg-muted);
-  font: inherit;
-  font-size: var(--kn-text-xs);
-  font-weight: 500;
-  cursor: pointer;
-  transition: background var(--kn-dur-fast), border-color var(--kn-dur-fast), color var(--kn-dur-fast);
-}
-.aw-mode-chip:hover {
-  background: color-mix(in srgb, var(--tint) 8%, transparent);
-  border-color: color-mix(in srgb, var(--tint) 35%, transparent);
-  color: var(--tint);
-}
-
-/* ============ 对话主体 ============ */
+/* ============ 对话主体（滚动容器） ============ */
 .aw-chat {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+/* 居中窄列（DeepSeek Harness：大屏两侧留白，内容列 760px） */
+.aw-thread {
+  max-width: 760px;
+  width: 100%;
+  min-height: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 20px 16px 24px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 0;
+  gap: 14px;
 }
 
 /* 空态引导 */
 .aw-empty {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  height: 100%;
   text-align: center;
   color: var(--kn-fg-muted);
 }
@@ -291,11 +262,18 @@ onMounted(async () => {
   line-height: 1.7;
 }
 
-/* 输入条 */
-.aw-input-bar {
+/* ============ 输入区 ============ */
+.aw-input-area {
   border-top: 1px solid var(--kn-border);
   background: var(--kn-bg-elev);
   flex-shrink: 0;
+}
+/* AiInputBar 自带 border-top，这里由外层提供分隔线（全宽），
+   内容限制为与消息流同宽的居中窄列 */
+.aw-input-area :deep(.ai-input-bar) {
+  border-top: 0;
+  max-width: 760px;
+  margin: 0 auto;
 }
 </style>
 

@@ -1,61 +1,63 @@
 <!--
-  AiMessageView：单条 AI 消息渲染
-  - 用户消息：右对齐渐变气泡（带工作类型标签）
-  - 助手消息：左对齐卡片（Markdown/代码块渲染 + 复制按钮）
-  - 工具卡片：模拟 agent 执行过程（读取上下文 → 分析 → 生成）
-  - 打字效果：助手回复中显示三点跳动
+  AiMessageView：消息流渲染（DeepSeek Harness 风格）
+  - 思考过程：回复前显示可折叠思考块（默认收起，点击展开查看推理要点）
+  - 用户消息：右对齐浅色卡片；助手消息：左对齐面板卡片（平铺，非渐变气泡）
+  - 消息头：角色/模型名 + 工作类型标签 + 时间
+  - 流式输出：打字机进行中的消息尾部显示闪烁光标
   - 代码块复制：点击复制按钮写入剪贴板
 -->
 <template>
-  <!-- 工具执行卡片（助手回复前显示） -->
-  <div v-if="toolActivity" class="ai-msg is-assistant">
-    <div class="ai-tool-card">
-      <span class="ai-tool-icon" :class="`is-${toolActivity.status}`">
-        <Icon :name="toolIcon(toolActivity.name)" :size="13" />
-      </span>
-      <div class="ai-tool-body">
-        <div class="ai-tool-title">
-          {{ toolActivity.name }}
-          <span v-if="toolActivity.status === 'done'" class="ai-tool-done">完成</span>
-        </div>
-        <div class="ai-tool-detail">{{ toolActivity.detail }}</div>
-      </div>
-    </div>
+  <!-- 思考过程（默认收起；text 为空表示仍在思考中） -->
+  <div v-if="thinking" class="ai-think">
+    <button type="button" class="ai-think-head" @click="$emit('toggle-thinking')">
+      <Icon name="chevron-right" :size="12" class="ai-think-arrow" :class="{ 'is-open': thinking.open }" />
+      <span class="ai-think-title">思考过程</span>
+      <span class="ai-think-model">{{ modelLabel }}</span>
+      <span v-if="!thinking.text" class="ai-typing"><i /><i /><i /></span>
+    </button>
+    <div v-if="thinking.open && thinking.text" class="ai-think-body">{{ thinking.text }}</div>
   </div>
 
-  <!-- 正常消息 -->
+  <!-- 消息 -->
   <div
     v-for="m in messages"
     :key="m.id"
     class="ai-msg"
     :class="`is-${m.role}`"
   >
-    <span v-if="m.work" class="ai-work-tag" :style="{ '--tint': workByKind(m.work)?.color }">
-      {{ workByKind(m.work)?.label }}
-    </span>
+    <div class="ai-msg-head">
+      <Icon :name="m.role === 'user' ? 'user' : 'sparkles'" :size="11" class="ai-msg-role-icon" />
+      <span class="ai-msg-role">{{ m.role === 'user' ? '你' : modelLabel }}</span>
+      <span v-if="m.work" class="ai-work-tag" :style="{ '--tint': workByKind(m.work)?.color }">
+        {{ workByKind(m.work)?.label }}
+      </span>
+      <span class="ai-msg-time">{{ m.time }}</span>
+    </div>
     <!-- 助手消息：渲染 Markdown/代码块；用户消息：纯文本 -->
     <div v-if="m.role === 'assistant'" class="ai-msg-markdown" v-html="renderMessage(m.text)" @click="onMarkdownClick" />
     <p v-else class="ai-msg-text">{{ m.text }}</p>
-    <span class="ai-msg-time">{{ m.time }}</span>
-  </div>
-
-  <!-- 正在思考 -->
-  <div v-if="typing && !toolActivity" class="ai-msg is-assistant">
-    <span class="ai-typing"><i /><i /><i /></span>
+    <!-- 流式输出光标（正在逐字打印的这条消息） -->
+    <span v-if="streaming && streaming.messageId === m.id" class="ai-caret" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { Icon } from '../common'
-import { renderMessage, toolIcon } from './render'
+import { renderMessage } from './render'
 import type { AiMessage } from '../../composables/useAiChat'
 import { workByKind } from '../../composables/useAiChat'
 
 defineProps<{
   messages: AiMessage[]
-  typing: boolean
-  toolActivity: { name: string; status: 'running' | 'done'; detail: string } | null
+  /** 思考过程（null = 无；text 为空表示思考中） */
+  thinking: { open: boolean; text: string } | null
+  /** 流式输出状态（null = 未在输出） */
+  streaming: { messageId: number; length: number } | null
+  /** 当前模型名（消息头展示） */
+  modelLabel: string
 }>()
+
+defineEmits<{ 'toggle-thinking': [] }>()
 
 /** 点击复制按钮：把代码写入剪贴板（按钮 data-copy 存的是代码原文） */
 function onMarkdownClick(e: MouseEvent) {
@@ -71,31 +73,102 @@ function onMarkdownClick(e: MouseEvent) {
 </script>
 
 <style scoped>
+/* ==================== 思考过程折叠块 ==================== */
+.ai-think {
+  width: 100%;
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-lg);
+  background: color-mix(in srgb, var(--kn-bg-sunken) 55%, transparent);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ai-think-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--kn-fg-muted);
+  font: inherit;
+  font-size: var(--kn-text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--kn-dur-fast);
+}
+.ai-think-head:hover {
+  background: var(--kn-hover);
+}
+.ai-think-arrow {
+  flex-shrink: 0;
+  transition: transform var(--kn-dur-fast) var(--kn-ease-out);
+}
+.ai-think-arrow.is-open {
+  transform: rotate(90deg);
+}
+.ai-think-model {
+  font-weight: 400;
+  color: var(--kn-fg-subtle);
+}
+.ai-think-body {
+  padding: 8px 12px 10px 26px;
+  border-top: 1px dashed var(--kn-border);
+  font-size: var(--kn-text-xs);
+  line-height: 1.75;
+  color: var(--kn-fg-muted);
+  white-space: pre-line;
+}
+
+/* ==================== 消息卡片（平铺，非气泡） ==================== */
 .ai-msg {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-width: 92%;
-  padding: 8px 10px;
+  gap: 6px;
+  padding: 10px 12px;
   border-radius: var(--kn-radius-lg);
   font-size: var(--kn-text-sm);
-  line-height: 1.5;
+  line-height: 1.6;
+  flex-shrink: 0;
 }
 .ai-msg.is-user {
   align-self: flex-end;
-  align-items: flex-end;
-  background: linear-gradient(135deg, var(--kn-brand-500), var(--kn-magenta-500));
-  color: #fff;
-  border-bottom-right-radius: 4px;
+  max-width: 85%;
+  background: color-mix(in srgb, var(--kn-brand-500) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--kn-brand-500) 18%, transparent);
+  color: var(--kn-fg);
 }
 .ai-msg.is-assistant {
   align-self: flex-start;
-  align-items: flex-start;
-  background: var(--sb-bg-elev, var(--kn-bg-elev));
-  border: 1px solid var(--sb-border);
-  color: var(--sb-fg);
-  border-bottom-left-radius: 4px;
+  width: 100%;
   max-width: 100%;
+  background: var(--kn-bg-elev);
+  border: 1px solid var(--kn-border);
+  color: var(--kn-fg);
+}
+
+/* 消息头：角色 + 工作标签 + 时间 */
+.ai-msg-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--kn-text-2xs);
+  color: var(--kn-fg-subtle);
+}
+.ai-msg.is-user .ai-msg-head {
+  justify-content: flex-end;
+}
+.ai-msg-role-icon {
+  color: var(--kn-brand-500);
+}
+.ai-msg-role {
+  font-weight: 600;
+  color: var(--kn-fg-muted);
+}
+.ai-msg-time {
+  margin-left: auto;
+  opacity: 0.7;
 }
 
 .ai-msg-text {
@@ -103,14 +176,9 @@ function onMarkdownClick(e: MouseEvent) {
   white-space: pre-wrap;
   word-break: break-word;
 }
-.ai-msg-time {
-  font-size: 10px;
-  opacity: 0.45;
-}
 
-/* 工作类型标签（用户消息顶部小胶囊） */
+/* 工作类型标签（消息头小胶囊） */
 .ai-work-tag {
-  align-self: flex-start;
   display: inline-flex;
   align-items: center;
   height: 16px;
@@ -130,69 +198,33 @@ function onMarkdownClick(e: MouseEvent) {
   overflow-x: auto;
 }
 
-/* 工具卡片（模拟 agent 执行过程） */
-.ai-tool-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  min-width: 220px;
+/* 流式输出光标（打字机尾部闪烁竖线） */
+.ai-caret {
+  display: inline-block;
+  width: 2px;
+  height: 14px;
+  margin-top: 2px;
+  border-radius: 1px;
+  background: var(--kn-brand-500);
+  animation: ai-caret-blink 0.9s steps(2, start) infinite;
 }
-.ai-tool-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: var(--kn-radius-md);
-  background: var(--sb-hover);
-  color: var(--sb-fg-muted);
-  flex-shrink: 0;
-}
-.ai-tool-icon.is-running {
-  animation: ai-tool-pulse 1.2s infinite ease-in-out;
-}
-.ai-tool-icon.is-done {
-  background: color-mix(in srgb, var(--kn-emerald-500) 15%, transparent);
-  color: var(--kn-emerald-500);
-}
-@keyframes ai-tool-pulse {
-  0%, 100% { opacity: 0.5; }
-  50%      { opacity: 1; }
-}
-.ai-tool-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.ai-tool-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--kn-text-sm);
-  font-weight: 600;
-}
-.ai-tool-done {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--kn-emerald-500);
-}
-.ai-tool-detail {
-  font-size: var(--kn-text-xs);
-  color: var(--sb-fg-muted);
+@keyframes ai-caret-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
 }
 
-/* 正在思考：三点跳动 */
+/* 思考中：三点跳动 */
 .ai-typing {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 0;
+  margin-left: 2px;
 }
 .ai-typing i {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
-  background: var(--sb-fg-muted);
+  background: var(--kn-fg-subtle);
   animation: ai-blink 1s infinite ease-in-out;
 }
 .ai-typing i:nth-child(2) { animation-delay: 0.15s; }
