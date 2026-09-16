@@ -33,7 +33,8 @@
           <input
             v-model="query"
             class="fm-search-input"
-            placeholder="搜索名称、标签、注释…"
+            placeholder="搜索名称 / 注释，支持 #类型 @标签"
+            title="示例：报告 #文档 @报表（条件可叠加）"
             spellcheck="false"
           />
           <button v-if="query" type="button" class="fm-search-x" aria-label="清空搜索" @click="query = ''">
@@ -46,25 +47,34 @@
         </button>
       </div>
 
-      <!-- 标签筛选 -->
+      <!-- 标签筛选（多选：需包含全部选中的标签） -->
       <div class="fm-tagbar">
-        <button type="button" class="fm-tagchip" :class="{ 'is-on': !activeTag }" @click="activeTag = ''">全部</button>
+        <button type="button" class="fm-tagchip" :class="{ 'is-on': !activeTags.length }" @click="activeTags = []">全部</button>
         <button
           v-for="t in allTags"
           :key="t"
           type="button"
           class="fm-tagchip"
-          :class="{ 'is-on': activeTag === t }"
-          @click="activeTag = activeTag === t ? '' : t"
+          :class="{ 'is-on': activeTags.includes(t) }"
+          @click="toggleTag(t)"
         >
           {{ t }}
         </button>
+        <span v-if="activeTags.length" class="fm-tagbar-hint">
+          <Icon name="check" :size="10" />
+          文件需含全部 {{ activeTags.length }} 个选中标签
+        </span>
       </div>
 
       <!-- 列表 + 详情 -->
       <div class="fm-body">
         <div class="fm-main">
-          <FileTable :files="filteredLibrary" :selected-id="selectedId" @select="selectedId = $event" />
+          <FileTable
+            :files="filteredLibrary"
+            :selected-id="selectedId"
+            empty-hint="试试 #类型（如 #文档）或 @标签（如 @报表）组合筛选"
+            @select="selectedId = $event"
+          />
         </div>
         <FileDetail
           v-if="selected"
@@ -122,7 +132,8 @@
             <input
               v-model="privateQuery"
               class="fm-search-input"
-              placeholder="在私有空间内搜索（名称 / 标签 / 注释）"
+              placeholder="私有空间内搜索，支持 #类型 @标签"
+              title="示例：合同 #PDF @合同（条件可叠加）"
               spellcheck="false"
             />
             <button v-if="privateQuery" type="button" class="fm-search-x" aria-label="清空搜索" @click="privateQuery = ''">
@@ -137,7 +148,12 @@
 
         <div class="fm-body">
           <div class="fm-main">
-            <FileTable :files="filteredPrivate" :selected-id="selectedId" @select="selectedId = $event" />
+            <FileTable
+              :files="filteredPrivate"
+              :selected-id="selectedId"
+              empty-hint="试试 #类型（如 #PDF）或 @标签（如 @合同）组合筛选"
+              @select="selectedId = $event"
+            />
           </div>
           <FileDetail
             v-if="selected"
@@ -156,18 +172,18 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
 import { Icon } from '../component/common'
-import { FileTable, FileDetail } from '../component/files'
+import { FileTable, FileDetail, kindMeta } from '../component/files'
 import type { ManagedFile } from '../component/files'
 
 /* =================== 空间 / 搜索状态 =================== */
 
 const space = ref<'library' | 'private'>('library')
-/** 资料空间统一搜索关键字（名称/标签/注释） */
+/** 资料空间统一搜索关键字（语法见 parseQuery） */
 const query = ref('')
 /** 私有空间内部搜索关键字（仅作用于私有文件，不与其他空间互通） */
 const privateQuery = ref('')
-/** 标签筛选（空 = 全部） */
-const activeTag = ref('')
+/** 标签筛选（多选：文件必须包含全部选中的标签，缺一不可；空数组 = 全部） */
+const activeTags = ref<string[]>([])
 /** 当前选中文件（详情面板） */
 const selectedId = ref('')
 
@@ -175,6 +191,13 @@ function switchSpace(next: 'library' | 'private') {
   if (space.value === next) return
   space.value = next
   selectedId.value = ''
+}
+
+/** 标签筛选开关（多选切换） */
+function toggleTag(tag: string) {
+  const i = activeTags.value.indexOf(tag)
+  if (i >= 0) activeTags.value.splice(i, 1)
+  else activeTags.value.push(tag)
 }
 
 /* =================== 私有空间：锁定 / 解锁 =================== */
@@ -224,17 +247,52 @@ const privateFiles = ref<ManagedFile[]>([
   { id: 'p5', name: '个人作品集.pptx',   kind: 'ppt',   size: '22 MB',  modified: '1 个月前', tags: ['作品'], note: '作品集 2026', encrypted: true },
 ])
 
-/* =================== 搜索 / 筛选 =================== */
+/* =================== 搜索语法 ===================
+ * - 普通词：匹配 名称 / 注释（多个词需全部命中）
+ * - #类型：匹配 文件格式（图片/视频/文档/表格…；多个 # 取并集）
+ * - @标签：匹配 标签（多个 @ 需全部命中）
+ * - 三种条件可叠加（同时满足）；标签多选筛选同样为"必须全含" */
 
-/** 统一匹配：名称 / 标签 / 注释（大小写不敏感） */
-function match(f: ManagedFile, q: string): boolean {
-  if (!q) return true
-  const key = q.toLowerCase()
-  return (
-    f.name.toLowerCase().includes(key) ||
-    f.tags.some((t) => t.toLowerCase().includes(key)) ||
-    f.note.toLowerCase().includes(key)
-  )
+interface SearchQuery {
+  /** 普通关键词（名称/注释） */
+  words: string[]
+  /** # 类型关键词（全小写） */
+  kinds: string[]
+  /** @ 标签关键词（全小写） */
+  tags: string[]
+}
+
+function parseQuery(raw: string): SearchQuery {
+  const words: string[] = []
+  const kinds: string[] = []
+  const tags: string[] = []
+  for (const token of raw.trim().split(/\s+/)) {
+    if (!token) continue
+    if (token.startsWith('#')) kinds.push(token.slice(1).toLowerCase())
+    else if (token.startsWith('@')) tags.push(token.slice(1).toLowerCase())
+    else words.push(token.toLowerCase())
+  }
+  return { words, kinds, tags }
+}
+
+/** # 类型匹配：格式显示名（图片/文档/表格…）或格式 key（image/doc…）包含关键词即可 */
+function matchKind(f: ManagedFile, keys: string[]): boolean {
+  if (!keys.length) return true
+  const label = kindMeta(f.kind).label.toLowerCase()
+  const key = f.kind.toLowerCase()
+  return keys.some((k) => label.includes(k) || key.includes(k))
+}
+
+/** 统一匹配：标签多选（全含）+ # 类型（并集）+ @ 标签（全含）+ 关键词（名称/注释） */
+function matchFile(f: ManagedFile, q: SearchQuery, requiredTags: string[]): boolean {
+  if (requiredTags.length && !requiredTags.every((t) => f.tags.includes(t))) return false
+  if (!matchKind(f, q.kinds)) return false
+  if (q.tags.length && !q.tags.every((k) => f.tags.some((t) => t.toLowerCase().includes(k)))) return false
+  if (q.words.length) {
+    const hay = `${f.name} ${f.note}`.toLowerCase()
+    if (!q.words.every((w) => hay.includes(w))) return false
+  }
+  return true
 }
 
 /** 资料空间标签全集（用于筛选 chips） */
@@ -254,13 +312,17 @@ const privateTags = computed(() => {
 /** 当前空间的标签全集（传给详情面板的下拉选择） */
 const availableTags = computed(() => (space.value === 'library' ? allTags.value : privateTags.value))
 
-/** 资料空间：统一搜索 + 标签筛选 */
+/** 资料空间：搜索语法 + 标签多选（必须全含） */
+const libraryParsed = computed(() => parseQuery(query.value))
 const filteredLibrary = computed(() =>
-  libraryFiles.value.filter((f) => match(f, query.value.trim()) && (!activeTag.value || f.tags.includes(activeTag.value)))
+  libraryFiles.value.filter((f) => matchFile(f, libraryParsed.value, activeTags.value))
 )
 
-/** 私有空间：仅内部搜索 */
-const filteredPrivate = computed(() => privateFiles.value.filter((f) => match(f, privateQuery.value.trim())))
+/** 私有空间：仅内部搜索（同一套语法，无标签多选入口） */
+const privateParsed = computed(() => parseQuery(privateQuery.value))
+const filteredPrivate = computed(() =>
+  privateFiles.value.filter((f) => matchFile(f, privateParsed.value, []))
+)
 
 /** 当前选中文件对象 */
 const selected = computed(() =>
@@ -495,6 +557,15 @@ onUnmounted(() => window.clearTimeout(importTimer))
   background: color-mix(in srgb, var(--kn-brand-500) 12%, transparent);
   color: var(--kn-brand-500);
   font-weight: 600;
+}
+/* 多选提示：明确"必须全含"的筛选语义 */
+.fm-tagbar-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 2px;
+  font-size: var(--kn-text-2xs);
+  color: var(--kn-brand-500);
 }
 
 /* ==================== 列表 + 详情 ==================== */

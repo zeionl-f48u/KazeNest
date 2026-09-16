@@ -20,6 +20,7 @@
     <div v-if="!files.length" class="ft-empty">
       <Icon name="search" :size="18" />
       <span>没有匹配的文件</span>
+      <span v-if="emptyHint" class="ft-empty-hint">{{ emptyHint }}</span>
     </div>
 
     <!-- 文件行 -->
@@ -63,6 +64,8 @@ defineProps<{
   files: ManagedFile[]
   /** 选中文件 id（行高亮） */
   selectedId?: string
+  /** 空态补充提示（如搜索语法示例） */
+  emptyHint?: string
 }>()
 
 const emit = defineEmits<{ select: [id: string] }>()
@@ -215,5 +218,9 @@ const emit = defineEmits<{ select: [id: string] }>()
   padding: 48px 0;
   color: var(--kn-fg-subtle);
   font-size: var(--kn-text-sm);
+}
+.ft-empty-hint {
+  font-size: var(--kn-text-2xs);
+  opacity: 0.85;
 }
 </style>
