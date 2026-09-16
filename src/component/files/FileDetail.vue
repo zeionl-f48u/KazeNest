@@ -25,6 +25,54 @@
       </button>
     </div>
 
+    <!-- 预览（演示：按格式渲染占位；接真实文件后换成缩略图/内容渲染） -->
+    <div class="fd-preview" :class="`is-${file.kind}`">
+      <span class="fd-preview-tag">预览</span>
+
+      <template v-if="file.kind === 'image'">
+        <Icon name="image" :size="30" />
+      </template>
+
+      <template v-else-if="file.kind === 'video'">
+        <span class="fd-pv-play"><Icon name="play" :size="16" /></span>
+      </template>
+
+      <template v-else-if="file.kind === 'audio'">
+        <span class="fd-pv-bars">
+          <i v-for="n in 14" :key="n" :style="{ height: `${8 + ((n * 13) % 26)}px` }" />
+        </span>
+      </template>
+
+      <template v-else-if="file.kind === 'code'">
+        <pre class="fd-pv-code">1  const theme = {
+2    brand: '#6366f1',
+3    radius: 8,
+4  }</pre>
+      </template>
+
+      <template v-else-if="file.kind === 'sheet'">
+        <span class="fd-pv-grid" />
+      </template>
+
+      <template v-else-if="file.kind === 'ppt'">
+        <span class="fd-pv-slide">
+          <i class="fd-pv-slide-title" />
+          <i class="fd-pv-slide-line" />
+          <i class="fd-pv-slide-line is-short" />
+        </span>
+      </template>
+
+      <template v-else-if="file.kind === 'archive'">
+        <Icon name="archive" :size="28" />
+      </template>
+
+      <template v-else>
+        <span class="fd-pv-paper">
+          <i v-for="n in 4" :key="n" class="fd-pv-paper-line" :style="{ width: `${92 - n * 14}%` }" />
+        </span>
+      </template>
+    </div>
+
     <!-- 元信息 -->
     <div class="fd-meta">
       <div class="fd-meta-row"><span>大小</span><span>{{ file.size }}</span></div>
@@ -296,6 +344,157 @@ onUnmounted(() => window.clearTimeout(aiTimer))
 .fd-close:hover {
   background: var(--kn-hover);
   color: var(--kn-fg);
+}
+
+/* ==================== 预览（按格式占位） ==================== */
+.fd-preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 140px;
+  border-radius: var(--kn-radius-md);
+  overflow: hidden;
+  background: var(--kn-bg-sunken);
+  color: var(--kn-fg-muted);
+}
+.fd-preview-tag {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--kn-fg-subtle);
+  text-transform: uppercase;
+}
+/* 图片：渐变底 */
+.fd-preview.is-image {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--kn-emerald-500) 22%, transparent), color-mix(in srgb, var(--kn-sky-500) 18%, transparent));
+  color: var(--kn-emerald-500);
+}
+/* 视频：深色播放器 */
+.fd-preview.is-video {
+  background: #14151c;
+  color: #fff;
+}
+.fd-pv-play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding-left: 3px;
+  box-sizing: border-box;
+}
+/* 音频：波形 */
+.fd-preview.is-audio {
+  background: color-mix(in srgb, var(--kn-magenta-500) 10%, transparent);
+  color: var(--kn-magenta-500);
+}
+.fd-pv-bars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.fd-pv-bars i {
+  width: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.75;
+}
+/* 代码：深色代码框 */
+.fd-preview.is-code {
+  align-items: flex-start;
+  justify-content: flex-start;
+  background: #14151c;
+  color: #c9d1d9;
+  padding: 10px 12px;
+  box-sizing: border-box;
+}
+.fd-pv-code {
+  margin: 0;
+  font-family: var(--kn-font-mono);
+  font-size: 10px;
+  line-height: 1.8;
+  white-space: pre;
+  opacity: 0.9;
+}
+/* 表格：网格 */
+.fd-preview.is-sheet {
+  background: color-mix(in srgb, var(--kn-emerald-500) 8%, transparent);
+}
+.fd-pv-grid {
+  width: 78%;
+  height: 74%;
+  border: 1px solid color-mix(in srgb, var(--kn-emerald-500) 40%, transparent);
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(to right, color-mix(in srgb, var(--kn-emerald-500) 26%, transparent) 0 1px, transparent 1px 33.4%),
+    repeating-linear-gradient(to bottom, color-mix(in srgb, var(--kn-emerald-500) 26%, transparent) 0 1px, transparent 1px 25%);
+}
+/* 演示：幻灯片 */
+.fd-preview.is-ppt {
+  background: color-mix(in srgb, var(--kn-amber-500) 10%, transparent);
+}
+.fd-pv-slide {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 72%;
+  height: 72%;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: var(--kn-bg-elev);
+  box-shadow: var(--kn-shadow-md);
+  box-sizing: border-box;
+}
+.fd-pv-slide-title {
+  width: 46%;
+  height: 8px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--kn-amber-500) 55%, transparent);
+}
+.fd-pv-slide-line {
+  width: 84%;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--kn-fg) 12%, transparent);
+}
+.fd-pv-slide-line.is-short {
+  width: 58%;
+}
+/* 压缩包 */
+.fd-preview.is-archive {
+  background: color-mix(in srgb, var(--kn-fg) 6%, transparent);
+}
+/* 文档 / PDF：纸张 */
+.fd-preview.is-doc,
+.fd-preview.is-pdf {
+  background: color-mix(in srgb, var(--kn-sky-500) 8%, transparent);
+}
+.fd-pv-paper {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 64%;
+  height: 76%;
+  padding: 14px 16px;
+  border-radius: 4px;
+  background: var(--kn-bg-elev);
+  box-shadow: var(--kn-shadow-md);
+  box-sizing: border-box;
+}
+.fd-pv-paper-line {
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--kn-fg) 12%, transparent);
+}
+.fd-pv-paper-line:first-child {
+  background: color-mix(in srgb, var(--kn-sky-500) 45%, transparent);
 }
 
 /* ==================== 元信息 ==================== */

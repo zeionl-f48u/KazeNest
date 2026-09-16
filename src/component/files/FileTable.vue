@@ -1,7 +1,7 @@
 <!--
-  FileTable：统一文件列表（多格式）
+  FileTable：统一文件列表（多格式，资源管理器式选择）
   - 列：名称（图标按格式着色）+ 格式 + 大小 + 修改时间 + 标签 + 注释摘要
-  - 点击行选中（父级 Files.vue 展示右侧详情面板）
+  - 选择：普通点击单选；Ctrl/Cmd 点击切换；Shift 点击范围（修饰键由父级处理）
   - 空态：搜索/筛选无结果时提示
 -->
 <template>
@@ -29,8 +29,8 @@
       :key="f.id"
       type="button"
       class="ft-row"
-      :class="{ 'is-on': f.id === selectedId }"
-      @click="emit('select', f.id)"
+      :class="{ 'is-on': selectedIds.includes(f.id) }"
+      @click="emit('select', f.id, $event)"
     >
       <span class="ft-name">
         <span class="ft-icon" :style="{ '--tint': kindMeta(f.kind).color }">
@@ -62,13 +62,16 @@ import type { ManagedFile } from './types'
 defineProps<{
   /** 当前要展示的文件（已由父级完成搜索/筛选） */
   files: ManagedFile[]
-  /** 选中文件 id（行高亮） */
-  selectedId?: string
+  /** 选中文件 id 集合（多选高亮） */
+  selectedIds: string[]
   /** 空态补充提示（如搜索语法示例） */
   emptyHint?: string
 }>()
 
-const emit = defineEmits<{ select: [id: string] }>()
+const emit = defineEmits<{
+  /** 选中某行（MouseEvent 携带修饰键，父级实现 单选/Ctrl 切换/Shift 范围） */
+  select: [id: string, e: MouseEvent]
+}>()
 </script>
 
 <style scoped>

@@ -23,6 +23,15 @@ export interface ManagedFile {
   note: string
   /** 是否加密存储（私有空间文件） */
   encrypted?: boolean
+  /** 所属文件夹 id（文件夹模式目录；'' 或省略 = 根目录） */
+  folderId?: string
+}
+
+/** 文件夹节点（文件夹模式的目录树；叶子文件夹请在转 TreeItem 时显式给 folder 图标） */
+export interface FolderNode {
+  id: string
+  name: string
+  children?: FolderNode[]
 }
 
 /** 格式 → 图标/颜色/显示名 */
