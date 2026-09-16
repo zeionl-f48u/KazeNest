@@ -69,6 +69,7 @@
         <FileDetail
           v-if="selected"
           :file="selected"
+          :available-tags="availableTags"
           @close="selectedId = ''"
           @update-tags="onUpdateTags"
           @update-note="onUpdateNote"
@@ -141,6 +142,7 @@
           <FileDetail
             v-if="selected"
             :file="selected"
+            :available-tags="availableTags"
             @close="selectedId = ''"
             @update-tags="onUpdateTags"
             @update-note="onUpdateNote"
@@ -241,6 +243,16 @@ const allTags = computed(() => {
   for (const f of libraryFiles.value) for (const t of f.tags) set.add(t)
   return [...set]
 })
+
+/** 私有空间标签全集（详情面板"选择已有标签"用） */
+const privateTags = computed(() => {
+  const set = new Set<string>()
+  for (const f of privateFiles.value) for (const t of f.tags) set.add(t)
+  return [...set]
+})
+
+/** 当前空间的标签全集（传给详情面板的下拉选择） */
+const availableTags = computed(() => (space.value === 'library' ? allTags.value : privateTags.value))
 
 /** 资料空间：统一搜索 + 标签筛选 */
 const filteredLibrary = computed(() =>

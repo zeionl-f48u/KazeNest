@@ -58,9 +58,38 @@
           spellcheck="false"
           @keydown.enter.prevent="addTag"
         />
-        <button type="button" class="fd-tag-btn" :disabled="!tagDraft.trim()" aria-label="添加标签" @click="addTag">
+        <button type="button" class="fd-tag-btn" :disabled="!tagDraft.trim()" aria-label="添加标签" title="添加标签" @click="addTag">
           <Icon name="plus" :size="12" />
         </button>
+
+        <!-- 选择已有标签（下拉） -->
+        <div ref="tagPickRef" class="fd-tag-picker">
+          <button
+            type="button"
+            class="fd-tag-btn"
+            :class="{ 'is-on': tagPopOpen }"
+            aria-label="选择已有标签"
+            title="选择已有标签"
+            @click="toggleTagPop"
+          >
+            <Icon name="tag" :size="12" />
+          </button>
+
+          <div v-if="tagPopOpen" class="fd-tagpop">
+            <div class="fd-tagpop-title">已有标签</div>
+            <button
+              v-for="t in selectableTags"
+              :key="t"
+              type="button"
+              class="fd-tagpop-item"
+              @click="pickTag(t)"
+            >
+              <Icon name="tag" :size="11" class="fd-tagpop-icon" />
+              <span>{{ t }}</span>
+            </button>
+            <div v-if="!selectableTags.length" class="fd-tagpop-empty">暂无可选标签</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -78,6 +107,12 @@
         :value="file.note"
         @input="emit('update-note', ($event.target as HTMLTextAreaElement).value)"
       ></textarea>
+
+      <!-- AI 一键批注（演示：模拟生成注释；接 AI 后替换为真实调用） -->
+      <button type="button" class="fd-ai-btn" :disabled="aiBusy" title="演示：模拟 AI 生成注释" @click="aiAnnotate">
+        <Icon name="sparkles" :size="12" />
+        <span>{{ aiBusy ? 'AI 批注生成中…' : 'AI 一键批注' }}</span>
+      </button>
     </div>
 
     <p class="fd-hint">标签与注释会被统一搜索命中（演示：即时保存在当前会话）</p>
@@ -85,7 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { Icon } from '../common'
 import { kindMeta } from './types'
 import type { ManagedFile } from './types'
@@ -93,6 +128,8 @@ import type { ManagedFile } from './types'
 const props = defineProps<{
   /** 当前选中的文件 */
   file: ManagedFile
+  /** 当前空间已有的标签集合（供"选择已有标签"下拉） */
+  availableTags?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -118,6 +155,61 @@ function addTag() {
 function removeTag(tag: string) {
   emit('update-tags', props.file.tags.filter((t) => t !== tag))
 }
+
+/* =================== 选择已有标签（下拉） =================== */
+
+const tagPopOpen = ref(false)
+const tagPickRef = ref<HTMLElement | null>(null)
+
+/** 可选项 = 空间已有标签 − 当前文件已有（避免重复） */
+const selectableTags = computed(() =>
+  (props.availableTags ?? []).filter((t) => !props.file.tags.includes(t))
+)
+
+function toggleTagPop() {
+  tagPopOpen.value = !tagPopOpen.value
+}
+
+function pickTag(tag: string) {
+  emit('update-tags', [...props.file.tags, tag])
+  tagPopOpen.value = false
+}
+
+/** 点击下拉以外区域关闭 */
+function onClickOutside(e: MouseEvent) {
+  if (!tagPopOpen.value) return
+  if (tagPickRef.value?.contains(e.target as Node)) return
+  tagPopOpen.value = false
+}
+
+onMounted(() => document.addEventListener('mousedown', onClickOutside))
+onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
+
+/* =================== AI 一键批注（演示） =================== */
+/* 模拟生成一段注释；接 AI 后替换为真实调用（把文件元信息/内容摘要发给模型） */
+
+const aiBusy = ref(false)
+let aiTimer: number | undefined
+
+function aiAnnotate() {
+  if (aiBusy.value) return
+  aiBusy.value = true
+  const targetId = props.file.id
+
+  aiTimer = window.setTimeout(() => {
+    aiBusy.value = false
+    /* 生成期间切换了文件：丢弃本次结果 */
+    if (props.file.id !== targetId) return
+
+    const kind = kindMeta(props.file.kind).label
+    const parts = [`AI 批注：这是一份${kind}文件「${props.file.name}」`]
+    if (props.file.tags.length) parts.push(`涉及 ${props.file.tags.join('、')} 等主题`)
+    parts.push('建议关注内容要点与时效性，归档时补充来源与版本信息')
+    emit('update-note', `${parts.join('，')}。`)
+  }, 900)
+}
+
+onUnmounted(() => window.clearTimeout(aiTimer))
 </script>
 
 <style scoped>
@@ -331,6 +423,100 @@ function removeTag(tag: string) {
 }
 .fd-tag-btn:disabled {
   opacity: 0.4;
+  cursor: default;
+}
+/* 选择已有标签按钮：展开态高亮 */
+.fd-tag-btn.is-on {
+  border-color: color-mix(in srgb, var(--kn-brand-500) 35%, transparent);
+  background: color-mix(in srgb, var(--kn-brand-500) 12%, transparent);
+  color: var(--kn-brand-500);
+}
+
+/* 选择已有标签：下拉弹层 */
+.fd-tag-picker {
+  position: relative;
+  flex-shrink: 0;
+}
+.fd-tagpop {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 170px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--kn-border-strong);
+  border-radius: var(--kn-radius-lg);
+  background: var(--kn-bg-elev);
+  box-shadow: var(--kn-shadow-lg);
+  animation: fd-pop-in var(--kn-dur-base) var(--kn-ease-out);
+}
+@keyframes fd-pop-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fd-tagpop-title {
+  padding: 2px 8px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--kn-fg-subtle);
+}
+.fd-tagpop-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: var(--kn-radius-sm);
+  background: transparent;
+  color: var(--kn-fg);
+  font: inherit;
+  font-size: var(--kn-text-xs);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--kn-dur-fast);
+}
+.fd-tagpop-item:hover {
+  background: var(--kn-hover);
+}
+.fd-tagpop-icon {
+  color: var(--kn-brand-500);
+  flex-shrink: 0;
+}
+.fd-tagpop-empty {
+  padding: 6px 8px;
+  font-size: var(--kn-text-xs);
+  color: var(--kn-fg-subtle);
+}
+
+/* AI 一键批注（注释框底部） */
+.fd-ai-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--kn-brand-500) 35%, transparent);
+  border-radius: var(--kn-radius-md);
+  background: color-mix(in srgb, var(--kn-brand-500) 10%, transparent);
+  color: var(--kn-brand-500);
+  font: inherit;
+  font-size: var(--kn-text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--kn-dur-fast), opacity var(--kn-dur-fast);
+}
+.fd-ai-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--kn-brand-500) 18%, transparent);
+}
+.fd-ai-btn:disabled {
+  opacity: 0.6;
   cursor: default;
 }
 
