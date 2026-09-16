@@ -34,7 +34,7 @@
             v-model="query"
             class="fm-search-input"
             placeholder="搜索名称 / 注释，支持 #类型 @标签"
-            title="示例：报告 #文档 @报表（条件可叠加）"
+            title="示例：报告 #docx @报表（# 可搜扩展名/类别，条件可叠加）"
             spellcheck="false"
           />
           <button v-if="query" type="button" class="fm-search-x" aria-label="清空搜索" @click="query = ''">
@@ -132,8 +132,8 @@
             <input
               v-model="privateQuery"
               class="fm-search-input"
-              placeholder="私有空间内搜索，支持 #类型 @标签"
-              title="示例：合同 #PDF @合同（条件可叠加）"
+            placeholder="私有空间内搜索，支持 #类型 @标签"
+            title="示例：合同 #pdf @合同（# 可搜扩展名/类别，条件可叠加）"
               spellcheck="false"
             />
             <button v-if="privateQuery" type="button" class="fm-search-x" aria-label="清空搜索" @click="privateQuery = ''">
@@ -249,7 +249,8 @@ const privateFiles = ref<ManagedFile[]>([
 
 /* =================== 搜索语法 ===================
  * - 普通词：匹配 名称 / 注释（多个词需全部命中）
- * - #类型：匹配 文件格式（图片/视频/文档/表格…；多个 # 取并集）
+ * - #类型：匹配 文件名称（含扩展名，如 #docx/#xlsx）与 格式类别（#图/#文档/#doc）；
+ *          只命中真实存在的信息；多个 # 取并集
  * - @标签：匹配 标签（多个 @ 需全部命中）
  * - 三种条件可叠加（同时满足）；标签多选筛选同样为"必须全含" */
 
@@ -268,19 +269,32 @@ function parseQuery(raw: string): SearchQuery {
   const tags: string[] = []
   for (const token of raw.trim().split(/\s+/)) {
     if (!token) continue
-    if (token.startsWith('#')) kinds.push(token.slice(1).toLowerCase())
-    else if (token.startsWith('@')) tags.push(token.slice(1).toLowerCase())
-    else words.push(token.toLowerCase())
+    if (token.startsWith('#')) {
+      const k = token.slice(1).toLowerCase()
+      if (k) kinds.push(k)
+    } else if (token.startsWith('@')) {
+      const t = token.slice(1).toLowerCase()
+      if (t) tags.push(t)
+    } else {
+      words.push(token.toLowerCase())
+    }
   }
   return { words, kinds, tags }
 }
 
-/** # 类型匹配：格式显示名（图片/文档/表格…）或格式 key（image/doc…）包含关键词即可 */
+/**
+ * # 类型匹配（只命中真实存在的信息，不无中生有）：
+ * 1) 文件名称（含扩展名）—— `#docx` 命中 *.docx、`#xlsx` 命中 *.xlsx
+ * 2) 格式类别名（前缀）—— `#图` 命中"图片"、`#文档` 命中"文档"
+ * 3) 格式类别 key（前缀）—— `#doc` 命中 doc 类（同时含 *.doc/*.docx）
+ * 多个 # 取并集（命中任一即可）
+ */
 function matchKind(f: ManagedFile, keys: string[]): boolean {
   if (!keys.length) return true
+  const name = f.name.toLowerCase()
   const label = kindMeta(f.kind).label.toLowerCase()
-  const key = f.kind.toLowerCase()
-  return keys.some((k) => label.includes(k) || key.includes(k))
+  const kindKey = f.kind.toLowerCase()
+  return keys.some((k) => name.includes(k) || label.startsWith(k) || kindKey.startsWith(k))
 }
 
 /** 统一匹配：标签多选（全含）+ # 类型（并集）+ @ 标签（全含）+ 关键词（名称/注释） */
