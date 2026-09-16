@@ -27,6 +27,7 @@ import { comingSoonConfig } from '../data'
 
 import Home from '../pages/Home.vue'
 import Editor from '../pages/Editor.vue'
+import Files from '../pages/Files.vue'
 import ComingSoon from '../component/common/ComingSoon.vue'
 import { AiWorkspace } from '../component/ai'
 
@@ -73,14 +74,13 @@ export const views: Record<ViewId, ViewDefinition> = {
     sidebarTitle: '资源管理器',
     sidebarVisible: true,
   },
-  // 以下为建设中视图：占位页统一走 ComingSoon，侧栏仍按各自形态先行呈现
   files: {
-    page: markRaw(ComingSoon),
+    page: markRaw(Files),
     sidebar: markRaw(FilesSidebar),
     sidebarTitle: '文件管理',
     sidebarVisible: true,
-    comingSoon: comingSoonConfig.files,
   },
+  // 以下为建设中视图：占位页统一走 ComingSoon，侧栏仍按各自形态先行呈现
   ai: {
     page: markRaw(AiWorkspace),
     sidebar: markRaw(AISidebar),

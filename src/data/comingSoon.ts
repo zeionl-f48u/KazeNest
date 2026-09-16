@@ -1,5 +1,5 @@
 /**
- * 占位视图配置（文件管理 / AI / 浏览器 / 设置 / 账户）
+ * 占位视图配置（AI / 浏览器 / 插件市场 / 设置 / 账户）
  * 由 component/common/ComingSoon.vue 统一渲染
  *
  * 调节指南：改对应视图的 title / desc / tags 等字段即可，
@@ -22,14 +22,6 @@ export interface ComingSoonConfig {
 import type { ViewId } from './activityItems'
 
 export const comingSoonConfig: Partial<Record<ViewId, ComingSoonConfig>> = {
-  files: {
-    title: '文件管理',
-    subtitle: '浏览、搜索与快速预览',
-    icon: 'folder',
-    tint: 'var(--kn-amber-500)',
-    desc: '浏览、搜索与快速预览文件的能力正在建设中',
-    tags: ['文件夹树', '全文搜索', '快速预览'],
-  },
   ai: {
     title: 'AI 助手',
     subtitle: '让 AI 帮你写、读、想',
