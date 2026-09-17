@@ -278,14 +278,16 @@ function onGlobalKeydown(e: KeyboardEvent) {
 
 /* =================== 活动栏 handler =================== */
 
-/** 切视图：强制展开侧边栏（VS Code 行为）
+/** 切视图：按注册表配置决定侧边栏开合（默认强制展开 = VS Code 行为；
+ *  sidebarDefaultOpen: false 的视图（如浏览器）进入时默认收缩）
  * id 来自 activityItems，类型上直接收窄为 ViewId
  * - 面板开着时进入 AI 视图：面板自动向左扩展为全宽（由 aiPanelExpanded 驱动）
  * - 从展开的面板切出：主内容直接切换（跳过视图过渡），过渡交给面板收回动画 */
 function onActivitySelect(id: string) {
-  skipViewTransition.value = aiPanelExpanded.value && id !== 'ai'
-  activeView.value = id as ViewId
-  sideBarOpen.value = true
+  const target = id as ViewId
+  skipViewTransition.value = aiPanelExpanded.value && target !== 'ai'
+  activeView.value = target
+  sideBarOpen.value = views[target]?.sidebarDefaultOpen !== false
 }
 
 /** 再次点击当前活动项：折叠/展开侧边栏 */

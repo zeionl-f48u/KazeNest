@@ -53,6 +53,8 @@ export interface ViewDefinition {
   comingSoon?: ComingSoonConfig
   /** 是否显示侧边栏（false = 全屏视图） */
   sidebarVisible: boolean
+  /** 切换到该视图时侧边栏是否默认展开（省略 = true；如浏览器默认收缩） */
+  sidebarDefaultOpen?: boolean
 }
 
 /**
@@ -93,6 +95,8 @@ export const views: Record<ViewId, ViewDefinition> = {
     sidebar: markRaw(BrowserSidebar),
     sidebarTitle: '浏览器',
     sidebarVisible: true,
+    /* 浏览器以内容为主：切换进入时侧栏默认收缩（可手动展开） */
+    sidebarDefaultOpen: false,
   },
   marketplace: {
     page: markRaw(ComingSoon),
