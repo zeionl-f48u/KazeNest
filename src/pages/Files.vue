@@ -68,7 +68,7 @@
 
       <!-- 已打开：资源管理器 -->
       <template v-else>
-        <!-- 工具行：面包屑 + 更换/新建文件夹 -->
+        <!-- 工具行：面包屑 + 搜索 + 更换/新建文件夹 -->
         <div class="fm-tools">
           <div class="fm-crumbs is-tools">
             <button type="button" class="fm-crumb" @click="selectFolder('')">
@@ -81,6 +81,22 @@
             </template>
             <span class="fm-crumbs-count">{{ filteredFolder.length }} 个文件</span>
           </div>
+
+          <!-- 资源管理器式搜索：搜索当前目录及子目录 -->
+          <div class="fm-search is-folder">
+            <Icon name="search" :size="14" class="fm-search-icon" />
+            <input
+              v-model="folderQuery"
+              class="fm-search-input"
+              placeholder="搜索文件，支持 #类型"
+              title="示例：报表 #xlsx（搜索当前目录及子目录）"
+              spellcheck="false"
+            />
+            <button v-if="folderQuery" type="button" class="fm-search-x" aria-label="清空搜索" @click="folderQuery = ''">
+              <Icon name="times" :size="11" />
+            </button>
+          </div>
+
           <button type="button" class="fm-btn" title="关闭当前文件夹，重新选择" @click="closeFolder">
             <Icon name="folder-open" :size="13" />
             <span>更换文件夹</span>
@@ -123,7 +139,7 @@
             <FileTable
               :files="filteredFolder"
               :selected-ids="selectedIds"
-              empty-hint="该目录下暂无文件"
+              :empty-hint="folderEmptyHint"
               @select="onFolderSelect"
             />
           </div>
@@ -395,8 +411,20 @@ function onAddFolder() {
 /** 当前目录范围（含子孙）；null = 全部文件 */
 const folderScope = computed(() => (activeFolderId.value ? folderScopeIds(activeFolderId.value) : null))
 
+/** 文件夹模式：搜索引擎式搜索栏（语法与资料空间一致，搜索当前目录及子目录） */
+const folderQuery = ref('')
+const folderParsed = computed(() => parseQuery(folderQuery.value))
+
 const filteredFolder = computed(() =>
-  folderFiles.value.filter((f) => !folderScope.value || (f.folderId && folderScope.value.has(f.folderId)))
+  folderFiles.value.filter((f) => {
+    if (folderScope.value && !(f.folderId && folderScope.value.has(f.folderId))) return false
+    return matchFile(f, folderParsed.value, [])
+  })
+)
+
+/** 列表空态提示（搜索中与目录为空给出不同引导） */
+const folderEmptyHint = computed(() =>
+  folderQuery.value.trim() ? '试试 #类型（如 #docx）或调整关键词' : '该目录下暂无文件'
 )
 
 const folderOrder = computed(() => filteredFolder.value.map((f) => f.id))
@@ -774,6 +802,11 @@ onUnmounted(() => {
 }
 .fm-search.is-private:focus-within {
   border-color: color-mix(in srgb, var(--kn-amber-500) 55%, transparent);
+}
+/* 文件夹模式搜索栏（资源管理器式：地址栏右侧固定宽度） */
+.fm-search.is-folder {
+  flex: 0 1 240px;
+  min-width: 150px;
 }
 .fm-search-icon {
   color: var(--kn-fg-muted);
