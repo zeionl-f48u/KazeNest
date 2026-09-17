@@ -15,7 +15,7 @@
       <button type="button" :class="{ 'is-on': space === 'folder' }" @click="setSpace('folder')">
         <Icon name="folder" :size="13" />
         <span>文件夹</span>
-        <span class="fm-tabs-count">{{ folderFiles.length }}</span>
+        <span v-if="folderOpened" class="fm-tabs-count">{{ folderFiles.length }}</span>
       </button>
       <button type="button" :class="{ 'is-on': space === 'library' }" @click="setSpace('library')">
         <Icon name="tag" :size="13" />
@@ -31,100 +31,142 @@
 
     <!-- ==================== 文件夹（资源管理器） ==================== -->
     <template v-if="space === 'folder'">
-      <!-- 工具行：面包屑 + 新建文件夹 -->
-      <div class="fm-tools">
-        <div class="fm-crumbs is-tools">
-          <button type="button" class="fm-crumb" @click="selectFolder('')">
-            <Icon name="th-large" :size="12" />
-            全部文件
-          </button>
-          <template v-for="node in folderPath(activeFolderId)" :key="node.id">
-            <Icon name="chevron-right" :size="10" class="fm-crumb-sep" />
-            <button type="button" class="fm-crumb" @click="selectFolder(node.id)">{{ node.name }}</button>
-          </template>
-          <span class="fm-crumbs-count">{{ filteredFolder.length }} 个文件</span>
-        </div>
-        <button type="button" class="fm-btn" title="演示：新建文件夹" @click="onAddFolder">
-          <Icon name="plus" :size="13" />
-          <span>新建文件夹</span>
-        </button>
-      </div>
+      <!-- 未打开文件夹：空态（打开本地文件夹 / 最近打开） -->
+      <div v-if="!folderOpened" class="fm-open">
+        <div class="fm-open-card">
+          <div class="fm-open-icon">
+            <Icon name="folder" :size="28" />
+          </div>
+          <h2 class="fm-open-title">打开本地文件夹</h2>
+          <p class="fm-open-desc">
+            像资源管理器一样浏览本地文件：多选后可添加到资料空间或私有空间统一管理
+          </p>
 
-      <div class="fm-body">
-        <!-- 左：目录 -->
-        <aside class="fm-folders">
-          <div class="fm-folders-head"><span>目录</span></div>
-
-          <button type="button" class="fm-folder-row" :class="{ 'is-on': !activeFolderId }" @click="selectFolder('')">
-            <Icon name="th-large" :size="13" class="fm-folder-icon" />
-            <span class="fm-folder-name">全部文件</span>
-            <span class="fm-folder-count">{{ folderFiles.length }}</span>
+          <button type="button" class="fm-btn is-primary fm-open-btn" :disabled="opening" @click="openFolder()">
+            <Icon name="folder-open" :size="14" />
+            <span>{{ opening ? '正在打开…' : '打开文件夹' }}</span>
           </button>
 
-          <SideBarTree
-            :nodes="folderItems"
-            :selected="activeFolderId"
-            :collapsed="collapsedFolders"
-            @select="onFolderPick"
-          />
-
-          <div class="fm-folders-sep" />
-
-          <button type="button" class="fm-folder-row is-private" @click="setSpace('private')">
-            <Icon name="lock" :size="13" class="fm-folder-icon" />
-            <span class="fm-folder-name">私有空间</span>
-            <span class="fm-folder-count">{{ privateFiles.length }}</span>
-          </button>
-        </aside>
-
-        <!-- 中：文件列表（多选） -->
-        <div class="fm-main">
-          <FileTable
-            :files="filteredFolder"
-            :selected-ids="selectedIds"
-            empty-hint="该目录下暂无文件"
-            @select="onFolderSelect"
-          />
-        </div>
-
-        <!-- 右：详情预览 / 多选操作 -->
-        <FileDetail
-          v-if="singleSelected"
-          :file="singleSelected"
-          :available-tags="availableTags"
-          @close="clearSelection"
-          @update-tags="onUpdateTags"
-          @update-note="onUpdateNote"
-        />
-        <aside v-else-if="selectedIds.length > 1" class="fm-multi">
-          <div class="fm-multi-head">
-            <span>已选 {{ selectedIds.length }} 项</span>
-            <div class="fm-multi-head-actions">
-              <button type="button" class="fm-link" @click="setSelection(folderOrder)">全选</button>
-              <button type="button" class="fm-link" @click="clearSelection">清除</button>
-            </div>
+          <div class="fm-open-recent">
+            <div class="fm-open-recent-title">最近打开</div>
+            <button
+              v-for="r in recentFolders"
+              :key="r.path"
+              type="button"
+              class="fm-open-recent-item"
+              :disabled="opening"
+              @click="openFolder(r.name)"
+            >
+              <Icon name="clock" :size="12" />
+              <span class="fm-open-recent-path">{{ r.path }}</span>
+            </button>
           </div>
 
-          <div class="fm-multi-list">
-            <div v-for="f in selectedFiles" :key="f.id" class="fm-multi-item">
-              <Icon :name="kindMeta(f.kind).icon" :size="12" :style="{ color: kindMeta(f.kind).color }" />
-              <span class="fm-multi-name">{{ f.name }}</span>
-            </div>
+          <p class="fm-open-hint">演示模式：打开后加载内置演示目录（接 Tauri 后读取真实文件系统）</p>
+        </div>
+      </div>
+
+      <!-- 已打开：资源管理器 -->
+      <template v-else>
+        <!-- 工具行：面包屑 + 更换/新建文件夹 -->
+        <div class="fm-tools">
+          <div class="fm-crumbs is-tools">
+            <button type="button" class="fm-crumb" @click="selectFolder('')">
+              <Icon name="folder-open" :size="12" />
+              {{ rootFolderName }}
+            </button>
+            <template v-for="node in folderPath(activeFolderId)" :key="node.id">
+              <Icon name="chevron-right" :size="10" class="fm-crumb-sep" />
+              <button type="button" class="fm-crumb" @click="selectFolder(node.id)">{{ node.name }}</button>
+            </template>
+            <span class="fm-crumbs-count">{{ filteredFolder.length }} 个文件</span>
+          </div>
+          <button type="button" class="fm-btn" title="关闭当前文件夹，重新选择" @click="closeFolder">
+            <Icon name="folder-open" :size="13" />
+            <span>更换文件夹</span>
+          </button>
+          <button type="button" class="fm-btn" title="演示：新建文件夹" @click="onAddFolder">
+            <Icon name="plus" :size="13" />
+            <span>新建文件夹</span>
+          </button>
+        </div>
+
+        <div class="fm-body">
+          <!-- 左：目录 -->
+          <aside class="fm-folders">
+            <div class="fm-folders-head"><span>目录</span></div>
+
+            <button type="button" class="fm-folder-row" :class="{ 'is-on': !activeFolderId }" @click="selectFolder('')">
+              <Icon name="th-large" :size="13" class="fm-folder-icon" />
+              <span class="fm-folder-name">全部文件</span>
+              <span class="fm-folder-count">{{ folderFiles.length }}</span>
+            </button>
+
+            <SideBarTree
+              :nodes="folderItems"
+              :selected="activeFolderId"
+              :collapsed="collapsedFolders"
+              @select="onFolderPick"
+            />
+
+            <div class="fm-folders-sep" />
+
+            <button type="button" class="fm-folder-row is-private" @click="setSpace('private')">
+              <Icon name="lock" :size="13" class="fm-folder-icon" />
+              <span class="fm-folder-name">私有空间</span>
+              <span class="fm-folder-count">{{ privateFiles.length }}</span>
+            </button>
+          </aside>
+
+          <!-- 中：文件列表（多选） -->
+          <div class="fm-main">
+            <FileTable
+              :files="filteredFolder"
+              :selected-ids="selectedIds"
+              empty-hint="该目录下暂无文件"
+              @select="onFolderSelect"
+            />
           </div>
 
-          <button type="button" class="fm-btn is-primary fm-multi-btn" @click="batchAdd('library')">
-            <Icon name="tag" :size="13" />
-            <span>添加到资料空间</span>
-          </button>
-          <button type="button" class="fm-btn fm-multi-btn" @click="batchAdd('private')">
-            <Icon name="lock" :size="13" />
-            <span>添加到私有空间</span>
-          </button>
+          <!-- 右：详情预览 / 多选操作 -->
+          <FileDetail
+            v-if="singleSelected"
+            :file="singleSelected"
+            :available-tags="availableTags"
+            @close="clearSelection"
+            @update-tags="onUpdateTags"
+            @update-note="onUpdateNote"
+          />
+          <aside v-else-if="selectedIds.length > 1" class="fm-multi">
+            <div class="fm-multi-head">
+              <span>已选 {{ selectedIds.length }} 项</span>
+              <div class="fm-multi-head-actions">
+                <button type="button" class="fm-link" @click="setSelection(folderOrder)">全选</button>
+                <button type="button" class="fm-link" @click="clearSelection">清除</button>
+              </div>
+            </div>
 
-          <p v-if="batchMsg" class="fm-multi-hint is-ok">{{ batchMsg }}</p>
-          <p v-else class="fm-multi-hint">"添加"为复制语义：原文件保留在文件夹中</p>
-        </aside>
-      </div>
+            <div class="fm-multi-list">
+              <div v-for="f in selectedFiles" :key="f.id" class="fm-multi-item">
+                <Icon :name="kindMeta(f.kind).icon" :size="12" :style="{ color: kindMeta(f.kind).color }" />
+                <span class="fm-multi-name">{{ f.name }}</span>
+              </div>
+            </div>
+
+            <button type="button" class="fm-btn is-primary fm-multi-btn" @click="batchAdd('library')">
+              <Icon name="tag" :size="13" />
+              <span>添加到资料空间</span>
+            </button>
+            <button type="button" class="fm-btn fm-multi-btn" @click="batchAdd('private')">
+              <Icon name="lock" :size="13" />
+              <span>添加到私有空间</span>
+            </button>
+
+            <p v-if="batchMsg" class="fm-multi-hint is-ok">{{ batchMsg }}</p>
+            <p v-else class="fm-multi-hint">"添加"为复制语义：原文件保留在文件夹中</p>
+          </aside>
+        </div>
+      </template>
     </template>
 
     <!-- ==================== 资料空间 ==================== -->
@@ -302,6 +344,11 @@ const {
   space,
   activeFolderId,
   selectedIds,
+  folderOpened,
+  rootFolderName,
+  opening,
+  openFolder,
+  closeFolder,
   setSpace,
   selectFolder,
   setSelection,
@@ -312,6 +359,12 @@ const {
   folderPath,
   folderScopeIds,
 } = useFileManager()
+
+/** 最近打开的文件夹（演示数据；接 Tauri 后记录真实选择历史） */
+const recentFolders = [
+  { name: 'KazeNest', path: 'D:\\Projects\\KazeNest' },
+  { name: 'Documents', path: 'C:\\Users\\Zeionl\\Documents' },
+]
 
 /* ---------- 文件夹模式：目录树 / 面包屑 / 过滤 ---------- */
 
@@ -544,6 +597,106 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+/* ==================== 文件夹：打开空态 ==================== */
+.fm-open {
+  display: flex;
+  justify-content: center;
+  padding: 32px 0 56px;
+}
+.fm-open-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 460px;
+  max-width: 100%;
+  padding: 30px 26px 22px;
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-xl);
+  background: var(--kn-bg-elev);
+  text-align: center;
+  box-sizing: border-box;
+}
+.fm-open-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--kn-radius-2xl);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--kn-sky-500) 22%, transparent), color-mix(in srgb, var(--kn-brand-500) 18%, transparent));
+  color: var(--kn-sky-500);
+}
+.fm-open-title {
+  margin: 6px 0 0;
+  font-size: var(--kn-text-lg);
+  font-weight: 700;
+}
+.fm-open-desc {
+  margin: 0;
+  max-width: 360px;
+  font-size: var(--kn-text-xs);
+  line-height: 1.7;
+  color: var(--kn-fg-muted);
+}
+.fm-open-btn {
+  height: 36px;
+  margin-top: 6px;
+  padding: 0 20px;
+}
+/* 最近打开 */
+.fm-open-recent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--kn-border);
+  text-align: left;
+}
+.fm-open-recent-title {
+  padding: 0 6px 4px;
+  font-size: var(--kn-text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--kn-fg-subtle);
+  text-transform: uppercase;
+}
+.fm-open-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--kn-radius-md);
+  background: transparent;
+  color: var(--kn-fg-muted);
+  font: inherit;
+  font-size: var(--kn-text-xs);
+  cursor: pointer;
+  transition: background var(--kn-dur-fast), color var(--kn-dur-fast);
+}
+.fm-open-recent-item:hover:not(:disabled) {
+  background: var(--kn-hover);
+  color: var(--kn-fg);
+}
+.fm-open-recent-item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.fm-open-recent-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fm-open-hint {
+  margin: 6px 0 0;
+  font-size: 10px;
+  color: var(--kn-fg-subtle);
 }
 
 /* ==================== 空间切换（分段控件） ==================== */

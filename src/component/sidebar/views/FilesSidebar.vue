@@ -8,17 +8,28 @@
 <template>
   <div class="fs">
     <SidebarSection title="目录" icon="folder">
-      <SidebarRow :icon="'th-large'" :selected="space === 'folder' && !activeFolderId" @click="pickAll">
-        全部文件
-        <template #meta><span class="fs-count">{{ folderFiles.length }}</span></template>
-      </SidebarRow>
+      <!-- 已打开本地文件夹：目录树（与页面同步） -->
+      <template v-if="folderOpened">
+        <SidebarRow :icon="'th-large'" :selected="space === 'folder' && !activeFolderId" @click="pickAll">
+          全部文件
+          <template #meta><span class="fs-count">{{ folderFiles.length }}</span></template>
+        </SidebarRow>
 
-      <SideBarTree
-        :nodes="folderItems"
-        :selected="space === 'folder' ? activeFolderId : ''"
-        :collapsed="collapsed"
-        @select="onNode"
-      />
+        <SideBarTree
+          :nodes="folderItems"
+          :selected="space === 'folder' ? activeFolderId : ''"
+          :collapsed="collapsed"
+          @select="onNode"
+        />
+      </template>
+
+      <!-- 未打开：打开入口 -->
+      <template v-else>
+        <SidebarRow :icon="'folder-open'" :color="'var(--kn-sky-500)'" @click="onOpenFolder">
+          打开文件夹…
+        </SidebarRow>
+        <div class="fs-empty">未打开本地文件夹</div>
+      </template>
     </SidebarSection>
 
     <div class="fs-sep" />
@@ -69,6 +80,8 @@ const {
   libraryFiles,
   space,
   activeFolderId,
+  folderOpened,
+  openFolder,
   setSpace,
   selectFolder,
 } = useFileManager()
@@ -91,6 +104,12 @@ const collapsed = ref<Set<string>>(new Set())
 function pickAll() {
   setSpace('folder')
   selectFolder('')
+}
+
+/** 打开本地文件夹（同时切到文件夹 Tab，便于看到加载与结果） */
+function onOpenFolder() {
+  setSpace('folder')
+  openFolder()
 }
 
 /** 点目录节点：切到文件夹模式并选中该目录（与页面同步） */
@@ -117,5 +136,10 @@ function onNode(item: TreeItem) {
   opacity: 0.5;
   flex-shrink: 0;
   margin-left: 6px;
+}
+.fs-empty {
+  padding: 4px 10px 6px;
+  font-size: var(--kn-text-2xs);
+  color: var(--kn-fg-subtle);
 }
 </style>

@@ -90,6 +90,39 @@ const activeFolderId = ref('')
 /** 选中文件集合：文件夹模式支持多选；资料/私有空间单选（长度 1 时展开详情） */
 const selectedIds = ref<string[]>([])
 
+/* ---------- 文件夹模式：本地文件夹打开状态 ---------- */
+
+/** 是否已打开本地文件夹（false = 显示"打开文件夹"空态） */
+const folderOpened = ref(false)
+/** 已打开文件夹的根名称（面包屑首项） */
+const rootFolderName = ref('')
+/** 打开中（演示加载反馈） */
+const opening = ref(false)
+let openTimer: number | undefined
+
+/** 打开本地文件夹（演示：450ms 后加载内置演示目录；
+ *  接 Tauri 后改为系统目录选择 + 读取真实文件系统） */
+function openFolder(name = '我的项目') {
+  if (opening.value) return
+  opening.value = true
+  window.clearTimeout(openTimer)
+  openTimer = window.setTimeout(() => {
+    rootFolderName.value = name
+    folderOpened.value = true
+    activeFolderId.value = ''
+    selectedIds.value = []
+    opening.value = false
+  }, 450)
+}
+
+/** 关闭当前文件夹（回到"打开文件夹"空态） */
+function closeFolder() {
+  folderOpened.value = false
+  rootFolderName.value = ''
+  activeFolderId.value = ''
+  selectedIds.value = []
+}
+
 /** 切换空间（清空选择） */
 function setSpace(next: FileSpace) {
   if (space.value === next) return
@@ -224,6 +257,11 @@ export function useFileManager() {
     space,
     activeFolderId,
     selectedIds,
+    folderOpened,
+    rootFolderName,
+    opening,
+    openFolder,
+    closeFolder,
     setSpace,
     selectFolder,
     setSelection,
