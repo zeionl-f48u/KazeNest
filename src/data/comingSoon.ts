@@ -1,5 +1,5 @@
 /**
- * 占位视图配置（AI / 浏览器 / 插件市场 / 设置 / 账户）
+ * 占位视图配置（插件市场 / 设置 / 账户）
  * 由 component/common/ComingSoon.vue 统一渲染
  *
  * 调节指南：改对应视图的 title / desc / tags 等字段即可，
@@ -22,22 +22,6 @@ export interface ComingSoonConfig {
 import type { ViewId } from './activityItems'
 
 export const comingSoonConfig: Partial<Record<ViewId, ComingSoonConfig>> = {
-  ai: {
-    title: 'AI 助手',
-    subtitle: '让 AI 帮你写、读、想',
-    icon: 'sparkles',
-    tint: 'var(--kn-magenta-500)',
-    desc: '智能补全、代码问答与自动重构正在接入中',
-    tags: ['代码补全', '智能问答', '自动重构'],
-  },
-  browser: {
-    title: '浏览器',
-    subtitle: '内嵌 Web 视图与历史',
-    icon: 'globe',
-    tint: 'var(--kn-emerald-500)',
-    desc: '内嵌 Web 视图、标签页与浏览历史正在建设中',
-    tags: ['Web 视图', '多标签', '历史记录'],
-  },
   marketplace: {
     title: '插件市场',
     subtitle: '发现、安装与管理插件',

@@ -28,6 +28,7 @@ import { comingSoonConfig } from '../data'
 import Home from '../pages/Home.vue'
 import Editor from '../pages/Editor.vue'
 import Files from '../pages/Files.vue'
+import Browser from '../pages/Browser.vue'
 import ComingSoon from '../component/common/ComingSoon.vue'
 import { AiWorkspace } from '../component/ai'
 
@@ -86,14 +87,12 @@ export const views: Record<ViewId, ViewDefinition> = {
     sidebar: markRaw(AISidebar),
     sidebarTitle: 'AI 助手',
     sidebarVisible: true,
-    comingSoon: comingSoonConfig.ai,
   },
   browser: {
-    page: markRaw(ComingSoon),
+    page: markRaw(Browser),
     sidebar: markRaw(BrowserSidebar),
     sidebarTitle: '浏览器',
     sidebarVisible: true,
-    comingSoon: comingSoonConfig.browser,
   },
   marketplace: {
     page: markRaw(ComingSoon),

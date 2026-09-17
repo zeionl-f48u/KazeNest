@@ -62,10 +62,10 @@
            （面板绝对定位于舞台右缘，可拖宽；进入 AI 视图时向左扩展覆盖整个舞台，
             动画完成后卸载面板，主内容无缝接管 —— 一个东西两种形式） -->
       <div class="app-stage" ref="stageRef">
-        <!-- 全宽视图（编辑器/AI 工作台）：通栏铺满，无外圈内边距，内部自滚动 -->
+        <!-- 全宽视图（编辑器/AI 工作台/浏览器）：通栏铺满，无外圈内边距，内部自滚动 -->
         <main
           class="app-content"
-          :class="{ 'is-flush': ['editor', 'ai'].includes(activeView), 'margin-anim': marginAnim }"
+          :class="{ 'is-flush': ['editor', 'ai', 'browser'].includes(activeView), 'margin-anim': marginAnim }"
           :style="{ marginRight: aiPanelDocking ? `${aiPanelWidth}px` : '0px' }"
         >
           <!-- 切换视图时安卓 Activity 风格过渡（淡入 + 上移）
