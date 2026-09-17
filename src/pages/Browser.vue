@@ -10,10 +10,14 @@
   <div class="bw">
     <BrowserTabBar
       :tabs="tabs"
+      :groups="groups"
       :active-id="activeId"
       @activate="activateTab"
       @close="closeTab"
       @new="newTab"
+      @move="onTabMove"
+      @toggle-group="toggleGroup"
+      @rename-group="renameGroup"
     />
 
     <BrowserToolbar
@@ -74,6 +78,16 @@ interface BrowserTab {
   /** 前进后退历史（url 数组） */
   history: string[]
   histIndex: number
+  /** 所属标签组（undefined = 未分组） */
+  groupId?: number
+}
+
+/** 标签组（Edge 风格：颜色 + 名称 + 折叠态） */
+interface TabGroup {
+  id: number
+  name: string
+  color: string
+  collapsed: boolean
 }
 
 let tabSeq = 0
@@ -94,6 +108,123 @@ function createTab(): BrowserTab {
 
 const tabs = ref<BrowserTab[]>([createTab()])
 const activeId = ref(tabs.value[0].id)
+
+/* =================== 标签组（Edge 风格） =================== */
+
+const groups = ref<TabGroup[]>([])
+let groupSeq = 0
+
+/** 组色板（新建组按序取色） */
+const GROUP_COLORS = [
+  'var(--kn-brand-500)',
+  'var(--kn-sky-500)',
+  'var(--kn-emerald-500)',
+  'var(--kn-amber-500)',
+  'var(--kn-rose-500)',
+  'var(--kn-magenta-500)',
+]
+
+function createGroup(): TabGroup {
+  const g: TabGroup = {
+    id: ++groupSeq,
+    name: `标签组 ${groupSeq}`,
+    color: GROUP_COLORS[(groupSeq - 1) % GROUP_COLORS.length],
+    collapsed: false,
+  }
+  groups.value.push(g)
+  return g
+}
+
+function membersOf(groupId: number): BrowserTab[] {
+  return tabs.value.filter((t) => t.groupId === groupId)
+}
+
+/** 组清理：无成员 → 移除组；只剩 1 个成员 → 解散（成员变回普通标签，Edge 行为） */
+function dissolveIfLonely(groupId: number) {
+  const members = membersOf(groupId)
+  if (members.length === 0) {
+    groups.value = groups.value.filter((g) => g.id !== groupId)
+  } else if (members.length === 1) {
+    members[0].groupId = undefined
+    groups.value = groups.value.filter((g) => g.id !== groupId)
+  }
+}
+
+function toggleGroup(groupId: number) {
+  const g = groups.value.find((x) => x.id === groupId)
+  if (g) g.collapsed = !g.collapsed
+}
+
+function renameGroup(groupId: number, name: string) {
+  const g = groups.value.find((x) => x.id === groupId)
+  if (g) g.name = name
+}
+
+/**
+ * 标签拖拽结果：
+ * - before/after：插入重排（若因此离开组范围则脱离组）
+ * - group：合并成组（目标无组则新建；已有组则加入）
+ * - end：移到末尾并脱离组
+ */
+function onTabMove(payload: {
+  dragId: number
+  targetId: number
+  position: 'before' | 'after' | 'group' | 'end'
+}) {
+  const { dragId, targetId, position } = payload
+  const from = tabs.value.findIndex((t) => t.id === dragId)
+  if (from === -1) return
+  const drag = tabs.value[from]
+  const oldGroupId = drag.groupId
+
+  /* 拖到空白：移到末尾并脱离组 */
+  if (position === 'end' || !targetId) {
+    drag.groupId = undefined
+    tabs.value.splice(from, 1)
+    tabs.value.push(drag)
+    if (oldGroupId) dissolveIfLonely(oldGroupId)
+    return
+  }
+
+  const target = tabs.value.find((t) => t.id === targetId)
+  if (!target || target.id === dragId) return
+
+  /* 合并成组 */
+  if (position === 'group') {
+    let groupId = target.groupId
+    if (!groupId) {
+      groupId = createGroup().id
+      target.groupId = groupId
+    }
+    drag.groupId = groupId
+    /* 移动到目标之后，保持组内相邻 */
+    tabs.value.splice(from, 1)
+    const ti = tabs.value.findIndex((t) => t.id === targetId)
+    tabs.value.splice(ti + 1, 0, drag)
+    if (oldGroupId && oldGroupId !== groupId) dissolveIfLonely(oldGroupId)
+    return
+  }
+
+  /* 插入重排 */
+  tabs.value.splice(from, 1)
+  let ti = tabs.value.findIndex((t) => t.id === targetId)
+  if (position === 'after') ti += 1
+  tabs.value.splice(ti, 0, drag)
+
+  /* 重排后：若两侧都没有同组伙伴则视为拖出组 */
+  if (drag.groupId) {
+    const idx = tabs.value.findIndex((t) => t.id === dragId)
+    const prev = tabs.value[idx - 1]
+    const next = tabs.value[idx + 1]
+    const stillInGroup =
+      (prev && prev.groupId === drag.groupId) || (next && next.groupId === drag.groupId)
+    if (!stillInGroup) {
+      const gid = drag.groupId
+      drag.groupId = undefined
+      dissolveIfLonely(gid)
+    }
+  }
+}
 
 const activeTab = computed(() => tabs.value.find((t) => t.id === activeId.value) ?? null)
 
@@ -205,6 +336,9 @@ function activateTab(id: number) {
 
 function newTab() {
   const tab = createTab()
+  /* Edge 行为：新标签继承当前激活标签的组 */
+  const cur = activeTab.value
+  if (cur?.groupId) tab.groupId = cur.groupId
   tabs.value.push(tab)
   activeId.value = tab.id
 }
@@ -212,7 +346,10 @@ function newTab() {
 function closeTab(id: number) {
   const i = tabs.value.findIndex((t) => t.id === id)
   if (i === -1) return
+  const closed = tabs.value[i]
   tabs.value.splice(i, 1)
+  /* 关闭后清理标签组（空组移除 / 剩 1 个解散） */
+  if (closed.groupId) dissolveIfLonely(closed.groupId)
   /* 关闭最后一个：自动新开一个，保持浏览器常驻 */
   if (!tabs.value.length) {
     const tab = createTab()
