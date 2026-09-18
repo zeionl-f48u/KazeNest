@@ -1,33 +1,29 @@
 <!--
   BrowserTabBar：浏览器标签栏（Edge 风格标签组 + 拖拽）
-  - 拖拽标签：
-    · 拖到另一标签左/右侧 28% 区域 → 插入重排（显示插入线）
-    · 拖到标签中间区域 → 合并成组（目标无组则新建组；已有组则加入该组，显示组框高亮）
-    · 拖到标签栏空白 → 移到末尾并脱离当前组
+  - 拖拽方案：鼠标跟随（transform）+ 布局坐标判定目标（与编辑器标签栏同一套稳定方案，
+    不使用 HTML5 drag & drop —— 在 WebView 中行为不可靠）
+  - 拖拽落点（按鼠标相对目标的水平位置分三区）：
+    · 左 30% / 右 30% → 插入重排（插入线提示）
+    · 中间 40% → 合并成组（目标高亮；无组则松手新建）
+    · 悬停组头 → 加入该组（组头高亮）
+    · 标签栏外松手 → 移到末尾并脱离当前组
   - 标签组：组头（色点 + 名称 + 数量）点击折叠/展开，双击重命名
   - 宽度自适应：标签 flex 均分可用宽度，最少 54px / 最多 220px，超出横向滚动
-  - 组头与新建按钮固定宽度不参与伸缩
 -->
 <template>
   <div class="btb">
-    <div
-      ref="barRef"
-      class="btb-tabs"
-      @dragover.prevent="onBarDragOver"
-      @drop.prevent="onBarDrop"
-    >
+    <div ref="barRef" class="btb-tabs">
       <template v-for="row in rows" :key="row.kind === 'group' ? `g${row.group.id}` : `t${row.tab.id}`">
-        <!-- 组头（点击折叠/展开，双击重命名；拖标签到组头 = 加入该组） -->
+        <!-- 组头（点击折叠/展开，双击重命名；拖标签悬停 = 加入该组） -->
         <div
           v-if="row.kind === 'group'"
           class="btb-group"
-          :class="{ 'is-collapsed': row.group.collapsed, 'is-drop-group': dropOnGroupId === row.group.id }"
+          :class="{ 'is-collapsed': row.group.collapsed, 'is-drop-group': dropPos === 'group' && dropGroupId === row.group.id }"
           :style="{ '--tint': row.group.color }"
           :title="row.group.name"
+          :data-group-id="row.group.id"
           @click="emit('toggle-group', row.group.id)"
           @dblclick.stop="startRename(row.group)"
-          @dragover.stop.prevent="onGroupDragOver(row.group.id)"
-          @drop.stop.prevent="onGroupDrop(row.group.id)"
         >
           <span class="btb-group-dot" />
           <input
@@ -53,19 +49,17 @@
           :class="{
             'is-on': row.tab.id === activeId,
             'is-dragging': dragId === row.tab.id,
-            'is-drop-before': dropTarget?.tabId === row.tab.id && dropTarget.position === 'before',
-            'is-drop-after': dropTarget?.tabId === row.tab.id && dropTarget.position === 'after',
-            'is-drop-group': dropTarget?.tabId === row.tab.id && dropTarget.position === 'group',
+            'is-drop-before': dropPos === 'before' && dropId === row.tab.id,
+            'is-drop-after': dropPos === 'after' && dropId === row.tab.id,
+            'is-drop-group': dropPos === 'group' && dropId === row.tab.id,
             'is-grouped': !!row.tab.groupId,
           }"
           :style="row.tab.groupId ? { '--tint': groupColor(row.tab.groupId) } : undefined"
           :title="row.tab.url || '新标签页'"
-          draggable="true"
-          @click="emit('activate', row.tab.id)"
-          @dragstart="onDragStart($event, row.tab.id)"
-          @dragend="onDragEnd"
-          @dragover="onTabDragOver($event, row.tab.id)"
-          @drop.stop.prevent="onTabDrop"
+          :data-tab-id="row.tab.id"
+          :ref="(el) => setTabEl(row.tab.id, el)"
+          @mousedown.left="onTabMousedown(row.tab.id, $event)"
+          @click="onTabClick(row.tab.id)"
         >
           <span v-if="row.tab.loading" class="btb-fav is-loading">
             <Icon name="refresh" :size="10" />
@@ -86,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onUnmounted, ref } from 'vue'
 import { Icon } from '../common'
 
 interface TabLike {
@@ -163,85 +157,150 @@ const rows = computed<Row[]>(() => {
   return out
 })
 
-/** 组色（标签顶部细条用） */
+/** 组色（组内标签顶部细条用） */
 function groupColor(groupId: number): string {
   return props.groups.find((g) => g.id === groupId)?.color ?? 'var(--kn-brand-500)'
 }
 
-/* =================== 拖拽（重排 / 成组） =================== */
+/* =================== 拖拽（鼠标跟随 + 落点判定） =================== */
+
+const tabElMap = new Map<number, HTMLElement>()
+function setTabEl(id: number, el: unknown) {
+  if (el) tabElMap.set(id, el as HTMLElement)
+  else tabElMap.delete(id)
+}
 
 const dragId = ref<number | null>(null)
-const dropTarget = ref<{ tabId: number; position: 'before' | 'after' | 'group' } | null>(null)
+/** 落点类型（before/after 重排，group 成组，null 无目标=末尾） */
+const dropPos = ref<'before' | 'after' | 'group' | null>(null)
+/** 落点目标标签 id（group 意图时为目标标签；悬停组头时为组内首个成员） */
+const dropId = ref<number | null>(null)
+/** 成组意图高亮的组 id（目标标签所在组 / 悬停的组头） */
+const dropGroupId = ref<number | null>(null)
 
-function onDragStart(e: DragEvent, id: number) {
+let startX = 0
+let startY = 0
+/** 是否真的拖动过（用于抑制拖动后的 click 误切换） */
+let didDrag = false
+
+function onTabMousedown(id: number, e: MouseEvent) {
+  if (e.button !== 0) return
+  if ((e.target as HTMLElement).closest('.btb-close')) return
   dragId.value = id
-  e.dataTransfer?.setData('text/plain', String(id))
-  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+  didDrag = false
+  startX = e.clientX
+  startY = e.clientY
+  window.addEventListener('mousemove', onDragMove)
+  window.addEventListener('mouseup', onDragEnd)
+}
+
+function onDragMove(e: MouseEvent) {
+  const id = dragId.value
+  if (id == null) return
+  const dx = e.clientX - startX
+  const dy = e.clientY - startY
+  if (!didDrag && Math.hypot(dx, dy) > 4) didDrag = true
+  if (!didDrag) return
+
+  /* 拖拽标签跟随鼠标（每帧更新，避免跳变） */
+  const el = tabElMap.get(id)
+  if (el) {
+    el.style.transform = `translate(${dx}px, ${dy}px)`
+    el.style.zIndex = '20'
+  }
+  updateDropTarget(e.clientX, e.clientY)
+}
+
+/** 落点判定：组头优先 → 标签三区（左/右=重排，中=成组）→ 无目标（末尾） */
+function updateDropTarget(x: number, y: number) {
+  const bar = barRef.value
+  if (!bar) return
+  const barRect = bar.getBoundingClientRect()
+
+  /* 垂直方向明显离开标签栏：视为拖到末尾（脱离组） */
+  if (y < barRect.top - 24 || y > barRect.bottom + 24) {
+    clearDrop()
+    return
+  }
+
+  /* 1) 悬停组头：加入该组 */
+  for (const gEl of bar.querySelectorAll<HTMLElement>('[data-group-id]')) {
+    const r = gEl.getBoundingClientRect()
+    if (x >= r.left && x <= r.right) {
+      const gid = Number(gEl.dataset.groupId)
+      const first = props.tabs.find((t) => t.groupId === gid)
+      dropPos.value = 'group'
+      dropId.value = first?.id ?? null
+      dropGroupId.value = gid
+      return
+    }
+  }
+
+  /* 2) 悬停标签：按水平位置分三区 */
+  for (const tEl of bar.querySelectorAll<HTMLElement>('[data-tab-id]')) {
+    const tid = Number(tEl.dataset.tabId)
+    if (tid === dragId.value) continue
+    const r = tEl.getBoundingClientRect()
+    if (x >= r.left && x <= r.right) {
+      const ratio = (x - r.left) / r.width
+      if (ratio < 0.3) {
+        dropPos.value = 'before'
+        dropId.value = tid
+        dropGroupId.value = null
+      } else if (ratio > 0.7) {
+        dropPos.value = 'after'
+        dropId.value = tid
+        dropGroupId.value = null
+      } else {
+        const tab = props.tabs.find((t) => t.id === tid)
+        dropPos.value = 'group'
+        dropId.value = tid
+        dropGroupId.value = tab?.groupId ?? null
+      }
+      return
+    }
+  }
+
+  /* 3) 空白区域：无目标 → 移到末尾 */
+  clearDrop()
+}
+
+function clearDrop() {
+  dropPos.value = null
+  dropId.value = null
+  dropGroupId.value = null
 }
 
 function onDragEnd() {
+  window.removeEventListener('mousemove', onDragMove)
+  window.removeEventListener('mouseup', onDragEnd)
+
+  const id = dragId.value
+  const el = id != null ? tabElMap.get(id) : null
+  if (el) {
+    el.style.transform = ''
+    el.style.zIndex = ''
+  }
+
+  if (didDrag && id != null) {
+    if (dropPos.value && dropId.value != null) {
+      emit('move', { dragId: id, targetId: dropId.value, position: dropPos.value })
+    } else {
+      emit('move', { dragId: id, targetId: 0, position: 'end' })
+    }
+  }
+
   dragId.value = null
-  dropTarget.value = null
-  dropOnGroupId.value = null
+  clearDrop()
 }
 
-/** 标签上的 dragover：按鼠标位置分三区（左 28% / 中 / 右 28%） */
-function onTabDragOver(e: DragEvent, tabId: number) {
-  if (dragId.value === null || dragId.value === tabId) return
-  e.preventDefault()
-  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
-  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-  const ratio = (e.clientX - rect.left) / rect.width
-  dropTarget.value = {
-    tabId,
-    position: ratio < 0.28 ? 'before' : ratio > 0.72 ? 'after' : 'group',
+/** 点击切换标签；拖动结束时抑制这次 click（避免误切） */
+function onTabClick(id: number) {
+  if (didDrag) {
+    didDrag = false
+    return
   }
-}
-
-function onTabDrop() {
-  if (dragId.value === null || !dropTarget.value) return
-  emit('move', {
-    dragId: dragId.value,
-    targetId: dropTarget.value.tabId,
-    position: dropTarget.value.position,
-  })
-  onDragEnd()
-}
-
-/** 标签栏空白：放到末尾并脱离组 */
-function onBarDragOver(e: DragEvent) {
-  if (dragId.value === null) return
-  const el = e.target as HTMLElement
-  /* 只在空白/容器本身时清除目标提示（标签上的 dragover 已 stop 语义由事件冒泡控制） */
-  if (el.closest('.btb-tab') || el.closest('.btb-group')) return
-  dropTarget.value = null
-  dropOnGroupId.value = null
-}
-
-function onBarDrop() {
-  if (dragId.value === null) return
-  /* 落在标签/组上的情况已由它们自己的 drop 处理（此处仅空白区域） */
-  emit('move', { dragId: dragId.value, targetId: 0, position: 'end' })
-  onDragEnd()
-}
-
-/** 拖到组头：加入该组（以首个成员为目标 + group 位置语义） */
-const dropOnGroupId = ref<number | null>(null)
-
-function onGroupDragOver(groupId: number) {
-  if (dragId.value === null) return
-  dropOnGroupId.value = groupId
-  dropTarget.value = null
-}
-
-function onGroupDrop(groupId: number) {
-  const drag = dragId.value
-  if (drag === null) return
-  const first = props.tabs.find((t) => t.groupId === groupId)
-  if (first && first.id !== drag) {
-    emit('move', { dragId: drag, targetId: first.id, position: 'group' })
-  }
-  onDragEnd()
+  emit('activate', id)
 }
 
 /* =================== 组重命名（双击组头） =================== */
@@ -268,6 +327,12 @@ function commitRename() {
 function cancelRename() {
   renamingId.value = null
 }
+
+/* 卸载兜底：拖拽中的全局监听清理 */
+onUnmounted(() => {
+  window.removeEventListener('mousemove', onDragMove)
+  window.removeEventListener('mouseup', onDragEnd)
+})
 </script>
 
 <style scoped>
@@ -283,6 +348,7 @@ function cancelRename() {
 
 /* 标签行：均分宽度（自适应），超出横向滚动 */
 .btb-tabs {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -315,6 +381,7 @@ function cancelRename() {
   font: inherit;
   font-size: var(--kn-text-xs);
   cursor: pointer;
+  user-select: none;
   transition: background var(--kn-dur-fast), color var(--kn-dur-fast), opacity var(--kn-dur-fast);
 }
 .btb-tab:hover {
@@ -346,9 +413,13 @@ function cancelRename() {
   border-radius: 2px;
   background: color-mix(in srgb, var(--tint) 60%, transparent);
 }
-/* 拖拽中的标签 */
+/* 拖拽中的标签：抬起效果（transform 由脚本控制） */
 .btb-tab.is-dragging {
-  opacity: 0.45;
+  cursor: grabbing;
+  background: var(--kn-bg-elev);
+  color: var(--kn-fg);
+  box-shadow: var(--kn-shadow-lg);
+  opacity: 0.92;
 }
 
 /* 插入线（重排提示） */
@@ -358,7 +429,7 @@ function cancelRename() {
 .btb-tab.is-drop-after {
   box-shadow: inset -2px 0 0 var(--kn-brand-500);
 }
-/* 合并成组提示（中间区域）：品牌色虚框 */
+/* 合并成组提示（中间区域）：品牌色描边 */
 .btb-tab.is-drop-group {
   background: color-mix(in srgb, var(--kn-brand-500) 12%, transparent);
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--kn-brand-500) 65%, transparent);
@@ -444,7 +515,7 @@ function cancelRename() {
 .btb-group.is-collapsed {
   background: color-mix(in srgb, var(--tint, var(--kn-brand-500)) 22%, transparent);
 }
-/* 拖到组头（加入该组）提示 */
+/* 拖标签悬停组头（加入该组）提示 */
 .btb-group.is-drop-group {
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--tint, var(--kn-brand-500)) 80%, transparent);
 }
