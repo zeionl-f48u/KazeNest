@@ -473,19 +473,19 @@ onUnmounted(() => {
 <style scoped>
 .btb {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   height: 36px;
-  padding: 4px 6px 0;
+  /* 左右内边距与下方工具栏 / 书签栏（10px）对齐 */
+  padding: 4px 10px 0;
   background: var(--kn-bg-sunken);
-  border-bottom: 1px solid var(--kn-border);
   flex-shrink: 0;
 }
 
-/* 标签行：均分宽度（自适应），超出横向滚动 */
+/* 标签行：均分宽度（自适应），超出横向滚动；标签贴底（与下方工具栏无缝衔接） */
 .btb-tabs {
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 2px;
   flex: 1;
   min-width: 0;
@@ -721,6 +721,7 @@ onUnmounted(() => {
   width: 26px;
   height: 26px;
   margin-left: 2px;
+  align-self: center;   /* 新建按钮在轨道内垂直居中（标签贴底） */
   border: 0;
   border-radius: var(--kn-radius-md);
   background: transparent;
