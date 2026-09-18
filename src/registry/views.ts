@@ -24,7 +24,6 @@ import { markRaw } from 'vue'
 
 import type { ViewId, ComingSoonConfig } from '../data'
 import { comingSoonConfig } from '../data'
-
 import Home from '../pages/Home.vue'
 import Editor from '../pages/Editor.vue'
 import Files from '../pages/Files.vue'
@@ -55,6 +54,8 @@ export interface ViewDefinition {
   sidebarVisible: boolean
   /** 切换到该视图时侧边栏是否默认展开（省略 = true；如浏览器默认收缩） */
   sidebarDefaultOpen?: boolean
+  /** 顶栏文字菜单（随视图自动切换；省略 = data/activityItems.ts 的默认 topMenus） */
+  menus?: readonly string[]
 }
 
 /**
@@ -70,18 +71,22 @@ export const views: Record<ViewId, ViewDefinition> = {
     sidebar: markRaw(HomeSidebar),
     sidebarTitle: '首页',
     sidebarVisible: true,
+    menus: ['文件', '编辑', '视图', '帮助'],
   },
   editor: {
     page: markRaw(Editor),
     sidebar: markRaw(EditorSidebar),
     sidebarTitle: '资源管理器',
     sidebarVisible: true,
+    /* VS Code 风格编辑器菜单（项多时自动收进 ⋯） */
+    menus: ['文件', '编辑', '选择', '视图', '转到', '运行', '终端', '帮助'],
   },
   files: {
     page: markRaw(Files),
     sidebar: markRaw(FilesSidebar),
     sidebarTitle: '文件管理',
     sidebarVisible: true,
+    menus: ['文件', '编辑', '视图', '空间', '工具', '帮助'],
   },
   // 以下为建设中视图：占位页统一走 ComingSoon，侧栏仍按各自形态先行呈现
   ai: {
@@ -89,6 +94,7 @@ export const views: Record<ViewId, ViewDefinition> = {
     sidebar: markRaw(AISidebar),
     sidebarTitle: 'AI 助手',
     sidebarVisible: true,
+    menus: ['文件', '编辑', '视图', '会话', '模型', '帮助'],
   },
   browser: {
     page: markRaw(Browser),
@@ -97,6 +103,7 @@ export const views: Record<ViewId, ViewDefinition> = {
     sidebarVisible: true,
     /* 浏览器以内容为主：切换进入时侧栏默认收缩（可手动展开） */
     sidebarDefaultOpen: false,
+    menus: ['文件', '编辑', '视图', '历史', '书签', '工具', '帮助'],
   },
   marketplace: {
     page: markRaw(ComingSoon),
@@ -104,16 +111,19 @@ export const views: Record<ViewId, ViewDefinition> = {
     sidebarTitle: '插件市场',
     sidebarVisible: true,
     comingSoon: comingSoonConfig.marketplace,
+    menus: ['文件', '编辑', '视图', '插件', '帮助'],
   },
   settings: {
     page: markRaw(ComingSoon),
     sidebarVisible: false,
     comingSoon: comingSoonConfig.settings,
+    menus: ['文件', '编辑', '视图', '帮助'],
   },
   account: {
     page: markRaw(ComingSoon),
     sidebarVisible: false,
     comingSoon: comingSoonConfig.account,
+    menus: ['文件', '编辑', '视图', '帮助'],
   },
 }
 

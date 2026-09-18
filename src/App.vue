@@ -19,7 +19,7 @@
         <TitlebarChrome
           part="leading"
           :workspace-name="workspaceName"
-          :menus="topMenus"
+          :menus="activeMenus"
           @workspace="onWorkspace"
           @menu="onMenu"
         />
@@ -146,6 +146,9 @@ const activeSidebar = computed(() => active.value.sidebar)
 
 /** 侧栏标题（SideBar 框架标题栏显示） */
 const sideBarTitle = computed(() => active.value.sidebarTitle ?? '侧边栏')
+
+/** 顶栏文字菜单：随视图自动切换（注册表 views[id].menus，未配置时用默认 topMenus） */
+const activeMenus = computed(() => active.value.menus ?? topMenus)
 
 /** 侧边栏是否显示：开关打开 且 该视图声明了侧栏（registry 的 sidebarVisible + sidebar） */
 const sideBarVisible = computed(

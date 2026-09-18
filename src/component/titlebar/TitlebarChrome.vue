@@ -244,6 +244,21 @@ watch(showMore, (v) => {
   if (!v) moreOpen.value = false
 })
 
+/* 菜单随视图切换（App.vue 传不同 menus）：重置溢出状态并等 DOM 更新后重新测量布局 */
+watch(
+  () => props.menus,
+  () => {
+    if (props.part !== 'leading') return
+    hiddenMenus.value = []
+    workspaceIconOnly.value = false
+    showMore.value = false
+    nextTick(() => {
+      measureNatural()
+      layout()
+    })
+  }
+)
+
 function openMore() {
   moreOpen.value = !moreOpen.value
   if (moreOpen.value) {
