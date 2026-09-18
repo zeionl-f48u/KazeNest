@@ -188,20 +188,43 @@ let didDrag = false
 let tabElsSnapshot: HTMLElement[] = []
 let groupElsSnapshot: HTMLElement[] = []
 
+/* ===== 拖拽中的性能与稳定性控制 ===== */
+/** rAF 节流：一帧只处理一次 mousemove（避免同帧多次样式写入） */
+let rafId = 0
+let lastMove: MouseEvent | null = null
+/** 落点防抖：候选落点需稳定 DROP_SETTLE_MS 才提交（抑制边界反复切换的频闪） */
+const DROP_SETTLE_MS = 70
+let dropTimer: number | undefined
+let candidateKey = ''
+let candidatePos: 'before' | 'after' | 'group' | null = null
+let candidateId: number | null = null
+let candidateGid: number | null = null
+
 function onTabMousedown(id: number, e: MouseEvent) {
   if (e.button !== 0) return
   if ((e.target as HTMLElement).closest('.btb-close')) return
   dragId.value = id
   didDrag = false
+  lastMove = null
   startX = e.clientX
   startY = e.clientY
   window.addEventListener('mousemove', onDragMove)
   window.addEventListener('mouseup', onDragEnd)
 }
 
+/** mousemove 只记录最新位置，实际处理放在 rAF（一帧一次） */
 function onDragMove(e: MouseEvent) {
+  if (dragId.value == null) return
+  lastMove = e
+  if (!rafId) rafId = requestAnimationFrame(processMove)
+}
+
+function processMove() {
+  rafId = 0
+  const e = lastMove
   const id = dragId.value
-  if (id == null) return
+  if (!e || id == null) return
+
   const dx = e.clientX - startX
   const dy = e.clientY - startY
   if (!didDrag && Math.hypot(dx, dy) > 4) {
@@ -217,76 +240,91 @@ function onDragMove(e: MouseEvent) {
   }
   if (!didDrag) return
 
-  /* 标签限制在水平轨道上：只做水平位移（不上下漂移，减少视觉抖动） */
+  /* 标签限制在水平轨道上：水平位移 + 轻微放大抬起（不上下漂移） */
   const el = tabElMap.get(id)
   if (el) {
-    el.style.transform = `translateX(${dx}px)`
+    el.style.transform = `translateX(${dx}px) scale(1.04)`
     el.style.zIndex = '20'
   }
   updateDropTarget(e.clientX, e.clientY)
 }
 
-/** 落点判定：组头优先 → 标签三区（左/右=重排，中=成组）→ 无目标（末尾）
+/** 纯计算的落点判定：组头优先 → 标签三区（左/右=重排，中=成组）→ 无目标（末尾）
  *  用布局坐标（offsetLeft，不受 transform 影响）——让位后的标签位置不会反过来
  *  影响判定，杜绝"目标↔位移"振荡频闪 */
-function updateDropTarget(clientX: number, clientY: number) {
+function computeDrop(clientX: number, clientY: number): {
+  pos: 'before' | 'after' | 'group' | null
+  id: number | null
+  gid: number | null
+} {
   const bar = barRef.value
-  if (!bar) return
+  if (!bar) return { pos: null, id: null, gid: null }
   const barRect = bar.getBoundingClientRect()
 
-  let pos: 'before' | 'after' | 'group' | null = null
-  let id: number | null = null
-  let gid: number | null = null
-
   /* 垂直方向明显离开标签栏：视为拖到末尾（脱离组） */
-  if (clientY >= barRect.top - 24 && clientY <= barRect.bottom + 24) {
-    /* 容器内坐标 = 布局坐标（补偿横向滚动；不含任何 transform 位移） */
-    const x = clientX - barRect.left + bar.scrollLeft
+  if (clientY < barRect.top - 24 || clientY > barRect.bottom + 24) {
+    return { pos: null, id: null, gid: null }
+  }
 
-    /* 1) 悬停组头：加入该组 */
-    for (const gEl of groupElsSnapshot) {
-      const left = gEl.offsetLeft
-      const right = left + gEl.offsetWidth
-      if (x >= left && x <= right) {
-        const groupId = Number(gEl.dataset.groupId)
-        const first = props.tabs.find((t) => t.groupId === groupId)
-        pos = 'group'
-        id = first?.id ?? null
-        gid = groupId
-        break
-      }
-    }
+  /* 容器内坐标 = 布局坐标（补偿横向滚动；不含任何 transform 位移） */
+  const x = clientX - barRect.left + bar.scrollLeft
 
-    /* 2) 悬停标签：按水平位置分三区 */
-    if (!pos) {
-      for (const tEl of tabElsSnapshot) {
-        const tid = Number(tEl.dataset.tabId)
-        if (tid === dragId.value) continue
-        const left = tEl.offsetLeft
-        const width = tEl.offsetWidth
-        if (x >= left && x <= left + width) {
-          const ratio = (x - left) / width
-          if (ratio < 0.3) {
-            pos = 'before'
-            id = tid
-          } else if (ratio > 0.7) {
-            pos = 'after'
-            id = tid
-          } else {
-            const tab = props.tabs.find((t) => t.id === tid)
-            pos = 'group'
-            id = tid
-            gid = tab?.groupId ?? null
-          }
-          break
-        }
-      }
+  /* 1) 悬停组头：加入该组 */
+  for (const gEl of groupElsSnapshot) {
+    const left = gEl.offsetLeft
+    const right = left + gEl.offsetWidth
+    if (x >= left && x <= right) {
+      const groupId = Number(gEl.dataset.groupId)
+      const first = props.tabs.find((t) => t.groupId === groupId)
+      return { pos: 'group', id: first?.id ?? null, gid: groupId }
     }
   }
 
-  dropPos.value = pos
-  dropId.value = id
-  dropGroupId.value = gid
+  /* 2) 悬停标签：按水平位置分三区 */
+  for (const tEl of tabElsSnapshot) {
+    const tid = Number(tEl.dataset.tabId)
+    if (tid === dragId.value) continue
+    const left = tEl.offsetLeft
+    const width = tEl.offsetWidth
+    if (x >= left && x <= left + width) {
+      const ratio = (x - left) / width
+      if (ratio < 0.3) return { pos: 'before', id: tid, gid: null }
+      if (ratio > 0.7) return { pos: 'after', id: tid, gid: null }
+      const tab = props.tabs.find((t) => t.id === tid)
+      return { pos: 'group', id: tid, gid: tab?.groupId ?? null }
+    }
+  }
+
+  /* 3) 空白区域：无目标 → 移到末尾 */
+  return { pos: null, id: null, gid: null }
+}
+
+/** 落点防抖提交：候选稳定 DROP_SETTLE_MS 后应用（让位动画随之刷新） */
+function updateDropTarget(clientX: number, clientY: number) {
+  const next = computeDrop(clientX, clientY)
+  const key = `${next.pos}|${next.id}|${next.gid}`
+  if (key === candidateKey) return
+  candidateKey = key
+  candidatePos = next.pos
+  candidateId = next.id
+  candidateGid = next.gid
+  window.clearTimeout(dropTimer)
+  dropTimer = window.setTimeout(commitDrop, DROP_SETTLE_MS)
+}
+
+function commitDrop() {
+  window.clearTimeout(dropTimer)
+  dropTimer = undefined
+  if (
+    candidatePos === dropPos.value &&
+    candidateId === dropId.value &&
+    candidateGid === dropGroupId.value
+  ) {
+    return
+  }
+  dropPos.value = candidatePos
+  dropId.value = candidateId
+  dropGroupId.value = candidateGid
   applyShift()
 }
 
@@ -354,8 +392,16 @@ function clearDrop() {
 function onDragEnd() {
   window.removeEventListener('mousemove', onDragMove)
   window.removeEventListener('mouseup', onDragEnd)
+  if (rafId) {
+    cancelAnimationFrame(rafId)
+    rafId = 0
+  }
+  window.clearTimeout(dropTimer)
+  dropTimer = undefined
 
   const id = dragId.value
+  /* 以松手瞬间的位置做即时落点判定（不经过防抖，保证响应） */
+  const final = didDrag && lastMove ? computeDrop(lastMove.clientX, lastMove.clientY) : null
 
   /* 关掉让位过渡后瞬时归位（避免"先回弹再重排"的闪烁） */
   dragActive.value = false
@@ -367,14 +413,16 @@ function onDragEnd() {
   }
 
   if (didDrag && id != null) {
-    if (dropPos.value && dropId.value != null) {
-      emit('move', { dragId: id, targetId: dropId.value, position: dropPos.value })
+    if (final && final.pos && final.id != null) {
+      emit('move', { dragId: id, targetId: final.id, position: final.pos })
     } else {
       emit('move', { dragId: id, targetId: 0, position: 'end' })
     }
   }
 
   dragId.value = null
+  lastMove = null
+  candidateKey = ''
   clearDrop()
 }
 
@@ -412,10 +460,12 @@ function cancelRename() {
   renamingId.value = null
 }
 
-/* 卸载兜底：拖拽中的全局监听与光标清理 */
+/* 卸载兜底：拖拽中的全局监听、光标与定时器清理 */
 onUnmounted(() => {
   window.removeEventListener('mousemove', onDragMove)
   window.removeEventListener('mouseup', onDragEnd)
+  if (rafId) cancelAnimationFrame(rafId)
+  window.clearTimeout(dropTimer)
   document.body.style.cursor = ''
 })
 </script>
@@ -473,10 +523,10 @@ onUnmounted(() => {
   background: var(--kn-hover);
   color: var(--kn-fg);
 }
-/* 拖拽期间：让位平滑过渡（transform）；拖动标签自身保持跟手（无过渡） */
+/* 拖拽期间：让位平滑过渡（transform，带"分量"的减速曲线）；拖动标签自身保持跟手 */
 .btb-tabs.is-drag-active .btb-tab {
   transition:
-    transform 0.16s var(--kn-ease-out),
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
     background var(--kn-dur-fast),
     color var(--kn-dur-fast),
     opacity var(--kn-dur-fast);
@@ -514,26 +564,30 @@ onUnmounted(() => {
   border-radius: 2px;
   background: color-mix(in srgb, var(--tint) 60%, transparent);
 }
-/* 拖拽中的标签：抬起效果（transform 由脚本控制） */
+/* 拖拽中的标签：抬起效果（transform 由脚本控制：水平位移 + 轻微放大） */
 .btb-tab.is-dragging {
   cursor: grabbing;
   background: var(--kn-bg-elev);
   color: var(--kn-fg);
-  box-shadow: var(--kn-shadow-lg);
-  opacity: 0.92;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--kn-brand-500) 50%, transparent),
+    0 4px 14px color-mix(in srgb, #000 26%, transparent);
+  opacity: 1;
 }
 
-/* 插入线（重排提示） */
+/* 插入线（重排提示）：3px 品牌色 + 目标底色提亮 */
 .btb-tab.is-drop-before {
-  box-shadow: inset 2px 0 0 var(--kn-brand-500);
+  box-shadow: inset 3px 0 0 var(--kn-brand-500);
+  background: color-mix(in srgb, var(--kn-brand-500) 9%, transparent);
 }
 .btb-tab.is-drop-after {
-  box-shadow: inset -2px 0 0 var(--kn-brand-500);
+  box-shadow: inset -3px 0 0 var(--kn-brand-500);
+  background: color-mix(in srgb, var(--kn-brand-500) 9%, transparent);
 }
-/* 合并成组提示（中间区域）：品牌色描边 */
+/* 合并成组提示（中间区域）：粗描边 + 更亮底色 */
 .btb-tab.is-drop-group {
-  background: color-mix(in srgb, var(--kn-brand-500) 12%, transparent);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--kn-brand-500) 65%, transparent);
+  background: color-mix(in srgb, var(--kn-brand-500) 15%, transparent);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--kn-brand-500) 78%, transparent);
 }
 
 /* favicon（字母占位） */
@@ -618,7 +672,7 @@ onUnmounted(() => {
 }
 /* 拖标签悬停组头（加入该组）提示 */
 .btb-group.is-drop-group {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--tint, var(--kn-brand-500)) 80%, transparent);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--tint, var(--kn-brand-500)) 85%, transparent);
 }
 .btb-group-dot {
   width: 8px;
