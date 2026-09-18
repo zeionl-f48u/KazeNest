@@ -184,6 +184,9 @@ let startX = 0
 let startY = 0
 /** 是否真的拖动过（用于抑制拖动后的 click 误切换） */
 let didDrag = false
+/** 拖拽期间的元素快照（布局坐标判定用，避免每帧查询 DOM） */
+let tabElsSnapshot: HTMLElement[] = []
+let groupElsSnapshot: HTMLElement[] = []
 
 function onTabMousedown(id: number, e: MouseEvent) {
   if (e.button !== 0) return
@@ -204,20 +207,29 @@ function onDragMove(e: MouseEvent) {
   if (!didDrag && Math.hypot(dx, dy) > 4) {
     didDrag = true
     dragActive.value = true
+    document.body.style.cursor = 'grabbing'
+    /* 快照当前行元素（拖拽期间不会增删，落点判定只读布局坐标） */
+    const bar = barRef.value
+    if (bar) {
+      tabElsSnapshot = [...bar.querySelectorAll<HTMLElement>('[data-tab-id]')]
+      groupElsSnapshot = [...bar.querySelectorAll<HTMLElement>('[data-group-id]')]
+    }
   }
   if (!didDrag) return
 
-  /* 拖拽标签跟随鼠标（每帧更新，避免跳变） */
+  /* 标签限制在水平轨道上：只做水平位移（不上下漂移，减少视觉抖动） */
   const el = tabElMap.get(id)
   if (el) {
-    el.style.transform = `translate(${dx}px, ${dy}px)`
+    el.style.transform = `translateX(${dx}px)`
     el.style.zIndex = '20'
   }
   updateDropTarget(e.clientX, e.clientY)
 }
 
-/** 落点判定：组头优先 → 标签三区（左/右=重排，中=成组）→ 无目标（末尾），随后刷新让位动画 */
-function updateDropTarget(x: number, y: number) {
+/** 落点判定：组头优先 → 标签三区（左/右=重排，中=成组）→ 无目标（末尾）
+ *  用布局坐标（offsetLeft，不受 transform 影响）——让位后的标签位置不会反过来
+ *  影响判定，杜绝"目标↔位移"振荡频闪 */
+function updateDropTarget(clientX: number, clientY: number) {
   const bar = barRef.value
   if (!bar) return
   const barRect = bar.getBoundingClientRect()
@@ -227,11 +239,15 @@ function updateDropTarget(x: number, y: number) {
   let gid: number | null = null
 
   /* 垂直方向明显离开标签栏：视为拖到末尾（脱离组） */
-  if (y >= barRect.top - 24 && y <= barRect.bottom + 24) {
+  if (clientY >= barRect.top - 24 && clientY <= barRect.bottom + 24) {
+    /* 容器内坐标 = 布局坐标（补偿横向滚动；不含任何 transform 位移） */
+    const x = clientX - barRect.left + bar.scrollLeft
+
     /* 1) 悬停组头：加入该组 */
-    for (const gEl of bar.querySelectorAll<HTMLElement>('[data-group-id]')) {
-      const r = gEl.getBoundingClientRect()
-      if (x >= r.left && x <= r.right) {
+    for (const gEl of groupElsSnapshot) {
+      const left = gEl.offsetLeft
+      const right = left + gEl.offsetWidth
+      if (x >= left && x <= right) {
         const groupId = Number(gEl.dataset.groupId)
         const first = props.tabs.find((t) => t.groupId === groupId)
         pos = 'group'
@@ -243,12 +259,13 @@ function updateDropTarget(x: number, y: number) {
 
     /* 2) 悬停标签：按水平位置分三区 */
     if (!pos) {
-      for (const tEl of bar.querySelectorAll<HTMLElement>('[data-tab-id]')) {
+      for (const tEl of tabElsSnapshot) {
         const tid = Number(tEl.dataset.tabId)
         if (tid === dragId.value) continue
-        const r = tEl.getBoundingClientRect()
-        if (x >= r.left && x <= r.right) {
-          const ratio = (x - r.left) / r.width
+        const left = tEl.offsetLeft
+        const width = tEl.offsetWidth
+        if (x >= left && x <= left + width) {
+          const ratio = (x - left) / width
           if (ratio < 0.3) {
             pos = 'before'
             id = tid
@@ -342,6 +359,7 @@ function onDragEnd() {
 
   /* 关掉让位过渡后瞬时归位（避免"先回弹再重排"的闪烁） */
   dragActive.value = false
+  document.body.style.cursor = ''
   lastShiftKey = ''
   for (const el of tabElMap.values()) {
     el.style.transform = ''
@@ -394,10 +412,11 @@ function cancelRename() {
   renamingId.value = null
 }
 
-/* 卸载兜底：拖拽中的全局监听清理 */
+/* 卸载兜底：拖拽中的全局监听与光标清理 */
 onUnmounted(() => {
   window.removeEventListener('mousemove', onDragMove)
   window.removeEventListener('mouseup', onDragEnd)
+  document.body.style.cursor = ''
 })
 </script>
 
@@ -464,6 +483,11 @@ onUnmounted(() => {
 }
 .btb-tabs.is-drag-active .btb-tab.is-dragging {
   transition: none;
+  will-change: transform;
+}
+/* 拖拽期间禁止 hover 干扰（鼠标下方的标签不再闪 hover 底色） */
+.btb-tabs.is-drag-active {
+  pointer-events: none;
 }
 .btb-tab.is-on {
   background: var(--kn-bg-elev);
