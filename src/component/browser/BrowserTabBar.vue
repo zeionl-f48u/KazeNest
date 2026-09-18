@@ -12,7 +12,7 @@
 -->
 <template>
   <div class="btb">
-    <div ref="barRef" class="btb-tabs">
+    <div ref="barRef" class="btb-tabs" :class="{ 'is-drag-active': dragActive }">
       <template v-for="row in rows" :key="row.kind === 'group' ? `g${row.group.id}` : `t${row.tab.id}`">
         <!-- 组头（点击折叠/展开，双击重命名；拖标签悬停 = 加入该组） -->
         <div
@@ -171,6 +171,8 @@ function setTabEl(id: number, el: unknown) {
 }
 
 const dragId = ref<number | null>(null)
+/** 是否处于真实拖拽中（控制让位动画的 transition 开关） */
+const dragActive = ref(false)
 /** 落点类型（before/after 重排，group 成组，null 无目标=末尾） */
 const dropPos = ref<'before' | 'after' | 'group' | null>(null)
 /** 落点目标标签 id（group 意图时为目标标签；悬停组头时为组内首个成员） */
@@ -199,7 +201,10 @@ function onDragMove(e: MouseEvent) {
   if (id == null) return
   const dx = e.clientX - startX
   const dy = e.clientY - startY
-  if (!didDrag && Math.hypot(dx, dy) > 4) didDrag = true
+  if (!didDrag && Math.hypot(dx, dy) > 4) {
+    didDrag = true
+    dragActive.value = true
+  }
   if (!didDrag) return
 
   /* 拖拽标签跟随鼠标（每帧更新，避免跳变） */
@@ -211,58 +216,116 @@ function onDragMove(e: MouseEvent) {
   updateDropTarget(e.clientX, e.clientY)
 }
 
-/** 落点判定：组头优先 → 标签三区（左/右=重排，中=成组）→ 无目标（末尾） */
+/** 落点判定：组头优先 → 标签三区（左/右=重排，中=成组）→ 无目标（末尾），随后刷新让位动画 */
 function updateDropTarget(x: number, y: number) {
   const bar = barRef.value
   if (!bar) return
   const barRect = bar.getBoundingClientRect()
 
+  let pos: 'before' | 'after' | 'group' | null = null
+  let id: number | null = null
+  let gid: number | null = null
+
   /* 垂直方向明显离开标签栏：视为拖到末尾（脱离组） */
-  if (y < barRect.top - 24 || y > barRect.bottom + 24) {
-    clearDrop()
-    return
-  }
-
-  /* 1) 悬停组头：加入该组 */
-  for (const gEl of bar.querySelectorAll<HTMLElement>('[data-group-id]')) {
-    const r = gEl.getBoundingClientRect()
-    if (x >= r.left && x <= r.right) {
-      const gid = Number(gEl.dataset.groupId)
-      const first = props.tabs.find((t) => t.groupId === gid)
-      dropPos.value = 'group'
-      dropId.value = first?.id ?? null
-      dropGroupId.value = gid
-      return
-    }
-  }
-
-  /* 2) 悬停标签：按水平位置分三区 */
-  for (const tEl of bar.querySelectorAll<HTMLElement>('[data-tab-id]')) {
-    const tid = Number(tEl.dataset.tabId)
-    if (tid === dragId.value) continue
-    const r = tEl.getBoundingClientRect()
-    if (x >= r.left && x <= r.right) {
-      const ratio = (x - r.left) / r.width
-      if (ratio < 0.3) {
-        dropPos.value = 'before'
-        dropId.value = tid
-        dropGroupId.value = null
-      } else if (ratio > 0.7) {
-        dropPos.value = 'after'
-        dropId.value = tid
-        dropGroupId.value = null
-      } else {
-        const tab = props.tabs.find((t) => t.id === tid)
-        dropPos.value = 'group'
-        dropId.value = tid
-        dropGroupId.value = tab?.groupId ?? null
+  if (y >= barRect.top - 24 && y <= barRect.bottom + 24) {
+    /* 1) 悬停组头：加入该组 */
+    for (const gEl of bar.querySelectorAll<HTMLElement>('[data-group-id]')) {
+      const r = gEl.getBoundingClientRect()
+      if (x >= r.left && x <= r.right) {
+        const groupId = Number(gEl.dataset.groupId)
+        const first = props.tabs.find((t) => t.groupId === groupId)
+        pos = 'group'
+        id = first?.id ?? null
+        gid = groupId
+        break
       }
-      return
+    }
+
+    /* 2) 悬停标签：按水平位置分三区 */
+    if (!pos) {
+      for (const tEl of bar.querySelectorAll<HTMLElement>('[data-tab-id]')) {
+        const tid = Number(tEl.dataset.tabId)
+        if (tid === dragId.value) continue
+        const r = tEl.getBoundingClientRect()
+        if (x >= r.left && x <= r.right) {
+          const ratio = (x - r.left) / r.width
+          if (ratio < 0.3) {
+            pos = 'before'
+            id = tid
+          } else if (ratio > 0.7) {
+            pos = 'after'
+            id = tid
+          } else {
+            const tab = props.tabs.find((t) => t.id === tid)
+            pos = 'group'
+            id = tid
+            gid = tab?.groupId ?? null
+          }
+          break
+        }
+      }
     }
   }
 
-  /* 3) 空白区域：无目标 → 移到末尾 */
-  clearDrop()
+  dropPos.value = pos
+  dropId.value = id
+  dropGroupId.value = gid
+  applyShift()
+}
+
+/* =================== 实时让位动画 =================== */
+
+/** 让位状态键：落点未变化时跳过重算（避免每帧写相同样式） */
+let lastShiftKey = ''
+
+/**
+ * 重排意图（before/after）时，拖动路径中间的标签平滑让出一格：
+ * - 用 transform 平移（transition 仅在拖拽期间开启，松手瞬时归位避免与重排双动画闪烁）
+ * - 跨组头区间不让位（避免标签滑入组头区域重叠，仅保留插入线提示）
+ * - 成组 / 无目标时不让位
+ */
+function applyShift() {
+  const drag = dragId.value
+  const key = `${drag}|${dropPos.value}|${dropId.value}`
+  if (key === lastShiftKey) return
+  lastShiftKey = key
+
+  /* 先清除非拖动标签的让位位移 */
+  for (const [id, el] of tabElMap) {
+    if (id !== drag) el.style.transform = ''
+  }
+
+  if (drag == null || !didDrag) return
+  if ((dropPos.value !== 'before' && dropPos.value !== 'after') || dropId.value == null) return
+
+  const all = rows.value
+  const fromRow = all.findIndex((r) => r.kind === 'tab' && r.tab.id === drag)
+  const tgtRow = all.findIndex((r) => r.kind === 'tab' && r.tab.id === dropId.value)
+  if (fromRow < 0 || tgtRow < 0) return
+
+  /* 目标插入行（把拖动行自身不算入中间段） */
+  let toRow = dropPos.value === 'before' ? tgtRow : tgtRow + 1
+  if (toRow > fromRow) toRow -= 1
+
+  /* 跨越组头 → 不让位 */
+  const lo = Math.min(fromRow, toRow)
+  const hi = Math.max(fromRow, toRow)
+  for (let i = lo; i <= hi; i++) {
+    if (all[i].kind === 'group') return
+  }
+
+  const draggedW = (tabElMap.get(drag)?.offsetWidth ?? 100) + 2 /* gap */
+  for (let i = 0; i < all.length; i++) {
+    const row = all[i]
+    if (row.kind !== 'tab' || row.tab.id === drag) continue
+    const el = tabElMap.get(row.tab.id)
+    if (!el) continue
+    if (toRow > fromRow && i > fromRow && i <= toRow) {
+      el.style.transform = `translateX(${-draggedW}px)`   // 向右拖：中间标签左移让位
+    } else if (toRow < fromRow && i >= toRow && i < fromRow) {
+      el.style.transform = `translateX(${draggedW}px)`    // 向左拖：中间标签右移让位
+    }
+  }
 }
 
 function clearDrop() {
@@ -276,8 +339,11 @@ function onDragEnd() {
   window.removeEventListener('mouseup', onDragEnd)
 
   const id = dragId.value
-  const el = id != null ? tabElMap.get(id) : null
-  if (el) {
+
+  /* 关掉让位过渡后瞬时归位（避免"先回弹再重排"的闪烁） */
+  dragActive.value = false
+  lastShiftKey = ''
+  for (const el of tabElMap.values()) {
     el.style.transform = ''
     el.style.zIndex = ''
   }
@@ -387,6 +453,17 @@ onUnmounted(() => {
 .btb-tab:hover {
   background: var(--kn-hover);
   color: var(--kn-fg);
+}
+/* 拖拽期间：让位平滑过渡（transform）；拖动标签自身保持跟手（无过渡） */
+.btb-tabs.is-drag-active .btb-tab {
+  transition:
+    transform 0.16s var(--kn-ease-out),
+    background var(--kn-dur-fast),
+    color var(--kn-dur-fast),
+    opacity var(--kn-dur-fast);
+}
+.btb-tabs.is-drag-active .btb-tab.is-dragging {
+  transition: none;
 }
 .btb-tab.is-on {
   background: var(--kn-bg-elev);
