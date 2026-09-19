@@ -31,6 +31,9 @@
 
   /* caption 控件（─ ☐ ✕）安全区兜底 */
   --tb-caption-right-clearance: 139px;
+  /* macOS 交通灯（红黄绿）左侧让位宽度（.tb.is-mac 消费）；插件注入
+   * --tauri-plugin-decoration-left-clearance 时以插件值为准 */
+  --tb-traffic-lights: 78px;
 
   /* ============ 配色（亮色 — macOS 毛玻璃）============ */
   /* 主体：半透明白 + backdrop blur（blur 数值在 .tb 里消费） */

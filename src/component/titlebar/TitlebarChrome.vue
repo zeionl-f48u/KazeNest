@@ -112,6 +112,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Icon } from '../common'
+import { isMac } from '../../utils'
 
 const props = withDefaults(
   defineProps<{
@@ -145,7 +146,6 @@ const emit = defineEmits<{
 
 /* ============ Ask AI 快捷键提示（与 App.vue 的全局快捷键保持一致） ============ */
 /* 打开/收起 AI 面板：Ctrl+Alt+I（macOS 为 ⌘⌥I），与 VS Code Copilot Chat 同款 */
-const isMac = /mac/i.test(navigator.userAgent)
 const aiShortcutLabel = computed(() => (isMac ? '⌘⌥I' : 'Ctrl+Alt+I'))
 
 /* ============ 溢出布局（参考 VS Code menubar 的 updateOverflowAction） ============ */

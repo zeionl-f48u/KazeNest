@@ -24,10 +24,11 @@ fn init_custom_titlebar(window: WebviewWindow) -> Result<(), String> {
         .create_overlay_titlebar()
         .map_err(|error| error.to_string())?;
     // macOS 上设置交通灯按钮的内边距
-    // 调节：交通灯离左/上边缘的间距（16.0 = 左右边距，20.0 = 上下边距）
+    // 调节：交通灯在自绘顶栏（38px 高）内的位置——
+    // 左右 16px 与顶栏内容留白协调；上下取 (38-12)/2 ≈ 13px 让灯垂直居中
     #[cfg(target_os = "macos")]
     window
-        .set_traffic_lights_inset(16.0, 20.0)
+        .set_traffic_lights_inset(16.0, 13.0)
         .map_err(|error| error.to_string())?;
 
     Ok(())

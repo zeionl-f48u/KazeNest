@@ -19,8 +19,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { Icon } from '../common'
+import { isMac } from '../../utils'
 
 defineProps<{
   /** 搜索面板是否打开（用于切换 "is-open" 态）*/
@@ -31,12 +32,10 @@ defineEmits<{
   open: []
 }>()
 
-const isMac = ref(false)
 /* 快捷键提示文案：改这里可换快捷键显示（实际绑定在 onGlobalKeydown） */
-const shortcutHint = computed(() => (isMac.value ? '⌘ K' : 'Ctrl K'))
+const shortcutHint = computed(() => (isMac ? '⌘ K' : 'Ctrl K'))
 
 onMounted(() => {
-  isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)
   window.addEventListener('keydown', onGlobalKeydown)
 })
 
@@ -51,7 +50,7 @@ onBeforeUnmount(() => {
  * 可以监听此事件并 toggle 自己的 modelValue。
  */
 function onGlobalKeydown(e: KeyboardEvent) {
-  const meta = isMac.value ? e.metaKey : e.ctrlKey
+  const meta = isMac ? e.metaKey : e.ctrlKey
   if (meta && e.key.toLowerCase() === 'k') {
     e.preventDefault()
     // 注意：这里不直接 emit，因为可能从关闭态触发"打开"

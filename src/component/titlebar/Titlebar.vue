@@ -13,7 +13,7 @@
   -->
   <header
     class="tb"
-    :class="{ 'is-inactive': isInactive }"
+    :class="{ 'is-inactive': isInactive, 'is-mac': isMac }"
     data-tauri-drag-region="deep"
   >
     <!-- 最左端：应用图标 + 应用名（KazeNest）+ 菜单栏 -->
@@ -79,6 +79,7 @@ import { Icon } from '../common'
 import SearchTrigger from './SearchTrigger.vue'
 import SearchPanel from './SearchPanel.vue'
 import type { SearchItem } from './types'
+import { isMac } from '../../utils'
 
 withDefaults(
   defineProps<{
@@ -222,12 +223,15 @@ onBeforeUnmount(() => window.removeEventListener('titlebar:search-toggle', onGlo
 /* =================== caption 区域宽度 =================== */
 
 /**
- * 右侧让给 caption 控件（─ ☐ ✕）的空间。
- * 插件会写入 --tauri-plugin-decoration-right-clearance；
- * 未注入时用 139px（3 个 46px 按钮 + 1px 缝隙）兜底。
+ * 窗口控制区让位：
+ * - Windows / Linux：右侧给原生 caption 控件（─ ☐ ✕）留空间
+ *   （插件注入 --tauri-plugin-decoration-right-clearance，未注入时兜底 139px）
+ * - macOS：控制按钮（交通灯）在左上角，右侧只需极小留白
  */
-const captionSpacerWidth = computed(
-  () => `max(8px, var(--tauri-plugin-decoration-right-clearance, 139px))`
+const captionSpacerWidth = computed(() =>
+  isMac
+    ? '8px'
+    : 'max(8px, var(--tauri-plugin-decoration-right-clearance, 139px))'
 )
 </script>
 
@@ -268,6 +272,17 @@ const captionSpacerWidth = computed(
 }
 
 .tb.is-inactive { opacity: 0.6; }
+
+/* ============ macOS：为左上角交通灯让位 ============
+ * 交通灯由插件原生渲染在左上角，WebView 内容需右移避开：
+ * 优先用插件注入的 clearance（若存在），否则用 --tb-traffic-lights 兜底。
+ * 宽度调节：tokens.css 的 --tb-traffic-lights（默认 78px） */
+.tb.is-mac {
+  padding-left: max(
+    var(--tb-pad-x),
+    var(--tauri-plugin-decoration-left-clearance, var(--tb-traffic-lights, 78px))
+  );
+}
 
 /* ============ 最左端（应用名 + 菜单栏） ============ */
 .tb-left {
