@@ -1,4 +1,40 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+//
+// ============================================================
+// 后端目录规划（当前为纯注释骨架，未添加 mod 声明，不影响编译）
+// ============================================================
+// src/
+// ├── main.rs              进程入口（已有）
+// ├── lib.rs               本文件：Tauri Builder、插件注册、invoke_handler（已有）
+// ├── error.rs             统一错误类型 AppError（命令统一返回 Result<T, AppError>）
+// ├── state.rs             全局状态 AppState（作用域 / 私有空间密钥 / AI 请求 / 监听 / SQLite）
+// ├── commands/            命令层：前端 invoke('xxx') 的薄封装（校验 → 调 core → DTO）
+// │   ├── fs.rs            列目录 / 读写文本 / 新建 / 重命名 / 删除 / 定位 / 搜索
+// │   ├── dialog.rs        系统对话框：选择文件夹 / 多选文件 / 保存文件 / 确认框
+// │   ├── vault.rs         私有空间：初始化 / 解锁 / 加密导入 / 解密导出 / 改密码
+// │   ├── ai.rs            AI：发起流式对话（事件回传）/ 取消生成 / 测试 Key
+// │   └── settings.rs      设置读写（敏感值加密后落盘）
+// ├── core/                核心层：可单测的业务实现（不依赖 tauri:: 类型）
+// │   ├── crypto.rs        Argon2id + AES-256-GCM 分块加解密 / 密钥内存清零
+// │   ├── paths.rs         路径安全：作用域校验（防目录穿越）/ 文件类型判定
+// │   ├── fs_watch.rs      notify 文件监听（外部修改感知、事件防抖）
+// │   └── ai_client.rs     OpenAI 兼容客户端 + SSE 流式解析 + 超时/重试/取消
+// └── models/              数据模型（serde DTO，字段与前端 TS 类型一一对应）
+//     ├── fs.rs             FileEntryDto / DirListingDto / SearchQueryDto
+//     ├── ai.rs             ChatRequestDto / 流式事件负载 / UsageDto / ModelDto
+//     └── vault.rs          VaultStatusDto / VaultEntryDto / VaultMeta 布局
+//
+// 接入步骤（每完成一个领域执行一次）：
+//   1. 取消下方 `mod …` 注释（并在各层 mod.rs 中启用 `pub mod xxx;`）
+//   2. 实现命令后在 invoke_handler![...] 中登记命令名
+//   3. Cargo.toml 添加对应依赖（reqwest / argon2 / aes-gcm / notify / rusqlite / trash …）
+//   4. capabilities/default.json 补充所需权限（fs 作用域 / dialog / http 等）
+//   5. 前端把 mock 替换为 invoke（useFileManager / useAiChat / 设置页的接入点）
+//
+// 待启用的模块声明（注释形式预留，启用时去掉行首注释）：
+//   mod commands; mod core; mod models; mod error; mod state;
+// ============================================================
+
 use tauri::WebviewWindow;
 use tauri_plugin_decoration::WebviewWindowExt;
 
