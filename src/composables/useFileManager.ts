@@ -10,8 +10,9 @@
  *   侧栏目录树与文件夹模式的 activeFolderId 双向同步
  * - 演示操作：多选添加、新建文件夹；接真实文件系统后替换实现
  */
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { FolderNode, ManagedFile } from '../component/files'
+import { useAppSession } from './useAppSession'
 
 /** 空间类型：文件夹（资源管理器）/ 资料空间 / 私有空间 */
 export type FileSpace = 'folder' | 'library' | 'private'
@@ -248,6 +249,56 @@ function folderScopeIds(id: string): Set<string> {
   return ids
 }
 
+/* =================== 持久化（AppSessionSnapshot.files 切片） =================== */
+/* 目录树 / 当前空间与目录 / 两空间文件（含标签注释）关闭后重开恢复；
+ * 私有空间始终以锁定态重开（locked 不持久化，安全优先） */
+
+const { session, restore, save } = useAppSession()
+
+/** 把当前文件管理状态写回共享快照 */
+function syncFiles() {
+  const s = session.value
+  if (!s) return
+  s.files = {
+    folderOpened: folderOpened.value,
+    rootFolderName: rootFolderName.value,
+    space: space.value,
+    activeFolderId: activeFolderId.value,
+    folders: folders.value,
+    folderFiles: folderFiles.value,
+    libraryFiles: libraryFiles.value,
+    privateFiles: privateFiles.value,
+  }
+}
+
+/** 状态任一变化 → 写回快照并防抖落盘 */
+watch(
+  [folderOpened, rootFolderName, space, activeFolderId, folders, folderFiles, libraryFiles, privateFiles],
+  () => {
+    syncFiles()
+    save()
+  },
+  { deep: true }
+)
+
+/** 启动恢复（幂等：页面与侧栏可能都触发） */
+let filesRestored = false
+
+async function restoreFiles() {
+  if (filesRestored) return
+  filesRestored = true
+  const snap = (await restore())?.files
+  if (!snap) return
+  folderOpened.value = !!snap.folderOpened
+  rootFolderName.value = snap.rootFolderName ?? ''
+  space.value = snap.space ?? 'folder'
+  activeFolderId.value = snap.activeFolderId ?? ''
+  if (Array.isArray(snap.folders) && snap.folders.length) folders.value = snap.folders
+  if (Array.isArray(snap.folderFiles) && snap.folderFiles.length) folderFiles.value = snap.folderFiles
+  if (Array.isArray(snap.libraryFiles) && snap.libraryFiles.length) libraryFiles.value = snap.libraryFiles
+  if (Array.isArray(snap.privateFiles) && snap.privateFiles.length) privateFiles.value = snap.privateFiles
+}
+
 export function useFileManager() {
   return {
     folders,
@@ -271,5 +322,6 @@ export function useFileManager() {
     addFolder,
     folderPath,
     folderScopeIds,
+    restore: restoreFiles,
   }
 }

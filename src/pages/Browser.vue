@@ -59,9 +59,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { BrowserTabBar, BrowserToolbar, BrowserViewport } from '../component/browser'
 import { domainOf, faviconOf, normalizeUrl } from '../component/browser'
+import { useAppSession } from '../composables'
 
 /* =================== 标签页状态 =================== */
 
@@ -364,6 +365,69 @@ function closeTab(id: number) {
 }
 
 onUnmounted(() => window.clearTimeout(loadTimer))
+
+/* =================== 持久化（AppSessionSnapshot.browser 切片） =================== */
+/* 标签页（含组/历史）/ 书签 / 最近访问关闭后重开恢复；loading 等瞬态不落盘 */
+
+const { session, restore, save } = useAppSession()
+
+/** 把当前浏览器状态写回共享快照 */
+function syncBrowser() {
+  const s = session.value
+  if (!s) return
+  s.browser = {
+    tabs: tabs.value.map((t) => ({
+      id: t.id,
+      title: t.title,
+      url: t.url,
+      color: t.color,
+      letter: t.letter,
+      groupId: t.groupId,
+      history: [...t.history],
+      histIndex: t.histIndex,
+    })),
+    activeTabId: activeId.value,
+    groups: groups.value.map((g) => ({ ...g })),
+    bookmarks: bookmarks.value.map((b) => ({ ...b })),
+    recent: [...recent.value],
+  }
+}
+
+/** 状态任一变化 → 写回快照并防抖落盘 */
+watch(
+  [tabs, activeId, groups, bookmarks, recent],
+  () => {
+    syncBrowser()
+    save()
+  },
+  { deep: true }
+)
+
+/** 启动恢复（幂等：KeepAlive 下只执行一次） */
+let browserRestored = false
+
+async function restoreBrowser() {
+  if (browserRestored) return
+  browserRestored = true
+  const snap = (await restore())?.browser
+  if (!snap || !Array.isArray(snap.tabs) || !snap.tabs.length) return
+
+  tabs.value = snap.tabs.map((t) => ({ ...t, loading: false, history: [...t.history] }))
+  groups.value = Array.isArray(snap.groups) ? snap.groups.map((g) => ({ ...g })) : []
+  bookmarks.value = Array.isArray(snap.bookmarks) ? snap.bookmarks.map((b) => ({ ...b })) : []
+  recent.value = Array.isArray(snap.recent) ? [...snap.recent] : []
+  activeId.value = snap.tabs.some((t) => t.id === snap.activeTabId)
+    ? snap.activeTabId
+    : tabs.value[0].id
+
+  /* 序列号推进到已恢复的最大值，避免新建时 id 冲突 */
+  tabSeq = Math.max(0, ...snap.tabs.map((t) => t.id))
+  groupSeq = Math.max(0, ...(snap.groups ?? []).map((g) => g.id))
+}
+
+onMounted(async () => {
+  await restoreBrowser()
+})
 </script>
 
 <style scoped>

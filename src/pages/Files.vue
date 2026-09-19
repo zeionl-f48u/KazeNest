@@ -342,7 +342,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { Icon } from '../component/common'
 import { FileTable, FileDetail, kindMeta } from '../component/files'
 import type { FolderNode, ManagedFile } from '../component/files'
@@ -374,6 +374,7 @@ const {
   addFolder,
   folderPath,
   folderScopeIds,
+  restore: restoreFiles,
 } = useFileManager()
 
 /** 最近打开的文件夹（演示数据；接 Tauri 后记录真实选择历史） */
@@ -617,6 +618,11 @@ function onImport() {
 onUnmounted(() => {
   window.clearTimeout(importTimer)
   window.clearTimeout(batchTimer)
+})
+
+/* 启动恢复：目录树 / 空间文件（含标签注释）关闭后重开恢复（幂等） */
+onMounted(async () => {
+  await restoreFiles()
 })
 </script>
 

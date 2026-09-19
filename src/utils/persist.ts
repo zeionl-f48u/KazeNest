@@ -11,6 +11,7 @@
  */
 import { load } from '@tauri-apps/plugin-store'
 import type { Store } from '@tauri-apps/plugin-store'
+import type { FolderNode, ManagedFile } from '../component/files'
 
 /** settings.json 里用到的 key（统一在这里登记，避免字符串散落） */
 const KEYS = {
@@ -129,6 +130,61 @@ export interface AiSessionSnapshot {
   createdAt: number
 }
 
+/* ---------- 文件管理（文件夹模式 + 两空间） ---------- */
+
+/** 文件管理快照：目录树 / 当前空间与目录 / 各空间文件（含标签注释等用户数据） */
+export interface FilesSnapshot {
+  /** 是否已打开本地文件夹（未打开时恢复为空态） */
+  folderOpened: boolean
+  /** 打开的文件夹根名（面包屑首项） */
+  rootFolderName: string
+  /** 当前空间（文件夹 / 资料空间 / 私有空间） */
+  space: 'folder' | 'library' | 'private'
+  /** 文件夹模式当前目录 id（'' = 根） */
+  activeFolderId: string
+  /** 目录树（含演示中新建的文件夹） */
+  folders: FolderNode[]
+  /** 文件夹模式的文件（文件系统原始文件） */
+  folderFiles: ManagedFile[]
+  /** 资料空间文件（含标签 / 注释） */
+  libraryFiles: ManagedFile[]
+  /** 私有空间文件（加密标识；重开仍保持锁定态） */
+  privateFiles: ManagedFile[]
+}
+
+/* ---------- 浏览器 ---------- */
+
+/** 浏览器标签页快照（loading 等瞬态不持久化） */
+export interface BrowserTabSnapshot {
+  id: number
+  title: string
+  url: string
+  color: string
+  letter: string
+  /** 所属标签组（undefined = 未分组） */
+  groupId?: number
+  /** 前进后退历史 */
+  history: string[]
+  histIndex: number
+}
+
+/** 浏览器标签组快照 */
+export interface BrowserGroupSnapshot {
+  id: number
+  name: string
+  color: string
+  collapsed: boolean
+}
+
+/** 浏览器快照（标签页 / 标签组 / 书签 / 最近访问） */
+export interface BrowserSnapshot {
+  tabs: BrowserTabSnapshot[]
+  activeTabId: number
+  groups: BrowserGroupSnapshot[]
+  bookmarks: { url: string; title: string }[]
+  recent: string[]
+}
+
 /** 全局页面状态快照：关闭后重开恢复到与上次一致
  *  - 由 App / Editor / AISidebar 各自维护自己那块（useAppSession 共享同一份对象）
  *  - editor.contents 含未保存修改 → 重开不丢草稿
@@ -170,6 +226,10 @@ export interface AppSessionSnapshot {
     /** 面板宽度（px） */
     width: number
   }
+  /** 文件管理（旧快照无此字段：使用内置演示数据） */
+  files?: FilesSnapshot
+  /** 浏览器（旧快照无此字段：使用默认新标签页） */
+  browser?: BrowserSnapshot
 }
 
 export async function getAppSession(): Promise<AppSessionSnapshot | null> {
