@@ -168,6 +168,7 @@ const {
   hide: hideAiPanel,
   toggle: toggleAiPanel,
   setWidth: setAiPanelWidth,
+  restoreWidth: restoreAiPanelWidth,
   resetWidth: resetAiPanelWidth,
 } = useAiPanel()
 
@@ -316,7 +317,7 @@ onMounted(async () => {
     activeView.value = saved.activeView as ViewId
     sideBarOpen.value = saved.sideBarOpen
     if (saved.aiPanel) {
-      setAiPanelWidth(saved.aiPanel.width)
+      restoreAiPanelWidth(saved.aiPanel.width)
       /* 面板常驻：上次开着就恢复（AI 视图下会直接以展开形态出现） */
       if (saved.aiPanel.open) showAiPanel()
     }

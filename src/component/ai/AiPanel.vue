@@ -39,6 +39,7 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from 'vue'
 import AiWorkspace from './AiWorkspace.vue'
+import { AI_PANEL_SNAP_CLOSE } from '../../composables'
 
 const props = defineProps<{
   /** 当前面板宽度（px，App 侧持有并负责钳制/持久化） */
@@ -101,10 +102,13 @@ function onResizeStart(e: MouseEvent) {
   e.preventDefault()
   const startX = e.clientX
   const startWidth = props.width
+  /** 拖拽目标宽度（本地记录，松手吸附判定不依赖 props 回流的时序） */
+  let lastWidth = startWidth
 
   /** 面板贴右：鼠标左移 = 宽度增大 */
   function onMove(ev: MouseEvent) {
-    emit('update:width', startWidth + (startX - ev.clientX))
+    lastWidth = startWidth + (startX - ev.clientX)
+    emit('update:width', lastWidth)
   }
 
   function onUp() {
@@ -112,6 +116,11 @@ function onResizeStart(e: MouseEvent) {
     document.removeEventListener('mouseup', onUp)
     document.body.classList.remove('ai-panel-resizing')
     stopResize = null
+
+    /* 拖到吸附阈值内 → 完全收起（宽度复位由 useAiPanel.hide 在动画后处理） */
+    if (lastWidth <= AI_PANEL_SNAP_CLOSE) {
+      emit('close')
+    }
   }
 
   document.body.classList.add('ai-panel-resizing')

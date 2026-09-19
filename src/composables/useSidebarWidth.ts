@@ -6,11 +6,16 @@
 import { ref } from 'vue'
 import { getSidebarWidth, setSidebarWidth } from '../utils'
 
-/** 侧边栏宽度范围（px） */
-export const MIN_WIDTH = 180
+/** 侧边栏宽度范围（px）
+ * - MIN_WIDTH：拖拽可达的最小宽度（继续往左拖即进入"收起意图区"）
+ * - SNAP_CLOSE：拖拽松手时宽度 ≤ 该值 → 完全收起（关闭侧栏，宽度复位）
+ */
+export const MIN_WIDTH = 120
 export const MAX_WIDTH = 480
 /** 默认宽度（双击手柄恢复到这个值） */
 export const DEFAULT_WIDTH = 300
+/** 拖拽吸附收起阈值（px）：松手宽度不超过它 → 完全收起 */
+export const SIDEBAR_SNAP_CLOSE = 150
 
 export function useSidebarWidth() {
   const width = ref(DEFAULT_WIDTH)

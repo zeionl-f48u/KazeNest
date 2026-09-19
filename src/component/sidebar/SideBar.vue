@@ -41,7 +41,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
 import { Icon } from '../common'
-import { useSidebarWidth, MIN_WIDTH, MAX_WIDTH } from '../../composables/useSidebarWidth'
+import { useSidebarWidth, MIN_WIDTH, MAX_WIDTH, SIDEBAR_SNAP_CLOSE } from '../../composables/useSidebarWidth'
 
 defineProps<{
   /** 侧边栏标题（视图名，如「资源管理器」「AI 助手」） */
@@ -83,6 +83,14 @@ function onResizeEnd() {
   document.body.classList.remove('sb-resizing')
   window.removeEventListener('mousemove', onResizeMove)
   window.removeEventListener('mouseup', onResizeEnd)
+
+  /* 拖到吸附阈值内 → 完全收起：
+   * 先关闭（离开动画用当前窄宽度播放），再复位宽度（只改持久化，不动视觉） */
+  if (sbWidth.value <= SIDEBAR_SNAP_CLOSE) {
+    emit('close')
+    resetToDefault()
+    return
+  }
   persistWidth()
 }
 
