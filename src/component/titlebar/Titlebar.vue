@@ -185,9 +185,9 @@ function syncLeadingBasis() {
 const leftRef = ref<HTMLElement>()
 
 /* =================== 应用名完全收缩 ===================
- * 让位顺序：菜单收进 ⋯（TitlebarChrome）→ 应用名收缩（本段）→ 搜索框（.tb-center min-width 兜底）。
- * 应用名宽度由脚本管理（不参与 flex 收缩）：空间不足时逐渐收窄（省略号），
- * 完全放不下时隐藏（display:none）—— 即 "KazeNest 可以被完全收缩"。
+ * 让位顺序：应用名（优先）→ 菜单收进 ⋯（TitlebarChrome）→ 搜索框（.tb-center min-width 兜底）。
+ * 应用名宽度由脚本管理（不参与 flex 收缩）：空间不足时立即开始收窄（省略号），
+ * 收不下时完全隐藏（display:none）—— "KazeNest 可以被完全收缩"，且优先级最高。
  */
 
 const titleRef = ref<HTMLElement>()
@@ -205,7 +205,12 @@ function measureTitleNatural() {
   if (wasCollapsed) title.classList.add('is-collapsed')
 }
 
-/** 应用名可用宽度 = 左区宽 − 应用图标 − leading slot − 间距；据此收窄/隐藏 */
+/**
+ * 应用名可用宽度 = 左区宽 − 应用图标 − 菜单自然宽 − 间距。
+ * 关键：用菜单的"自然宽"（flex-basis，全部菜单展开时的宽度）而非压缩后的实际宽——
+ * 这样空间一紧张应用名就优先收缩/隐藏，菜单保持完整展开，
+ * 直到应用名完全收起后，菜单才开始收进 ⋯。
+ */
 function updateTitleWidth() {
   const left = leftRef.value
   const title = titleRef.value
@@ -214,10 +219,12 @@ function updateTitleWidth() {
   const gap = parseFloat(getComputedStyle(left).gap) || 0
   const icon = left.querySelector<HTMLElement>('.tb-icon-btn')
   const iconW = icon ? icon.offsetWidth : 0
-  const avail = Math.max(0, left.clientWidth - iconW - slot.offsetWidth - gap * 2)
+  /* 菜单自然宽：优先取已固化的 flex-basis，未就绪时用 scrollWidth */
+  const slotNatural = parseFloat(slot.style.flexBasis || '0') || slot.scrollWidth
+  const avail = Math.max(0, left.clientWidth - iconW - slotNatural - gap * 2)
 
-  if (avail <= 1) {
-    /* 完全收缩：隐藏（宽度归零会留下省略号残影） */
+  /* 小于最小可读宽度（约一个省略号）→ 直接完全隐藏，避免残影 */
+  if (avail < 18) {
     title.classList.add('is-collapsed')
     title.style.width = ''
     return
@@ -389,8 +396,8 @@ const captionSpacerWidth = computed(() =>
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  /* 宽度由脚本管理（updateTitleWidth）：空间不足时逐渐收窄，收不下时完全隐藏
-   * （不参与 flex 收缩，保证能收缩到 0）。让位顺序：菜单 → 应用名 → 搜索框。 */
+  /* 宽度由脚本管理（updateTitleWidth）：空间不足时优先收窄、收不下时完全隐藏
+   * （不参与 flex 收缩，保证能收缩到 0）。让位顺序：应用名 → 菜单 → 搜索框。 */
   flex-shrink: 0;
   min-width: 0;
   user-select: none;
