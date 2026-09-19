@@ -5,3 +5,5 @@
 export * from './persist'
 export * from './platform'
 export { initMacNativeMenu } from './nativeMenu'
+export { showDemo } from './demo'
+export type { DemoPayload } from './demo'

@@ -20,8 +20,7 @@
           part="leading"
           :workspace-name="workspaceName"
           :menus="titlebarMenus"
-          @workspace="onWorkspace"
-          @menu="onMenu"
+          @workspace-select="workspaceName = $event"
         />
       </template>
 
@@ -32,11 +31,13 @@
           :notify-count="notifyCount"
           :ai-active="aiPanelActive"
           @ask-ai="onAskAI"
-          @notify="onNotify"
-          @account="onAccount"
+          @notify-read="notifyCount = 0"
         />
       </template>
     </Titlebar>
+
+    <!-- 全局演示弹窗：无真实功能按钮的点击画面（showDemo 事件驱动） -->
+    <DemoDialog />
 
     <!-- VS Code 布局：活动栏 | 侧边栏 | 主内容 -->
     <div class="app-body">
@@ -110,8 +111,9 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Titlebar, TitlebarChrome } from './component/titlebar'
 import { ActivityBar, SideBar } from './component/sidebar'
 import { AiPanel } from './component/ai'
+import { DemoDialog } from './component/common'
 import { useAppSession, useAppBoot, useAiPanel } from './composables'
-import { isMac, initMacNativeMenu } from './utils'
+import { isMac, initMacNativeMenu, showDemo } from './utils'
 
 import { searchItems, activityItems, topMenus } from './data'
 import type { SearchItem, ViewId } from './data'
@@ -127,7 +129,7 @@ import { views } from './registry/views'
 const activeView = ref<ViewId>('editor')
 const sideBarOpen = ref(true)
 const notifyCount = ref(3)
-const workspaceName = '我的工作区'
+const workspaceName = ref('我的工作区')
 
 /* =================== 视图注册表驱动 =================== */
 /* 视图的完整定义（页面 / 侧栏 / 占位配置 / 侧栏可见性）在 registry/views.ts，
@@ -242,36 +244,22 @@ watch([aiPanelOpen, aiPanelWidth], () => {
 })
 
 /* =================== 顶栏 handler =================== */
-/* 这些目前只是打日志的占位。接真实逻辑时在这里替换：
- * - onSearchSelect: 搜索面板选中某项 → 可导航/执行命令
- * - onMenu: 顶栏菜单（文件/编辑/…）点中 → 弹出菜单
- * - onWorkspace: 工作区选择器 → 打开"切换工作区"对话框
- * - onAskAI: Ask AI 按钮 → 打开 AI 侧栏/对话框
- * - onNotify: 通知铃铛 → 打开通知中心
- * - onAccount: 账户头像 → 打开账户面板（目前跳设置页） */
+/* 菜单 / 工作区 / 通知 / 账户的"点击画面"在 TitlebarChrome 内部处理
+ * （下拉面板 → 条目 → 演示弹窗 showDemo）；这里只保留搜索选中与 Ask AI。 */
+
 function onSearchSelect(item: SearchItem) {
-  console.log('search selected:', item)
-}
-
-function onMenu(name: string) {
-  console.log('menu clicked:', name)
-}
-
-function onWorkspace() {
-  console.log('workspace clicked')
+  /* 导航类（nav.*）：切换到对应视图；其余：演示弹窗反馈 */
+  const view = item.id.startsWith('nav.') ? item.id.slice(4) : ''
+  if (view && view in views) {
+    onActivitySelect(view)
+    return
+  }
+  showDemo({ title: item.title, desc: `演示模式：${item.desc}（尚未接入）`, icon: item.icon })
 }
 
 function onAskAI() {
   /* 开合 AI 面板（面板常驻：在 AI 视图内关闭后露出 AI 主界面，再按重新覆盖） */
   toggleAiPanel()
-}
-
-function onNotify() {
-  console.log('notify clicked')
-}
-
-function onAccount() {
-  console.log('account clicked')
 }
 
 /* =================== 全局快捷键 =================== */

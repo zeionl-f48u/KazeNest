@@ -7,6 +7,8 @@ import './tokens.css'
 
 export { default as Titlebar } from './Titlebar.vue'
 export { default as TitlebarChrome } from './TitlebarChrome.vue'
+export { default as TbDropdown } from './TbDropdown.vue'
 export { default as SearchTrigger } from './SearchTrigger.vue'
 export { default as SearchPanel } from './SearchPanel.vue'
+export type { DropdownItem } from './TbDropdown.vue'
 export type { SearchItem } from './types'

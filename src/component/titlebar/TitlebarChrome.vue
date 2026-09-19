@@ -15,7 +15,7 @@
       class="tb-workspace"
       :class="{ 'is-icon-only': workspaceIconOnly }"
       :aria-label="'切换工作区'"
-      @click="$emit('workspace')"
+      @click="openWorkspace"
     >
       <Icon name="folder-open" :size="15" class="tb-ws-icon" />
       <span class="tb-ws-name">{{ workspaceName }}</span>
@@ -31,7 +31,7 @@
       type="button"
       class="tb-menu"
       :class="{ 'is-overflowed': hiddenMenus.includes(m) }"
-      @click="$emit('menu', m)"
+      @click="openMenu(m, $event)"
     >
       {{ m }}
     </button>
@@ -67,6 +67,17 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- 点击画面：菜单下拉（点击条目 → 演示弹窗） -->
+    <TbDropdown
+      v-if="dropdown"
+      :items="dropdown.items"
+      :title="dropdown.title"
+      :x="dropdown.x"
+      :y="dropdown.y"
+      @select="onDropdownSelect"
+      @close="dropdown = null"
+    />
   </div>
 
   <!-- ============ 右侧：Ask AI + 通知 + 账户 ============ -->
@@ -92,7 +103,7 @@
         type="button"
         class="tb-util-btn"
         aria-label="通知"
-        @click="$emit('notify')"
+        @click="openNotify"
       >
         <Icon name="bell" :size="15" />
         <span v-if="notifyCount > 0" class="tb-util-badge">{{ notifyCount }}</span>
@@ -101,18 +112,32 @@
         type="button"
         class="tb-util-btn"
         aria-label="账户"
-        @click="$emit('account')"
+        @click="openAccount"
       >
         <Icon name="user" :size="15" />
       </button>
     </div>
+
+    <!-- 点击画面：通知中心 / 账户 下拉 -->
+    <TbDropdown
+      v-if="dropdown"
+      :items="dropdown.items"
+      :title="dropdown.title"
+      :x="dropdown.x"
+      :y="dropdown.y"
+      @select="onDropdownSelect"
+      @close="dropdown = null"
+    />
   </template>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Icon } from '../common'
-import { isMac } from '../../utils'
+import TbDropdown from './TbDropdown.vue'
+import type { DropdownItem } from './TbDropdown.vue'
+import { isMac, showDemo } from '../../utils'
+import { menuEntriesOf } from '../../data/menuItems'
 
 const props = withDefaults(
   defineProps<{
@@ -137,12 +162,105 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  workspace: []
-  menu: [string]
   askAi: []
-  notify: []
-  account: []
+  /** 工作区切换（工作区下拉选中某项） */
+  'workspace-select': [name: string]
+  /** 通知全部标为已读 */
+  'notify-read': []
 }>()
+
+/* ============ 点击画面：菜单 / 工作区 / 通知 / 账户 下拉 ============
+ * 无真实功能的按钮统一给"画面"反馈：
+ * - 文字菜单 → 下拉（该项的占位菜单条目）→ 点击条目弹演示弹窗
+ * - 工作区 → 下拉（工作区列表，可真实切换显示名；添加项弹演示弹窗）
+ * - 通知 → 通知中心（演示通知列表 + 全部已读，可清零徽标）
+ * - 账户 → 账户菜单（条目弹演示弹窗）
+ */
+
+interface DropdownState {
+  /** 'menu:菜单名' | 'workspace' | 'notify' | 'account' */
+  kind: string
+  x: number
+  y: number
+  title?: string
+  items: DropdownItem[]
+}
+
+const dropdown = ref<DropdownState | null>(null)
+
+/** 以按钮为锚点计算下拉位置（按钮下方左对齐） */
+function anchorPos(el: HTMLElement) {
+  const r = el.getBoundingClientRect()
+  return { x: r.left, y: r.bottom + 6 }
+}
+
+function openMenu(name: string, e: MouseEvent) {
+  const pos = anchorPos(e.currentTarget as HTMLElement)
+  dropdown.value = { kind: `menu:${name}`, ...pos, title: name, items: menuEntriesOf(name) }
+}
+
+function openWorkspace(e: MouseEvent) {
+  const pos = anchorPos(e.currentTarget as HTMLElement)
+  const workspaces = ['我的工作区', 'KazeNest 项目', '设计资源']
+  const items: DropdownItem[] = workspaces.map((w) => ({
+    id: `ws:${w}`,
+    label: w,
+    icon: 'folder-open',
+    checked: w === props.workspaceName,
+  }))
+  items.push({ id: 'sep', label: '', separator: true })
+  items.push({ id: 'add', label: '添加工作区…', icon: 'plus' })
+  dropdown.value = { kind: 'workspace', ...pos, title: '切换工作区', items }
+}
+
+function openNotify(e: MouseEvent) {
+  const pos = anchorPos(e.currentTarget as HTMLElement)
+  const items: DropdownItem[] = [
+    { id: 'n1', label: '构建完成：kazenest v0.1.0', icon: 'check', color: 'var(--kn-emerald-500)', meta: '2 分钟前' },
+    { id: 'n2', label: 'AI 会话已生成代码评审', icon: 'sparkles', color: 'var(--kn-brand-500)', meta: '1 小时前' },
+    { id: 'n3', label: '私有空间新增加密文件', icon: 'lock', color: 'var(--kn-amber-500)', meta: '昨天' },
+    { id: 'sep', label: '', separator: true },
+    { id: 'read-all', label: '全部标为已读', icon: 'check' },
+  ]
+  dropdown.value = { kind: 'notify', ...pos, title: '通知', items }
+}
+
+function openAccount(e: MouseEvent) {
+  const pos = anchorPos(e.currentTarget as HTMLElement)
+  const items: DropdownItem[] = [
+    { id: 'profile', label: '个人资料', icon: 'user' },
+    { id: 'usage', label: '使用统计', icon: 'chart-bar' },
+    { id: 'prefs', label: '偏好设置', icon: 'cog' },
+    { id: 'sep', label: '', separator: true },
+    { id: 'signout', label: '退出登录', icon: 'forward' },
+  ]
+  dropdown.value = { kind: 'account', ...pos, title: 'Zeionl', items }
+}
+
+function onDropdownSelect(item: DropdownItem) {
+  const state = dropdown.value
+  dropdown.value = null
+  if (!state) return
+
+  if (state.kind.startsWith('menu:')) {
+    const menuName = state.kind.slice(5)
+    showDemo({ title: item.label, desc: `演示模式：「${menuName}」菜单功能尚未接入` })
+    return
+  }
+  if (state.kind === 'workspace') {
+    if (item.id === 'add') showDemo({ title: '添加工作区', desc: '演示模式：工作区管理尚未接入', icon: 'folder-open' })
+    else emit('workspace-select', item.label)
+    return
+  }
+  if (state.kind === 'notify') {
+    if (item.id === 'read-all') emit('notify-read')
+    else showDemo({ title: '通知详情', desc: item.label, icon: 'bell' })
+    return
+  }
+  if (state.kind === 'account') {
+    showDemo({ title: item.label, desc: '演示模式：账户功能尚未接入', icon: 'user' })
+  }
+}
 
 /* ============ Ask AI 快捷键提示（与 App.vue 的全局快捷键保持一致） ============ */
 /* 打开/收起 AI 面板：Ctrl+Alt+I（macOS 为 ⌘⌥I），与 VS Code Copilot Chat 同款 */
@@ -278,7 +396,17 @@ function openMore() {
 
 function onOverflowClick(item: { type: 'menu'; label: string }) {
   moreOpen.value = false
-  if (item.type === 'menu') emit('menu', item.label)
+  if (item.type === 'menu' && moreRef.value) {
+    /* ⋯ 里的菜单同样打开"点击画面"下拉（锚在 ⋯ 按钮下方，避免超出窗口右缘） */
+    const r = moreRef.value.getBoundingClientRect()
+    dropdown.value = {
+      kind: `menu:${item.label}`,
+      x: r.left - 170,
+      y: r.bottom + 6,
+      title: item.label,
+      items: menuEntriesOf(item.label),
+    }
+  }
 }
 
 /* ============ 生命周期 ============ */

@@ -6,3 +6,4 @@
 export { default as PageLayout } from './PageLayout.vue'
 export { default as GlassCard } from './GlassCard.vue'
 export { default as Icon } from './Icon.vue'
+export { default as DemoDialog } from './DemoDialog.vue'

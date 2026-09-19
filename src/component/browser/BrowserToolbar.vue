@@ -51,7 +51,7 @@
       >
         <Icon :name="bookmarked ? 'star-fill' : 'star'" :size="14" />
       </button>
-      <button type="button" class="bt-btn" title="更多（演示）">
+      <button type="button" class="bt-btn" title="更多（演示）" @click="onMore">
         <Icon name="ellipsis-h" :size="14" />
       </button>
     </div>
@@ -61,6 +61,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Icon } from '../common'
+import { showDemo } from '../../utils'
 
 const props = defineProps<{
   /** 当前地址（'' = 新标签页） */
@@ -100,6 +101,11 @@ function onFocus() {
 
 function onSubmit() {
   emit('navigate', draft.value)
+}
+
+/** 更多（演示）：还没有真实菜单，给点击画面反馈 */
+function onMore() {
+  showDemo({ title: '更多', desc: '演示模式：浏览器更多菜单尚未接入', icon: 'globe' })
 }
 </script>
 
