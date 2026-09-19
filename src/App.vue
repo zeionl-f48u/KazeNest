@@ -19,7 +19,7 @@
         <TitlebarChrome
           part="leading"
           :workspace-name="workspaceName"
-          :menus="activeMenus"
+          :menus="titlebarMenus"
           @workspace="onWorkspace"
           @menu="onMenu"
         />
@@ -111,6 +111,7 @@ import { Titlebar, TitlebarChrome } from './component/titlebar'
 import { ActivityBar, SideBar } from './component/sidebar'
 import { AiPanel } from './component/ai'
 import { useAppSession, useAppBoot, useAiPanel } from './composables'
+import { isMac, initMacNativeMenu } from './utils'
 
 import { searchItems, activityItems, topMenus } from './data'
 import type { SearchItem, ViewId } from './data'
@@ -149,6 +150,9 @@ const sideBarTitle = computed(() => active.value.sidebarTitle ?? '侧边栏')
 
 /** 顶栏文字菜单：随视图自动切换（注册表 views[id].menus，未配置时用默认 topMenus） */
 const activeMenus = computed(() => active.value.menus ?? topMenus)
+
+/** 顶栏内绘菜单：macOS 上菜单移至系统顶栏（原生菜单管理），内绘菜单留空 */
+const titlebarMenus = computed(() => (isMac ? [] : activeMenus.value))
 
 /** 侧边栏是否显示：开关打开 且 该视图声明了侧栏（registry 的 sidebarVisible + sidebar） */
 const sideBarVisible = computed(
@@ -303,13 +307,25 @@ function onActivityToggle() {
 
 const { boot } = useAppBoot()
 
+/** 页面 → 外壳导航（首页卡片 / 快捷入口 / macOS 原生菜单派发 'kn:navigate'） */
+function onNavigate(e: Event) {
+  const detail = (e as CustomEvent<string>).detail
+  if (detail) onActivitySelect(detail)
+}
+
+/** 应用命令（macOS 原生菜单等派发 'kn:command'） */
+function onCommand(e: Event) {
+  const detail = (e as CustomEvent<string>).detail
+  if (detail === 'toggle-sidebar') sideBarOpen.value = !sideBarOpen.value
+  else if (detail === 'toggle-ai-panel') onAskAI()
+}
+
 onMounted(async () => {
-  /* 页面 → 外壳导航（首页卡片 / 快捷入口等派发 'kn:navigate'） */
-  const onNavigate = (e: Event) => {
-    const detail = (e as CustomEvent<string>).detail
-    if (detail) onActivitySelect(detail)
-  }
   window.addEventListener('kn:navigate', onNavigate)
+  window.addEventListener('kn:command', onCommand)
+
+  /* macOS：菜单移至系统顶栏（原生菜单管理；失败自动回退内绘菜单） */
+  void initMacNativeMenu()
 
   /* 恢复上次会话（窗口尚未显示，恢复动作用户不可见） */
   const saved = await restore()
@@ -343,6 +359,8 @@ onUnmounted(() => {
   stageObserver?.disconnect()
   window.clearTimeout(marginAnimTimer)
   window.removeEventListener('keydown', onGlobalKeydown)
+  window.removeEventListener('kn:navigate', onNavigate)
+  window.removeEventListener('kn:command', onCommand)
 })
 </script>
 

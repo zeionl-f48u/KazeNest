@@ -4,3 +4,4 @@
  */
 export * from './persist'
 export * from './platform'
+export { initMacNativeMenu } from './nativeMenu'
