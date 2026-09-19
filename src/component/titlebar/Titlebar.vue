@@ -34,7 +34,7 @@
         <Icon v-else :name="appIcon" :size="17" class="tb-icon-fallback" />
       </button>
 
-      <span class="tb-title">{{ title }}</span>
+      <span ref="titleRef" class="tb-title">{{ title }}</span>
 
       <div
         ref="leadingSlotRef"
@@ -184,6 +184,48 @@ function syncLeadingBasis() {
  */
 const leftRef = ref<HTMLElement>()
 
+/* =================== 应用名完全收缩 ===================
+ * 让位顺序：菜单收进 ⋯（TitlebarChrome）→ 应用名收缩（本段）→ 搜索框（.tb-center min-width 兜底）。
+ * 应用名宽度由脚本管理（不参与 flex 收缩）：空间不足时逐渐收窄（省略号），
+ * 完全放不下时隐藏（display:none）—— 即 "KazeNest 可以被完全收缩"。
+ */
+
+const titleRef = ref<HTMLElement>()
+
+/** 应用名自然宽度（缓存；隐藏状态下 scrollWidth 为 0，避免污染左区 basis 计算） */
+let titleNatural = 0
+
+/** 测量应用名自然宽度（隐藏状态下临时展开测量） */
+function measureTitleNatural() {
+  const title = titleRef.value
+  if (!title) return
+  const wasCollapsed = title.classList.contains('is-collapsed')
+  if (wasCollapsed) title.classList.remove('is-collapsed')
+  titleNatural = title.scrollWidth
+  if (wasCollapsed) title.classList.add('is-collapsed')
+}
+
+/** 应用名可用宽度 = 左区宽 − 应用图标 − leading slot − 间距；据此收窄/隐藏 */
+function updateTitleWidth() {
+  const left = leftRef.value
+  const title = titleRef.value
+  const slot = leadingSlotRef.value
+  if (!left || !title || !slot) return
+  const gap = parseFloat(getComputedStyle(left).gap) || 0
+  const icon = left.querySelector<HTMLElement>('.tb-icon-btn')
+  const iconW = icon ? icon.offsetWidth : 0
+  const avail = Math.max(0, left.clientWidth - iconW - slot.offsetWidth - gap * 2)
+
+  if (avail <= 1) {
+    /* 完全收缩：隐藏（宽度归零会留下省略号残影） */
+    title.classList.add('is-collapsed')
+    title.style.width = ''
+    return
+  }
+  title.classList.remove('is-collapsed')
+  title.style.width = avail < titleNatural ? `${Math.floor(avail)}px` : ''
+}
+
 function computeLeftNatural(): number {
   const left = leftRef.value
   if (!left) return 0
@@ -193,7 +235,7 @@ function computeLeftNatural(): number {
   if (!icon || !title || !slot) return 0
   const gap = parseFloat(getComputedStyle(left).gap) || 0
   const iconW = icon.getBoundingClientRect().width
-  const titleW = title.scrollWidth // 内容宽，与是否截断无关
+  const titleW = titleNatural || title.scrollWidth // 内容宽，与收窄/隐藏状态无关
   const slotW = parseFloat(slot.style.flexBasis) || slot.getBoundingClientRect().width
   return Math.ceil(iconW + titleW + slotW + gap * 2)
 }
@@ -207,18 +249,34 @@ function syncLeftBasis() {
   }
 }
 
+/** 左区宽度观察器：宽度变化时刷新应用名收缩 */
+let leftObserver: ResizeObserver | undefined
+
 onMounted(() => {
   window.addEventListener('titlebar:search-toggle', onGlobalToggle)
+  measureTitleNatural()
   syncLeadingBasis()
   syncLeftBasis()
+  updateTitleWidth()
   // 字体加载完成后自然宽度可能变化，重新校准
   const fonts = (document as Document & { fonts?: FontFaceSet }).fonts
   if (fonts?.ready) fonts.ready.then(() => {
+    measureTitleNatural()
     syncLeadingBasis()
     syncLeftBasis()
+    updateTitleWidth()
   })
+  /* 窗口缩放 / 菜单溢出 / 搜索框让位都会改变左区宽度 → 实时刷新应用名 */
+  if (leftRef.value && typeof ResizeObserver !== 'undefined') {
+    leftObserver = new ResizeObserver(() => updateTitleWidth())
+    leftObserver.observe(leftRef.value)
+  }
 })
-onBeforeUnmount(() => window.removeEventListener('titlebar:search-toggle', onGlobalToggle))
+
+onBeforeUnmount(() => {
+  window.removeEventListener('titlebar:search-toggle', onGlobalToggle)
+  leftObserver?.disconnect()
+})
 
 /* =================== caption 区域宽度 =================== */
 
@@ -331,13 +389,17 @@ const captionSpacerWidth = computed(() =>
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  /* 让位优先级：菜单(收进⋯) → 搜索框 → 标题。标题 shrink 很小，
-   * 只有当左侧空间被菜单/搜索耗尽后才轻微截断（VS Code 风格）。 */
-  flex-shrink: 0.2;
+  /* 宽度由脚本管理（updateTitleWidth）：空间不足时逐渐收窄，收不下时完全隐藏
+   * （不参与 flex 收缩，保证能收缩到 0）。让位顺序：菜单 → 应用名 → 搜索框。 */
+  flex-shrink: 0;
   min-width: 0;
   user-select: none;
   pointer-events: none;       /* 让事件穿透，点击落在 header 上触发拖动 */
   opacity: 0.92;
+}
+/* 完全收缩态：空间不足时应用名整体隐藏 */
+.tb-title.is-collapsed {
+  display: none;
 }
 
 /* ============ 中央（命令中心） ============ */
