@@ -577,6 +577,8 @@ cargo test              # core 层单测
 - 标题栏问题：`main.ts` 里的 `[TB-DEBUG]` 日志（临时开关）
 - 历史编译错误日志：`src-tauri/build_error.txt`
 
+> 不会 Rust / 初次上手：先读同目录的 [`GETTING-STARTED.md`](./GETTING-STARTED.md)（从零写第一个 Tauri 命令的实战教程）。
+
 ---
 
 ## 13. 测试策略
