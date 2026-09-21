@@ -19,6 +19,8 @@ export interface EditorTabsProps {
   onCloseAll: () => void
   onCloseSaved: () => void
   onReorder: (payload: { from: number; to: number }) => void
+  /** 无标签时的空态操作：恢复默认示例文件 */
+  onOpenDefaults?: () => void
 }
 
 export function EditorTabs({
@@ -30,6 +32,7 @@ export function EditorTabs({
   onCloseAll,
   onCloseSaved,
   onReorder,
+  onOpenDefaults,
 }: EditorTabsProps) {
   /* ==================== 拖拽排序 ====================
    * 拖拽中的标签跟随鼠标（translateX，每帧更新），其余标签让位（位移一个标签宽度），
@@ -208,17 +211,32 @@ export function EditorTabs({
         </button>
       ))}
 
-      <div
-        className="ed-tabs-more"
-        role="button"
-        title="更多标签"
-        onClick={(e) => {
-          const r = e.currentTarget.getBoundingClientRect()
-          setMoreAnchor({ x: r.right - 170, y: r.bottom + 6 })
-        }}
-      >
-        <Icon name="ellipsis-h" size={13} />
-      </div>
+      {/* 空态：无打开的文件 */}
+      {files.length === 0 && (
+        <div className="ed-tabs-empty">
+          <span className="ed-tabs-empty-text">没有打开的文件</span>
+          {onOpenDefaults && (
+            <button type="button" className="ed-tabs-empty-btn" onClick={onOpenDefaults}>
+              <Icon name="file-plus" size={12} />
+              打开示例文件
+            </button>
+          )}
+        </div>
+      )}
+
+      {files.length > 0 && (
+        <div
+          className="ed-tabs-more"
+          role="button"
+          title="更多标签"
+          onClick={(e) => {
+            const r = e.currentTarget.getBoundingClientRect()
+            setMoreAnchor({ x: r.right - 170, y: r.bottom + 6 })
+          }}
+        >
+          <Icon name="ellipsis-h" size={13} />
+        </div>
+      )}
 
       {moreAnchor && (
         <Dropdown

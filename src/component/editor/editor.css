@@ -132,6 +132,47 @@
   border-radius: 4px;
 }
 
+/* 标签栏空态（全部关闭后：提示 + 恢复示例文件） */
+.ed-tabs-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  flex: 1;
+  min-width: 0;
+  animation: ed-tabs-empty-in var(--kn-dur-base) var(--kn-ease-out);
+}
+@keyframes ed-tabs-empty-in {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ed-tabs-empty-text {
+  font-size: var(--kn-text-xs);
+  color: var(--ed-tab-fg);
+  opacity: 0.6;
+  white-space: nowrap;
+}
+.ed-tabs-empty-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 10px;
+  border: 1px solid var(--ed-tabbar-border);
+  border-radius: var(--kn-radius-pill);
+  background: transparent;
+  color: var(--ed-tab-fg);
+  font: inherit;
+  font-size: var(--kn-text-xs);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--kn-dur-fast), border-color var(--kn-dur-fast);
+}
+.ed-tabs-empty-btn:hover {
+  background: var(--kn-hover);
+  border-color: var(--kn-border-strong);
+}
+
 /* ==================== 代码区 ==================== */
 .ed-code {
   position: relative;

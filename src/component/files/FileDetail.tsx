@@ -89,6 +89,34 @@ export function FileDetail({
 
   /* ==================== 预览 ==================== */
 
+  /** 由 id 生成稳定的演示元信息（分辨率/时长/页数等；接真实文件元数据后替换） */
+  const previewMeta = (() => {
+    let h = 0
+    for (const ch of file.id + file.name) h = (h * 31 + ch.charCodeAt(0)) % 99991
+    const pad = (n: number) => String(n).padStart(2, '0')
+    switch (file.kind) {
+      case 'image':
+        return `${[1280, 1920, 2560, 3840][h % 4]} × ${[720, 1080, 1440, 2160][(h >> 2) % 4]} · ${['PNG', 'JPEG', 'WebP'][h % 3]}`
+      case 'video':
+        return `${pad((h % 20) + 1)}:${pad(h % 60)} · ${[1080, 1440, 2160][h % 3]}p`
+      case 'audio':
+        return `${pad((h % 5) + 2)}:${pad(h % 60)} · ${[192, 256, 320][h % 3]} kbps`
+      case 'code':
+        return `${(h % 400) + 20} 行 · UTF-8`
+      case 'doc':
+      case 'pdf':
+        return `${(h % 40) + 3} 页`
+      case 'sheet':
+        return `${(h % 6) + 1} 个工作表`
+      case 'ppt':
+        return `${(h % 30) + 5} 张幻灯片`
+      case 'archive':
+        return `${(h % 40) + 3} 个文件`
+      default:
+        return ''
+    }
+  })()
+
   const renderPreview = () => {
     switch (file.kind) {
       case 'image':
@@ -164,6 +192,7 @@ export function FileDetail({
       <div className={`fd-preview is-${file.kind}`}>
         <span className="fd-preview-tag">预览</span>
         {renderPreview()}
+        {previewMeta && <span className="fd-preview-meta">{previewMeta}</span>}
       </div>
 
       <div className="fd-meta">

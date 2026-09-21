@@ -161,6 +161,15 @@ export function Editor() {
     })
   }
 
+  /** 标签栏空态：恢复默认示例文件 */
+  const onOpenDefaults = () => {
+    setOpenFiles([...editorFiles])
+    setActiveFileId(editorFiles[0]?.id ?? '')
+  }
+
+  /** 当前文件总行数（状态栏展示） */
+  const totalLines = activeFile.content ? activeFile.content.split('\n').length : 0
+
   return (
     <div className="editor-page">
       <EditorTabs
@@ -172,11 +181,18 @@ export function Editor() {
         onCloseAll={onCloseAll}
         onCloseSaved={onCloseSaved}
         onReorder={onReorder}
+        onOpenDefaults={onOpenDefaults}
       />
 
       <CodeView file={activeFile} onUpdate={onContentUpdate} onCursor={onCursor} />
 
-      <StatusBar file={activeFile} line={cursor.line} col={cursor.col} selected={cursor.selected} />
+      <StatusBar
+        file={activeFile}
+        line={cursor.line}
+        col={cursor.col}
+        selected={cursor.selected}
+        totalLines={totalLines}
+      />
     </div>
   )
 }

@@ -11,9 +11,11 @@ export interface StatusBarProps {
   line: number
   col: number
   selected: number
+  /** 当前文件总行数（0 表示空文件不显示） */
+  totalLines?: number
 }
 
-export function StatusBar({ file, line, col, selected }: StatusBarProps) {
+export function StatusBar({ file, line, col, selected, totalLines = 0 }: StatusBarProps) {
   return (
     <footer className="ed-status">
       <div className="ed-status-left">
@@ -31,6 +33,7 @@ export function StatusBar({ file, line, col, selected }: StatusBarProps) {
         <span className="ed-status-item">
           Ln {line}, Col {col}
         </span>
+        {totalLines > 0 && <span className="ed-status-item">{totalLines} 行</span>}
         {selected > 1 && <span className="ed-status-item">{selected} 个字符已选中</span>}
         <span className="ed-status-item">UTF-8</span>
         <span className="ed-status-item">{file.language}</span>
