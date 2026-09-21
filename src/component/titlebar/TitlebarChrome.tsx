@@ -130,8 +130,12 @@ export function TitlebarChrome({
   const menuRefs = useRef<(HTMLButtonElement | null)[]>([])
   const wsWidthRef = useRef(0)
   const menuWidthsRef = useRef<number[]>([])
+  /* 收纳状态同时存 state（渲染）与 ref（layout 读取）。
+   * layout 只依赖 menus（不依赖 state），避免「state → layout → state」的无限循环频闪 */
   const [visibleCount, setVisibleCount] = useState(menus.length)
   const [wsIconOnly, setWsIconOnly] = useState(false)
+  const visibleCountRef = useRef(menus.length)
+  const wsIconOnlyRef = useRef(false)
   /** leading 自然宽度（全部菜单展开 + 当前工作区样式），供 Titlebar 计算应用名收缩 */
   const [naturalWidth, setNaturalWidth] = useState(0)
 
@@ -141,67 +145,84 @@ export function TitlebarChrome({
     if (!container) return
     const avail = container.clientWidth
 
-    /* 全量可见时缓存自然宽度 */
-    if (visibleCount >= menus.length && !wsIconOnly) {
-      wsWidthRef.current = wsRef.current?.offsetWidth ?? 0
-      menuWidthsRef.current = menus.map((_, i) => menuRefs.current[i]?.offsetWidth ?? 0)
+    /* 全量可见时缓存自然宽度（首帧 DOM 未就绪则稍后重试，避免缓存 0 宽导致永不收纳） */
+    if (visibleCountRef.current >= menus.length && !wsIconOnlyRef.current) {
+      const nextWs = wsRef.current?.offsetWidth ?? 0
+      const nextMenus = menus.map((_, i) => menuRefs.current[i]?.offsetWidth ?? 0)
+      const valid = menus.length === 0 || nextWs > 0 || nextMenus.some((w) => w > 0)
+      if (!valid) {
+        window.setTimeout(layout, 40)
+        return
+      }
+      wsWidthRef.current = nextWs
+      menuWidthsRef.current = nextMenus
     }
 
-    /* 1) 工作区：空间不足则图标化 */
     const wsW = wsWidthRef.current
     const totalMenus = menuWidthsRef.current.reduce((a, b) => a + b, 0)
-    const needIconOnly = wsW + totalMenus + BUFFER > avail
-    if (needIconOnly !== wsIconOnly) setWsIconOnly(needIconOnly)
 
-    /* 上报自然宽度（全部菜单展开 + ⋯ 预留 + 间距），供 Titlebar 的应用名收缩计算 */
+    /* 1) 工作区：空间不足则图标化 */
+    const needIconOnly = wsW + totalMenus + BUFFER > avail
+    if (needIconOnly !== wsIconOnlyRef.current) {
+      wsIconOnlyRef.current = needIconOnly
+      setWsIconOnly(needIconOnly)
+    }
+
+    /* 上报自然宽度（供 Titlebar 的应用名收缩计算） */
     const natural = (needIconOnly ? 33 : wsW) + totalMenus + MORE_BTN_W + (menus.length + 2) * 4 + 10
     setNaturalWidth((prev) => (Math.abs(prev - natural) > 1 ? natural : prev))
 
     /* 2) 菜单：从右往左收进 ⋯ */
-    if (wsW + totalMenus + BUFFER <= avail) {
-      if (visibleCount !== menus.length) setVisibleCount(menus.length)
-      return
-    }
-    const used = needIconOnly ? 33 : wsW
-    let acc = 0
-    let count = 0
-    for (const w of menuWidthsRef.current) {
-      if (used + acc + w + MORE_BTN_W + BUFFER <= avail) {
-        acc += w
-        count++
-      } else {
-        break
+    let nextCount = menus.length
+    const fitsAll = wsW + totalMenus + BUFFER <= avail
+    if (!fitsAll) {
+      const used = needIconOnly ? 33 : wsW
+      let acc = 0
+      let count = 0
+      for (const w of menuWidthsRef.current) {
+        if (used + acc + w + MORE_BTN_W + BUFFER <= avail) {
+          acc += w
+          count++
+        } else {
+          break
+        }
       }
+      if (count < menus.length && used + acc + MORE_BTN_W + BUFFER > avail) count = 0
+      nextCount = count
     }
-    if (count < menus.length && used + acc + MORE_BTN_W + BUFFER > avail) {
-      count = 0
+    if (nextCount !== visibleCountRef.current) {
+      visibleCountRef.current = nextCount
+      setVisibleCount(nextCount)
     }
-    if (count !== visibleCount) setVisibleCount(count)
-  }, [part, menus, visibleCount, wsIconOnly])
+  }, [part, menus])
 
   useEffect(() => {
     if (part !== 'leading') return
     const container = containerRef.current
     if (!container) return
-    const raf = window.requestAnimationFrame(layout)
     const ro = new ResizeObserver(() => layout())
     ro.observe(container)
     window.addEventListener('resize', layout)
     return () => {
-      window.cancelAnimationFrame(raf)
       ro.disconnect()
       window.removeEventListener('resize', layout)
     }
   }, [part, layout])
 
-  /* 菜单变化（视图切换）时重置收纳状态再重排 */
+  /* 菜单变化（视图切换）时重置收纳状态再重排（延时兜底首帧未就绪的情况） */
   useEffect(() => {
+    visibleCountRef.current = menus.length
+    wsIconOnlyRef.current = false
     setVisibleCount(menus.length)
     setWsIconOnly(false)
     menuWidthsRef.current = []
     wsWidthRef.current = 0
-    const t = window.setTimeout(layout, 0)
-    return () => window.clearTimeout(t)
+    const t1 = window.setTimeout(layout, 30)
+    const t2 = window.setTimeout(layout, 140)
+    return () => {
+      window.clearTimeout(t1)
+      window.clearTimeout(t2)
+    }
   }, [menus, layout])
 
   const hiddenMenus = useMemo(() => menus.slice(visibleCount), [menus, visibleCount])

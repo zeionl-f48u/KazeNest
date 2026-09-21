@@ -63,7 +63,28 @@ export function Titlebar({
     if (collapsed) el.classList.add('is-collapsed')
   }, [])
 
-  /** 应用名可用宽度 = 左区宽 − 图标 − leading 自然宽 − 间距（自然宽由 TitlebarChrome 上报） */
+  /**
+   * 固定左区 / leading 的 flex-basis 为「自然宽度」：
+   * 否则应用名收缩、菜单收进 ⋯ 会改变内容宽度 → 布局宽度跟着变 → 再次触发收缩计算，
+   * 形成「内容 ↔ 宽度」反馈环（表现就是顶栏持续频闪）。
+   * leading 的自然宽度由 TitlebarChrome 通过 data-natural-width 上报。
+   */
+  const syncNaturalBases = useCallback(() => {
+    const left = leftRef.current
+    const title = titleRef.current
+    const slot = slotRef.current
+    if (!left || !title || !slot) return
+    const gap = parseFloat(getComputedStyle(left).gap) || 0
+    const icon = left.querySelector<HTMLElement>('.tb-icon-btn')
+    const iconW = icon ? icon.offsetWidth : 0
+    const child = slot.firstElementChild as HTMLElement | null
+    const slotNatural = Number(child?.dataset.naturalWidth ?? 0) || child?.scrollWidth || 0
+    if (slotNatural > 0) slot.style.flexBasis = `${slotNatural}px`
+    const leftNatural = Math.ceil(iconW + titleNaturalRef.current + slotNatural + gap * 2)
+    if (leftNatural > 0) left.style.flexBasis = `${leftNatural}px`
+  }, [])
+
+  /** 应用名可用宽度 = 左区宽 − 图标 − leading 自然宽 − 间距（用固定 basis，反馈环已切断） */
   const updateTitleWidth = useCallback(() => {
     const left = leftRef.current
     const title = titleRef.current
@@ -73,8 +94,8 @@ export function Titlebar({
     const icon = left.querySelector<HTMLElement>('.tb-icon-btn')
     const iconW = icon ? icon.offsetWidth : 0
     const child = slot.firstElementChild as HTMLElement | null
-    const reported = Number(child?.dataset.naturalWidth ?? 0)
-    const slotNatural = reported || slot.scrollWidth
+    const slotBasis = parseFloat(slot.style.flexBasis || '0')
+    const slotNatural = slotBasis || Number(child?.dataset.naturalWidth ?? 0) || slot.scrollWidth
     const avail = Math.max(0, left.clientWidth - iconW - slotNatural - gap * 2)
 
     if (avail < 18) {
@@ -87,20 +108,22 @@ export function Titlebar({
   }, [])
 
   useEffect(() => {
-    measureTitleNatural()
-    updateTitleWidth()
-    const fonts = (document as Document & { fonts?: FontFaceSet }).fonts
-    void fonts?.ready.then(() => {
+    const relayout = () => {
       measureTitleNatural()
+      syncNaturalBases()
       updateTitleWidth()
-    })
+    }
+    relayout()
+    const fonts = (document as Document & { fonts?: FontFaceSet }).fonts
+    void fonts?.ready.then(relayout)
 
     const left = leftRef.current
     const slot = slotRef.current
+    /* 左区宽度变化（窗口缩放/侧栏开关）→ 重新计算应用名（只改应用名，不改 basis，无循环） */
     const ro = new ResizeObserver(() => updateTitleWidth())
     if (left) ro.observe(left)
-    /* 菜单溢出后 leading 自然宽变化（data-natural-width）→ 重新计算应用名可用宽度 */
-    const mo = new MutationObserver(() => updateTitleWidth())
+    /* leading 自然宽变化（菜单溢出收纳完成）→ 重设 basis 并重算应用名 */
+    const mo = new MutationObserver(() => relayout())
     const child = slot?.firstElementChild
     if (child) mo.observe(child, { attributes: true, attributeFilter: ['data-natural-width'] })
 
@@ -108,7 +131,7 @@ export function Titlebar({
       ro.disconnect()
       mo.disconnect()
     }
-  }, [measureTitleNatural, updateTitleWidth, leading])
+  }, [measureTitleNatural, syncNaturalBases, updateTitleWidth, leading])
 
   /* ==================== 渲染 ==================== */
 
