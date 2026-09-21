@@ -1,0 +1,6 @@
+/* Icon：基础样式（React 版；与 Icon.vue 的 scoped 样式保持一致） */
+.kn-icon {
+  display: inline-block;
+  vertical-align: -2px;
+  flex-shrink: 0;
+}
