@@ -6,6 +6,7 @@
  * - 导航通过 onNavigate 回调（App 统一处理视图切换）
  */
 import { useEffect, useState } from 'react'
+import { motion } from 'motion/react'
 import { GlassCard } from '@/component/common/GlassCard'
 import { Icon } from '@/component/common/Icon'
 import { Button } from '@/component/ui/button'
@@ -107,9 +108,14 @@ export function Home({ onNavigate }: HomeProps) {
           快速开始
         </h2>
         <div className="home-grid">
-          {homeCards.map((card) => (
-            <GlassCard
+          {homeCards.map((card, i) => (
+            <motion.div
               key={card.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.04 * i, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <GlassCard
               title={card.title}
               desc={card.desc}
               icon={card.icon}
@@ -130,6 +136,7 @@ export function Home({ onNavigate }: HomeProps) {
                 </button>
               }
             />
+            </motion.div>
           ))}
         </div>
       </section>

@@ -10,6 +10,7 @@ import { Icon } from '../common/Icon'
 import { Dropdown } from '../ui/dropdown'
 import type { DropdownItem } from '../ui/dropdown'
 import { Button } from '../ui/button'
+import NotificationBell from '../ui/notification-bell'
 import { Kbd } from '../ui/primitives'
 import { cn } from '@/lib/utils'
 import { isMac, showDemo } from '@/utils'
@@ -391,24 +392,21 @@ export function TitlebarChrome({
       <span className="mx-1 inline-block h-4 w-px shrink-0 bg-[var(--tb-divider)]" aria-hidden />
 
       <div className="inline-flex shrink-0 items-center gap-0.5">
-        <button
-          type="button"
+        {/* Rare UI 通知铃（未读数量徽标 + 新增时摇铃动画） */}
+        <NotificationBell
+          count={notifyCount}
+          max={9}
+          variant="count"
+          size={30}
+          color="violet"
           aria-label="通知"
           onClick={openNotify}
-          className="ui-press relative inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-[var(--tb-fg)] hover:bg-[var(--tb-hover)]"
-        >
-          <Icon name="bell" size={15} />
-          {notifyCount > 0 && (
-            <span className="absolute top-0 right-0 inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-[var(--kn-bg-elev)] bg-[var(--kn-rose-500)] px-1 text-[9px] leading-none font-semibold text-white">
-              {notifyCount}
-            </span>
-          )}
-        </button>
+        />
         <button
           type="button"
           aria-label="账户"
           onClick={openAccount}
-          className="ui-press inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-[var(--tb-fg)] hover:bg-[var(--tb-hover)]"
+          className="ui-press ui-lift inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-[var(--tb-fg)] hover:bg-[var(--tb-hover)]"
         >
           <Icon name="user" size={15} />
         </button>

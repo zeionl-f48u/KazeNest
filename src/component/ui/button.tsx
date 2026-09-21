@@ -20,7 +20,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
   default:
     'border border-[var(--kn-border)] bg-[var(--kn-bg-elev)] text-[var(--kn-fg)] hover:bg-[var(--kn-hover)]',
   primary:
-    'border border-transparent text-white font-semibold bg-[linear-gradient(135deg,var(--kn-brand-500),var(--kn-magenta-500))] hover:brightness-110',
+    'is-glow border border-transparent text-white font-semibold bg-[linear-gradient(135deg,var(--kn-brand-500),var(--kn-magenta-500))] hover:brightness-110',
   ghost:
     'border border-transparent bg-transparent text-[var(--kn-fg-muted)] hover:bg-[var(--kn-hover)] hover:text-[var(--kn-fg)]',
   outline:
@@ -41,7 +41,7 @@ export function Button({ variant = 'default', size = 'md', className, ...props }
     <button
       type="button"
       className={cn(
-        'ui-press inline-flex shrink-0 cursor-pointer items-center justify-center font-medium select-none',
+        'ui-press ui-lift inline-flex shrink-0 cursor-pointer items-center justify-center font-medium select-none',
         'disabled:cursor-default disabled:opacity-45',
         VARIANTS[variant],
         SIZES[size],

@@ -78,3 +78,23 @@
   opacity: 0.45;
   cursor: default;
 }
+
+/* ---------- Rare UI 风格：悬停浮起 + 主按钮发光 ---------- */
+.ui-lift {
+  transition:
+    transform 0.14s var(--kn-ease-out),
+    box-shadow 0.14s var(--kn-ease-out),
+    background-color 0.14s var(--kn-ease-out),
+    border-color 0.14s var(--kn-ease-out),
+    color 0.14s var(--kn-ease-out),
+    filter 0.14s var(--kn-ease-out);
+}
+.ui-lift:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.ui-lift:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.ui-lift.is-glow:hover:not(:disabled) {
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--kn-brand-500) 55%, transparent);
+}

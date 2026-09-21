@@ -108,7 +108,18 @@ node scripts/add-rare-ui.mjs fluid-orb
 node scripts/add-rare-ui.mjs folder-component
 ```
 
-已接入：`fluid-orb`（首页欢迎区装饰背景）。组件清单见 [rareui.com/components](https://www.rareui.com/components)。
+已接入并使用：
+
+| 组件 | 落点 |
+|---|---|
+| `fluid-orb` | 首页欢迎区 / AI 空态的流体球装饰背景 |
+| `gravity-letters` | 首页「点按掉落字母」互动条 |
+| `animated-counter` | 首页统计数字滚动 |
+| `folder-component` | 文件管理「打开文件夹」空态的可开合文件夹动画 |
+| `scroll-progress` | 内容区顶部滚动进度条（全局） |
+| `notification-bell` | 顶栏通知铃（未读徽标 + 摇铃动画） |
+
+组件清单见 [rareui.com/components](https://www.rareui.com/components)。
 
 ## 路线图
 

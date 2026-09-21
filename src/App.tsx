@@ -12,6 +12,7 @@ import { TitlebarChrome } from '@/component/titlebar/TitlebarChrome'
 import { ActivityBar, SideBar } from '@/component/sidebar'
 import { AiPanel } from '@/component/ai'
 import { DemoDialog } from '@/component/common/DemoDialog'
+import ScrollProgress from '@/component/ui/scroll-progress'
 import { useAppSession } from '@/hooks/useAppSession'
 import {
   useAiPanel,
@@ -43,6 +44,7 @@ export default function App() {
   /* ==================== 舞台宽度（面板 left 换算） ==================== */
 
   const stageRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLElement>(null)
   const [stageWidth, setStageWidth] = useState(() => window.innerWidth)
 
   useEffect(() => {
@@ -246,7 +248,11 @@ export default function App() {
 
         {/* 内容舞台：主内容 + AI 右侧面板 */}
         <div className="app-stage" ref={stageRef}>
+          {/* Rare UI 滚动进度条（跟随主内容滚动容器） */}
+          <ScrollProgress containerRef={contentRef} className="app-progress" />
+
           <main
+            ref={contentRef}
             className={cn('app-content', isFlush && 'is-flush')}
             style={{ marginRight: panelDocked ? `${panel.width}px` : 0 }}
           >
