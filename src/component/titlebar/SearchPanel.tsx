@@ -57,6 +57,12 @@ export function SearchPanel({ open, items, onClose, onSelect }: SearchPanelProps
     setActive(0)
   }, [query])
 
+  /* 键盘上下移动选中项时滚动进视野 */
+  useEffect(() => {
+    const el = document.querySelector<HTMLElement>(`[data-search-active="true"]`)
+    el?.scrollIntoView({ block: 'nearest' })
+  }, [active])
+
   if (!open) return null
 
   const flat = filtered
@@ -143,6 +149,7 @@ export function SearchPanel({ open, items, onClose, onSelect }: SearchPanelProps
                   <button
                     key={it.id}
                     type="button"
+                    data-search-active={index === active ? 'true' : undefined}
                     onMouseEnter={() => setActive(index)}
                     onClick={() => {
                       onSelect(it)

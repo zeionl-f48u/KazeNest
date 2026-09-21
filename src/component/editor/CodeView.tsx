@@ -605,7 +605,13 @@ export function CodeView({ file, onUpdate, onCursor }: CodeViewProps) {
             </div>
           ))}
 
-          {content === '' && <div className="ed-empty">空文件</div>}
+          {content === '' && (
+            <div className="ed-empty">
+              <Icon name="file-plus" size={26} className="ed-empty-icon" />
+              <span className="ed-empty-title">空文件</span>
+              <span className="ed-empty-hint">直接输入开始编辑 · Ctrl+S 保存 · Ctrl+F 查找</span>
+            </div>
+          )}
         </div>
       </div>
 

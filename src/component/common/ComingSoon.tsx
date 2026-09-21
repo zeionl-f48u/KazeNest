@@ -1,35 +1,39 @@
 /**
  * ComingSoon：占位页（「建设中」页面统一用它）
  * - 由 data/comingSoon 的配置驱动（title/subtitle/icon/tint/desc/tags）
- * - 与 Vue 版视觉一致：浮动图标 + 标题 + 描述 + 能力标签
+ * - 视觉：品牌色光晕 + 浮动图标 + 能力清单（交错入场）+ 路线图提示
  */
 import { Icon } from './Icon'
 import { PageLayout } from './PageLayout'
 import type { ComingSoonConfig } from '@/data'
+import './coming-soon.css'
 
 export function ComingSoon({ title, subtitle, icon, tint, desc, tags }: ComingSoonConfig) {
   return (
     <PageLayout title={title} subtitle={subtitle} icon={icon}>
-      <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
-        <div
-          style={{ '--tint': tint } as React.CSSProperties}
-          className="cs-float inline-flex h-[84px] w-[84px] items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--tint)_14%,transparent)] text-[var(--tint)] shadow-[var(--kn-shadow-md)]"
-        >
-          <Icon name={icon} size={40} />
-        </div>
-        <h3 className="mt-2 text-xl font-semibold text-[var(--kn-fg)]">{title}</h3>
-        <p className="m-0 max-w-[320px] text-sm leading-relaxed text-[var(--kn-fg-muted)]">
-          {desc}
-        </p>
-        <div className="mt-2 inline-flex flex-wrap justify-center gap-2">
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full border border-[var(--kn-border)] bg-[var(--kn-bg-elev)] px-3 py-1 text-xs text-[var(--kn-fg-muted)]"
-            >
-              {tag}
-            </span>
-          ))}
+      <div className="cs" style={{ '--tint': tint } as React.CSSProperties}>
+        {/* 品牌色光晕背景 */}
+        <div className="cs-glow" aria-hidden="true" />
+
+        <div className="cs-card">
+          <div className="cs-float">
+            <Icon name={icon} size={40} />
+          </div>
+          <h3 className="cs-title">{title}</h3>
+          <p className="cs-desc">{desc}</p>
+
+          {/* 能力清单（建设中） */}
+          <div className="cs-tags">
+            {tags.map((tag, i) => (
+              <span key={tag} className="cs-tag" style={{ animationDelay: `${i * 70}ms` }}>
+                <Icon name="clock" size={11} className="cs-tag-icon" />
+                <span className="cs-tag-label">{tag}</span>
+                <span className="cs-tag-state">建设中</span>
+              </span>
+            ))}
+          </div>
+
+          <p className="cs-hint">该模块将按路线图逐步开放 · 当前为界面占位</p>
         </div>
       </div>
     </PageLayout>

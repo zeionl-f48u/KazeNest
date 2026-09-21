@@ -36,7 +36,10 @@ export function FilesLibrary() {
     setActiveTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
   }
 
-  const single = fm.selectedIds.length === 1 ? (filtered.find((f) => f.id === fm.selectedIds[0]) ?? fm.libraryFiles.find((f) => f.id === fm.selectedIds[0]) ?? null) : null
+  const single =
+    fm.selectedIds.length === 1
+      ? (fm.libraryFiles.find((f) => f.id === fm.selectedIds[0]) ?? null)
+      : null
 
   const onImport = () => {
     setImporting(true)

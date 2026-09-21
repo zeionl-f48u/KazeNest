@@ -6,6 +6,7 @@
  * - 会话持久化：标签（含组与历史）/ 书签 / 最近访问
  */
 import { useCallback, useEffect, useState } from 'react'
+import { Icon } from '@/component/common/Icon'
 import { BrowserTabBar } from '@/component/browser/BrowserTabBar'
 import { BrowserToolbar } from '@/component/browser/BrowserToolbar'
 import { BrowserViewport } from '@/component/browser/BrowserViewport'
@@ -351,18 +352,22 @@ export function Browser() {
           {bookmarks.map((b) => {
             const fav = faviconOf(b.url)
             return (
-              <button
-                key={b.url}
-                type="button"
-                className="bw-bookmark"
-                title={b.url}
-                onClick={() => navigate(b.url)}
-              >
-                <span className="bw-bookmark-fav" style={{ '--tint': fav.color } as React.CSSProperties}>
-                  {fav.letter}
-                </span>
-                <span className="bw-bookmark-title">{b.title}</span>
-              </button>
+              <span key={b.url} className="bw-bookmark" title={b.url}>
+                <button type="button" className="bw-bookmark-main" onClick={() => navigate(b.url)}>
+                  <span className="bw-bookmark-fav" style={{ '--tint': fav.color } as React.CSSProperties}>
+                    {fav.letter}
+                  </span>
+                  <span className="bw-bookmark-title">{b.title}</span>
+                </button>
+                <button
+                  type="button"
+                  className="bw-bookmark-x"
+                  aria-label={`移除书签 ${b.title}`}
+                  onClick={() => setBookmarks((prev) => prev.filter((x) => x.url !== b.url))}
+                >
+                  <Icon name="times" size={9} />
+                </button>
+              </span>
             )
           })}
         </div>

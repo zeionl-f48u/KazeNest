@@ -230,11 +230,30 @@
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   color: var(--ed-gutter-fg);
   font-family: var(--kn-font-sans);
   pointer-events: none;
+  animation: ed-empty-in var(--kn-dur-slow) var(--kn-ease-out);
+}
+@keyframes ed-empty-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ed-empty-icon {
+  opacity: 0.45;
+}
+.ed-empty-title {
+  font-size: var(--kn-text-md);
+  font-weight: 600;
+  color: var(--kn-fg-muted);
+}
+.ed-empty-hint {
+  font-size: var(--kn-text-2xs);
+  color: var(--kn-fg-subtle);
 }
 
 /* 补全弹层 */

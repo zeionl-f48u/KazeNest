@@ -1,0 +1,136 @@
+/*
+ * ComingSoon 占位页样式（React 版）
+ */
+
+.cs {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  justify-content: center;
+  padding: var(--kn-space-6) 0 var(--kn-space-10);
+}
+
+/* 品牌色光晕（页面顶部一团柔光） */
+.cs-glow {
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(680px, 100%);
+  height: 360px;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tint) 22%, transparent), transparent 100%);
+  opacity: 0.55;
+  pointer-events: none;
+  filter: blur(6px);
+}
+
+.cs-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--kn-space-3);
+  width: 520px;
+  max-width: 100%;
+  padding: var(--kn-space-8) var(--kn-space-6) var(--kn-space-6);
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-2xl);
+  background: var(--kn-glass-bg);
+  backdrop-filter: saturate(var(--kn-glass-saturation)) blur(var(--kn-glass-blur));
+  -webkit-backdrop-filter: saturate(var(--kn-glass-saturation)) blur(var(--kn-glass-blur));
+  box-shadow: var(--kn-glass-shadow);
+  text-align: center;
+  box-sizing: border-box;
+  animation: cs-card-in var(--kn-dur-slow) var(--kn-ease-out);
+}
+@keyframes cs-card-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 浮动图标 */
+.cs-float {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  border-radius: var(--kn-radius-2xl);
+  background: color-mix(in srgb, var(--tint) 14%, transparent);
+  color: var(--tint);
+  box-shadow: var(--kn-shadow-md);
+  animation: cs-float 3.5s var(--kn-ease-in-out) infinite;
+}
+@keyframes cs-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+.cs-title {
+  margin: var(--kn-space-2) 0 0;
+  font-size: var(--kn-text-xl);
+  font-weight: 700;
+  color: var(--kn-fg);
+}
+
+.cs-desc {
+  margin: 0;
+  max-width: 360px;
+  font-size: var(--kn-text-sm);
+  line-height: 1.7;
+  color: var(--kn-fg-muted);
+}
+
+/* 能力清单 */
+.cs-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--kn-space-2);
+  margin-top: var(--kn-space-2);
+}
+.cs-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 6px 0 10px;
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-pill);
+  background: var(--kn-bg-elev);
+  font-size: var(--kn-text-xs);
+  color: var(--kn-fg);
+  animation: cs-tag-in var(--kn-dur-base) var(--kn-ease-out) backwards;
+}
+@keyframes cs-tag-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cs-tag-icon {
+  color: var(--tint);
+  flex-shrink: 0;
+}
+.cs-tag-label {
+  white-space: nowrap;
+}
+.cs-tag-state {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: var(--kn-radius-pill);
+  background: color-mix(in srgb, var(--tint) 14%, transparent);
+  color: var(--tint);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cs-hint {
+  margin: var(--kn-space-2) 0 0;
+  font-size: var(--kn-text-2xs);
+  color: var(--kn-fg-subtle);
+}
