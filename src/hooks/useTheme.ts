@@ -30,18 +30,25 @@ export function setThemeMode(mode: ThemeMode) {
 
 /** 启动引导：读盘应用到 <html>（在 React 渲染前调用，避免闪白） */
 export async function bootstrapTheme() {
-  if (!mediaBound) {
-    mediaBound = true
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      if (store.get() === 'system') apply('system')
-    })
-  }
-  const saved = await getTheme()
-  if (saved) {
-    store.set(saved)
-    apply(saved)
-  } else {
-    apply(store.get())
+  try {
+    if (!mediaBound) {
+      mediaBound = true
+      window
+        .matchMedia('(prefers-color-scheme: dark)')
+        .addEventListener?.('change', () => {
+          if (store.get() === 'system') apply('system')
+        })
+    }
+    const saved = await getTheme()
+    if (saved) {
+      store.set(saved)
+      apply(saved)
+    } else {
+      apply(store.get())
+    }
+  } catch (error) {
+    /* 主题引导失败不应阻塞启动 */
+    console.warn('[KazeNest] 主题初始化失败：', error)
   }
 }
 

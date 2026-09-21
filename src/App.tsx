@@ -2,7 +2,7 @@
  * App：React 版外壳
  * - 布局：Titlebar | ActivityBar + SideBar + 内容舞台（主内容 + AI 右侧面板）
  * - 状态：activeView / sideBarOpen / 通知数 / 工作区名 / AI 面板（会话快照持久化）
- * - 启动：useAppBoot（自定义标题栏 + 显示窗口）、会话恢复、macOS 原生菜单
+ * - 启动：会话恢复、macOS 原生菜单（窗口显示由入口 BootGate 保障）
  * - AI 面板：常驻开关；位于 AI 视图时向左扩展铺满内容区（morph 动画）
  * - 全局：DemoDialog（showDemo 事件驱动的点击画面）、Ctrl/Cmd+Alt+I 开合面板
  */
@@ -22,7 +22,6 @@ import {
   resetAiPanelWidth,
   setAiPanelWidth,
 } from '@/hooks/useAiPanel'
-import { useAppBoot } from '@/hooks/useAppBoot'
 import { activityItems, searchItems, topMenus } from '@/data'
 import type { SearchItem, ViewId } from '@/data'
 import type { ActivityItem } from '@/component/sidebar'
@@ -30,8 +29,6 @@ import { views } from '@/registry/views'
 import { cn } from '@/lib/utils'
 import { initMacNativeMenu, isMac, showDemo } from '@/utils'
 import './App.css'
-
-let bootStarted = false
 
 export default function App() {
   const [activeView, setActiveView] = useState<ViewId>('editor')
@@ -61,11 +58,6 @@ export default function App() {
   /* ==================== 启动：窗口 + 会话恢复 + 全局事件 ==================== */
 
   useEffect(() => {
-    if (!bootStarted) {
-      bootStarted = true
-      const { boot } = useAppBoot()
-      void boot()
-    }
     void initMacNativeMenu()
 
     let cancelled = false

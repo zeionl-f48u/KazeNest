@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
@@ -10,5 +10,29 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!--
+      启动兜底：窗口配置了 visible:false，正常由前端 BootGate 调 win.show() 显示。
+      若前端脚本未能启动（编译错误/模块加载失败），这里 4.5s 后强制显示窗口并给出提示，
+      避免"终端一切正常但窗口永不出现、且看不到任何错误"的死角。
+    -->
+    <script>
+      setTimeout(function () {
+        if (document.documentElement.dataset.knReady === '1') return
+        try {
+          var w = window.__TAURI__ && window.__TAURI__.window && window.__TAURI__.window.getCurrentWindow()
+          if (w && w.show) w.show()
+        } catch (e) {
+          /* 忽略：非 Tauri 环境 */
+        }
+        var root = document.getElementById('root')
+        if (root && !root.childElementCount) {
+          root.innerHTML =
+            '<div style="font:14px/1.7 ui-sans-serif,system-ui;padding:32px;color:#f43f5e">' +
+            'KazeNest 前端未能启动（可能是脚本加载或编译错误）。<br/>' +
+            '请在运行 pnpm tauri dev 的终端查看错误，或按 Ctrl+Shift+I 打开开发者工具。</div>'
+        }
+      }, 4500)
+    </script>
   </body>
 </html>
