@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from '@/component/common/Icon'
+import FluidOrb from '@/component/ui/fluid-orb'
 import { AiMessageView } from './AiMessageView'
 import { AiInputBar } from './AiInputBar'
 import { useAiChat } from '@/hooks/useAiChat'
@@ -185,6 +186,12 @@ export function AiWorkspace({ variant = 'page', closable = false, onExpand, onCl
         <div className={`aw-thread${messages.length ? '' : ' is-hero'}${isPanel ? ' is-panel' : ''}`}>
           {messages.length === 0 ? (
             <div className={`aw-hero${isPanel ? ' is-panel' : ''}`}>
+              {/* Rare UI 流体球：空态装饰背景（面板形态省略，节省空间） */}
+              {!isPanel && (
+                <div className="aw-hero-orb" aria-hidden="true">
+                  <FluidOrb size={300} />
+                </div>
+              )}
               <div className="aw-hero-logo">
                 <Icon name="cloud" size={isPanel ? 26 : 34} />
               </div>

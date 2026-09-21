@@ -171,6 +171,45 @@ export default function App() {
   const panelDocked = panel.open && !panelExpanded
   const panelLeft = panelExpanded ? 0 : Math.max(0, stageWidth - panel.width)
 
+  /* ==================== 离场动画（存在感状态） ==================== */
+  /* React 条件渲染默认瞬间卸载；这里保留元素至离场动画播完再卸载 */
+
+  const [sideBarRendered, setSideBarRendered] = useState(sideBarOpen)
+  const [sideBarClosing, setSideBarClosing] = useState(false)
+
+  useEffect(() => {
+    if (sideBarVisible) {
+      setSideBarRendered(true)
+      setSideBarClosing(false)
+      return
+    }
+    if (!sideBarRendered) return
+    setSideBarClosing(true)
+    const t = window.setTimeout(() => {
+      setSideBarRendered(false)
+      setSideBarClosing(false)
+    }, 220)
+    return () => window.clearTimeout(t)
+  }, [sideBarVisible, sideBarRendered])
+
+  const [panelRendered, setPanelRendered] = useState(panel.open)
+  const [panelClosing, setPanelClosing] = useState(false)
+
+  useEffect(() => {
+    if (panel.open) {
+      setPanelRendered(true)
+      setPanelClosing(false)
+      return
+    }
+    if (!panelRendered) return
+    setPanelClosing(true)
+    const t = window.setTimeout(() => {
+      setPanelRendered(false)
+      setPanelClosing(false)
+    }, 240)
+    return () => window.clearTimeout(t)
+  }, [panel.open, panelRendered])
+
   return (
     <div className="app-shell">
       <Titlebar
@@ -204,10 +243,12 @@ export default function App() {
           onToggle={onActivityToggle}
         />
 
-        {sideBarVisible && SidebarComp && (
-          <SideBar title={active.sidebarTitle ?? '侧边栏'} onClose={() => setSideBarOpen(false)}>
-            <SidebarComp />
-          </SideBar>
+        {sideBarRendered && SidebarComp && (
+          <div className={`sb-presence${sideBarClosing ? ' is-closing' : ''}`}>
+            <SideBar title={active.sidebarTitle ?? '侧边栏'} onClose={() => setSideBarOpen(false)}>
+              <SidebarComp />
+            </SideBar>
+          </div>
         )}
 
         {/* 内容舞台：主内容 + AI 右侧面板 */}
@@ -221,8 +262,11 @@ export default function App() {
             </div>
           </main>
 
-          {panel.open && (
-            <div className="ai-panel-wrap" style={{ left: `${panelLeft}px` }}>
+          {panelRendered && (
+            <div
+              className={`ai-panel-wrap${panelClosing ? ' is-closing' : ''}`}
+              style={{ left: `${panelLeft}px` }}
+            >
               <AiPanel
                 width={panel.width}
                 expanded={panelExpanded}

@@ -75,9 +75,16 @@ body {
   }
 }
 
-/* ============ 侧栏进入动画 ============ */
-.app-body > .sb {
+/* ============ 侧栏进入 / 离场动画（存在感包装层） ============ */
+.sb-presence {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
   animation: sb-in var(--kn-dur-slow) var(--kn-ease-out);
+}
+.sb-presence.is-closing {
+  animation: sb-out 0.2s var(--kn-ease-out) forwards;
+  pointer-events: none;
 }
 @keyframes sb-in {
   from {
@@ -87,6 +94,12 @@ body {
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+@keyframes sb-out {
+  to {
+    opacity: 0;
+    transform: translateX(-12px);
   }
 }
 
@@ -124,7 +137,15 @@ body.ai-panel-resizing .app-content {
   will-change: left;
   animation: ai-panel-in 0.24s var(--kn-ease-out);
 }
+/* 关闭：向右滑出淡出（播完后由 App 卸载） */
+.ai-panel-wrap.is-closing {
+  animation: ai-panel-out 0.24s var(--kn-ease-out) forwards;
+  pointer-events: none;
+}
 @keyframes ai-panel-in {
   from { opacity: 0; transform: translateX(24px); }
   to   { opacity: 1; transform: none; }
+}
+@keyframes ai-panel-out {
+  to { opacity: 0; transform: translateX(24px); }
 }

@@ -121,6 +121,8 @@
   justify-content: center;
 }
 .aw-hero {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -128,6 +130,22 @@
   width: 100%;
   text-align: center;
   padding-bottom: 7vh;
+}
+/* 空态装饰流体球（内容保持在上层） */
+.aw-hero-orb {
+  position: absolute;
+  top: -96px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 0;
+  opacity: 0.42;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(closest-side, #000 58%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 58%, transparent 100%);
+}
+.aw-hero > *:not(.aw-hero-orb) {
+  position: relative;
+  z-index: 1;
 }
 .aw-hero-logo {
   width: 72px;
