@@ -1,0 +1,202 @@
+/*
+ * Settings 页面样式（React 版）
+ */
+
+.st {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kn-space-5);
+  max-width: 760px;
+  animation: st-in var(--kn-dur-slow) var(--kn-ease-out);
+}
+@keyframes st-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.st-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.st-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--kn-text-2xl);
+  font-weight: 700;
+}
+.st-title-icon {
+  color: var(--kn-brand-500);
+}
+.st-subtitle {
+  margin: 0;
+  font-size: var(--kn-text-sm);
+  color: var(--kn-fg-muted);
+}
+
+/* ==================== 分区卡片 ==================== */
+.st-section {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-xl);
+  background: var(--kn-bg-elev);
+  overflow: hidden;
+}
+.st-section-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--kn-border);
+  background: color-mix(in srgb, var(--kn-bg-sunken) 55%, transparent);
+  font-size: var(--kn-text-sm);
+  font-weight: 600;
+  color: var(--kn-fg);
+}
+.st-section-head svg {
+  color: var(--kn-brand-500);
+}
+.st-demo-tag {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 7px;
+  border-radius: var(--kn-radius-pill);
+  background: color-mix(in srgb, var(--kn-amber-500) 14%, transparent);
+  color: var(--kn-amber-500);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* ==================== 行 ==================== */
+.st-rows {
+  display: flex;
+  flex-direction: column;
+}
+.st-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 52px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--kn-border);
+}
+.st-row:last-child {
+  border-bottom: 0;
+}
+.st-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.st-row-title {
+  font-size: var(--kn-text-sm);
+  font-weight: 500;
+  color: var(--kn-fg);
+}
+.st-row-desc {
+  font-size: var(--kn-text-2xs);
+  color: var(--kn-fg-muted);
+}
+
+/* 原生下拉（演示） */
+.st-select {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-md);
+  background: var(--kn-bg);
+  color: var(--kn-fg);
+  font: inherit;
+  font-size: var(--kn-text-xs);
+  outline: 0;
+  cursor: pointer;
+}
+.st-select:focus {
+  border-color: color-mix(in srgb, var(--kn-brand-500) 55%, transparent);
+}
+
+/* ==================== 快捷键 ==================== */
+.st-keys {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  padding: 6px 16px 10px;
+}
+.st-key-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--kn-border) 70%, transparent);
+}
+.st-key-row:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+.st-key-label {
+  font-size: var(--kn-text-xs);
+  color: var(--kn-fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.st-key-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ==================== 关于 ==================== */
+.st-about {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.st-about-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--kn-radius-lg);
+  background: linear-gradient(135deg, var(--kn-brand-500), var(--kn-magenta-500));
+  color: #fff;
+  box-shadow: var(--kn-shadow-md);
+  flex-shrink: 0;
+}
+.st-about-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.st-about-name {
+  font-size: var(--kn-text-md);
+  font-weight: 700;
+}
+.st-about-meta {
+  font-size: var(--kn-text-2xs);
+  color: var(--kn-fg-muted);
+}
+.st-about-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.st-hint {
+  margin: 0;
+  font-size: var(--kn-text-2xs);
+  color: var(--kn-fg-subtle);
+}

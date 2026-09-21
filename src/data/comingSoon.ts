@@ -1,5 +1,5 @@
 /**
- * 占位视图配置（插件市场 / 设置 / 账户）
+ * 占位视图配置（插件市场 / 账户）
  * 由 component/common/ComingSoon.tsx 统一渲染
  *
  * 调节指南：改对应视图的 title / desc / tags 等字段即可，
@@ -29,14 +29,6 @@ export const comingSoonConfig: Partial<Record<ViewId, ComingSoonConfig>> = {
     tint: 'var(--kn-brand-500)',
     desc: '插件浏览、搜索与一键安装能力正在建设中',
     tags: ['插件浏览', '搜索筛选', '一键安装'],
-  },
-  settings: {
-    title: '设置',
-    subtitle: '主题、快捷键与偏好',
-    icon: 'cog',
-    tint: 'var(--kn-sky-500)',
-    desc: '主题、快捷键与个性化偏好正在建设中',
-    tags: ['主题外观', '快捷键', '偏好设置'],
   },
   account: {
     title: '账户',

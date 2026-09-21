@@ -9,6 +9,7 @@ import { Home } from '../pages/Home'
 import { Editor } from '../pages/Editor'
 import { Files } from '../pages/Files'
 import { Browser } from '../pages/Browser'
+import { Settings } from '../pages/Settings'
 import { AiWorkspace } from '../component/ai'
 import { ComingSoon } from '../component/common/ComingSoon'
 import { HomeSidebar } from '../component/sidebar/views/HomeSidebar'
@@ -83,8 +84,7 @@ export const views: Record<ViewId, ViewDefinition> = {
     menus: ['文件', '编辑', '视图', '插件', '帮助'],
   },
   settings: {
-    page: ComingSoon,
-    comingSoon: comingSoonConfig.settings,
+    page: Settings,
     sidebarVisible: false,
     menus: ['文件', '编辑', '视图', '帮助'],
   },

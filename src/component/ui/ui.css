@@ -40,3 +40,41 @@
 .ui-press:active:not(:disabled) {
   transform: scale(0.97);
 }
+
+/* ---------- Slider（原生 range 美化） ---------- */
+.ui-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 160px;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--kn-fg) 14%, transparent);
+  outline: none;
+  cursor: pointer;
+}
+.ui-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--kn-brand-500);
+  border: 2px solid var(--kn-bg-elev);
+  box-shadow: var(--kn-shadow-md);
+  transition: transform 0.12s var(--kn-ease-out);
+}
+.ui-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+.ui-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--kn-brand-500);
+  border: 2px solid var(--kn-bg-elev);
+  box-shadow: var(--kn-shadow-md);
+}
+.ui-slider:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
