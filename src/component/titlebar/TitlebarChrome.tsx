@@ -14,6 +14,7 @@ import { Kbd } from '../ui/primitives'
 import { cn } from '@/lib/utils'
 import { isMac, showDemo } from '@/utils'
 import { menuEntriesOf } from '@/data/menuItems'
+import { useTheme } from '@/hooks/useTheme'
 
 export interface TitlebarChromeProps {
   part: 'leading' | 'trailing'
@@ -23,6 +24,8 @@ export interface TitlebarChromeProps {
   aiActive?: boolean
   onWorkspaceSelect?: (name: string) => void
   onNotifyRead?: () => void
+  /** 单条通知已读（顶栏徽标 -1） */
+  onNotifyReadOne?: () => void
   onAskAi?: () => void
 }
 
@@ -45,9 +48,26 @@ export function TitlebarChrome({
   aiActive = false,
   onWorkspaceSelect,
   onNotifyRead,
+  onNotifyReadOne,
   onAskAi,
 }: TitlebarChromeProps) {
   const [dropdown, setDropdown] = useState<DropdownState | null>(null)
+  const { mode: themeMode, setThemeMode } = useTheme()
+
+  /** 通知中心（演示数据；点击标记已读，未读带圆点） */
+  interface NotifyItem {
+    id: string
+    label: string
+    icon: string
+    color: string
+    meta: string
+    unread: boolean
+  }
+  const [notifications, setNotifications] = useState<NotifyItem[]>([
+    { id: 'n1', label: '构建完成：kazenest v0.1.0', icon: 'check', color: 'var(--kn-emerald-500)', meta: '2 分钟前', unread: true },
+    { id: 'n2', label: 'AI 会话已生成代码评审', icon: 'sparkles', color: 'var(--kn-brand-500)', meta: '1 小时前', unread: true },
+    { id: 'n3', label: '私有空间新增加密文件', icon: 'lock', color: 'var(--kn-amber-500)', meta: '昨天', unread: true },
+  ])
 
   /* ==================== 通用：以下拉为画面的交互 ==================== */
 
@@ -74,13 +94,16 @@ export function TitlebarChrome({
   }
 
   const openNotify = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const items: DropdownItem[] = [
-      { id: 'n1', label: '构建完成：kazenest v0.1.0', icon: 'check', color: 'var(--kn-emerald-500)', meta: '2 分钟前' },
-      { id: 'n2', label: 'AI 会话已生成代码评审', icon: 'sparkles', color: 'var(--kn-brand-500)', meta: '1 小时前' },
-      { id: 'n3', label: '私有空间新增加密文件', icon: 'lock', color: 'var(--kn-amber-500)', meta: '昨天' },
-      { id: 'sep', label: '', separator: true },
-      { id: 'read-all', label: '全部标为已读', icon: 'check' },
-    ]
+    const items: DropdownItem[] = notifications.map((n) => ({
+      id: n.id,
+      label: n.label,
+      icon: n.icon,
+      color: n.color,
+      meta: n.meta,
+      dot: n.unread,
+    }))
+    items.push({ id: 'sep', label: '', separator: true })
+    items.push({ id: 'read-all', label: '全部标为已读', icon: 'check' })
     setDropdown({ kind: 'notify', ...anchorOf(e.currentTarget), title: '通知', items })
   }
 
@@ -89,7 +112,11 @@ export function TitlebarChrome({
       { id: 'profile', label: '个人资料', icon: 'user' },
       { id: 'usage', label: '使用统计', icon: 'chart-bar' },
       { id: 'prefs', label: '偏好设置', icon: 'cog' },
-      { id: 'sep', label: '', separator: true },
+      { id: 'sep-appearance', label: '', separator: true },
+      { id: 'theme-light', label: '浅色外观', icon: 'palette', checked: themeMode === 'light' },
+      { id: 'theme-dark', label: '深色外观', icon: 'moon', checked: themeMode === 'dark' },
+      { id: 'theme-system', label: '跟随系统', icon: 'display', checked: themeMode === 'system' },
+      { id: 'sep-signout', label: '', separator: true },
       { id: 'signout', label: '退出登录', icon: 'forward' },
     ]
     setDropdown({ kind: 'account', ...anchorOf(e.currentTarget), title: 'Zeionl', items })
@@ -114,11 +141,32 @@ export function TitlebarChrome({
       return
     }
     if (state.kind === 'notify') {
-      if (item.id === 'read-all') onNotifyRead?.()
-      else showDemo({ title: '通知详情', desc: item.label, icon: 'bell' })
+      if (item.id === 'read-all') {
+        setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })))
+        onNotifyRead?.()
+        return
+      }
+      const target = notifications.find((n) => n.id === item.id)
+      if (target?.unread) {
+        setNotifications((prev) => prev.map((n) => (n.id === item.id ? { ...n, unread: false } : n)))
+        onNotifyReadOne?.()
+      }
+      showDemo({ title: '通知详情', desc: item.label, icon: 'bell' })
       return
     }
     if (state.kind === 'account') {
+      if (item.id === 'theme-light') {
+        setThemeMode('light')
+        return
+      }
+      if (item.id === 'theme-dark') {
+        setThemeMode('dark')
+        return
+      }
+      if (item.id === 'theme-system') {
+        setThemeMode('system')
+        return
+      }
       showDemo({ title: item.label, desc: '演示模式：账户功能尚未接入', icon: 'user' })
     }
   }

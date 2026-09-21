@@ -18,6 +18,7 @@ const KEYS = {
   sidebarWidth: 'sidebarWidth',
   recentFiles: 'recentFiles',
   appSession: 'appSession',
+  theme: 'theme',
 } as const
 
 /** 最近打开的文件项（name 去重键） */
@@ -63,6 +64,32 @@ export async function setSidebarWidth(width: number): Promise<void> {
     await s.set(KEYS.sidebarWidth, width)
   } catch {
     /* 忽略持久化失败（如浏览器环境） */
+  }
+}
+
+/* =================== 主题 =================== */
+
+/** 外观模式（light 亮色 / dark 暗色 / system 跟随系统） */
+export type StoredTheme = 'light' | 'dark' | 'system'
+
+export async function getTheme(): Promise<StoredTheme | null> {
+  const s = await getStore()
+  if (!s) return null
+  try {
+    const v = await s.get<StoredTheme>(KEYS.theme)
+    return v === 'light' || v === 'dark' || v === 'system' ? v : null
+  } catch {
+    return null
+  }
+}
+
+export async function setTheme(mode: StoredTheme): Promise<void> {
+  const s = await getStore()
+  if (!s) return
+  try {
+    await s.set(KEYS.theme, mode)
+  } catch {
+    /* 忽略持久化失败 */
   }
 }
 

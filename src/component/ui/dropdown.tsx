@@ -20,7 +20,9 @@ export interface DropdownItem {
   meta?: string
   /** 勾选态（工作区当前项等） */
   checked?: boolean
-  /** 分隔线（其余字段忽略） */
+  /** 未读圆点（通知等） */
+  dot?: boolean
+  /** 分隔线 */
   separator?: boolean
 }
 
@@ -78,6 +80,9 @@ export function Dropdown({ items, title, x, y, onSelect, onClose }: DropdownProp
               <span className="inline-flex w-3 shrink-0 items-center justify-center text-[var(--kn-brand-500)]">
                 {it.checked && <Icon name="check" size={11} />}
               </span>
+              {it.dot && (
+                <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--kn-brand-500)]" />
+              )}
               {it.icon && (
                 <Icon name={it.icon} size={13} className="shrink-0 opacity-75" color={it.color} />
               )}

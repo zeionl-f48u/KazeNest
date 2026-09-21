@@ -231,6 +231,7 @@ export default function App() {
             aiActive={panel.open || activeView === 'ai'}
             onAskAi={onAskAi}
             onNotifyRead={() => setNotifyCount(0)}
+            onNotifyReadOne={() => setNotifyCount((c) => Math.max(0, c - 1))}
           />
         }
       />

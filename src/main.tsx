@@ -14,6 +14,10 @@ import './styles/tokens.css'
 import './styles/effects.css'
 
 import App from './App'
+import { bootstrapTheme } from '@/hooks/useTheme'
+
+/* 应用外观（读盘；渲染前应用避免闪白） */
+void bootstrapTheme()
 
 const container = document.getElementById('root')
 if (!container) throw new Error('找不到 #root 挂载点')
