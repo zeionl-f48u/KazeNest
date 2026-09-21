@@ -126,6 +126,7 @@ node scripts/add-rare-ui.mjs folder-component
 - 注释与文档一律中文；组件目录随视图划分，样式与类名统一命名
 - 视图的完整定义在 `src/registry/views.ts`（页面 / 侧栏 / 顶栏菜单一处配置）
 - 提交粒度：一个功能点一个提交，提交信息说明动机与影响面
+- React hooks 只能在组件或自定义 Hook 内调用（模块顶层禁止）；跨模块共享状态用 `lib/store` 或无 hooks API（如 `appSession`）
 - 后端目录的 AI 维护约定（识别问题 / 加注释 / 维护文档，不擅自改实现）见 `src-tauri/README.md` 顶部
 
 ## 致谢

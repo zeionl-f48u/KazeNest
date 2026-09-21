@@ -1,9 +1,13 @@
 /**
- * 全局会话持久化（React 版 useAppSession）
- * 与 Vue 版行为一致：
+ * 全局会话持久化（React 版）
  * - 共享同一份 AppSessionSnapshot（模块级 store）
  * - restore()：启动读一次（缓存），save()：300ms 防抖落盘，flush()：立即落盘
  * - 各视图通过 update(mutator) 写回自己的那段状态
+ *
+ * 两种用法（重要）：
+ * - `appSession`：无 hooks 的模块 API —— 供其他模块/store 在**顶层**使用
+ *   （如 useAiChat / useFileManager 的 syncSession；hooks 不能在模块顶层调用）
+ * - `useAppSession()`：组件内使用 —— 额外通过 useStore 订阅快照变化
  */
 import { getAppSession, setAppSession } from '@/utils'
 import type { AppSessionSnapshot } from '@/utils'
@@ -78,6 +82,21 @@ function update(mutator: (snap: AppSessionSnapshot) => void) {
   save()
 }
 
+/**
+ * 无 hooks 的会话 API（可在模块顶层安全调用）
+ * get session 读取当前快照（不订阅）
+ */
+export const appSession = {
+  get session() {
+    return store.get()
+  },
+  restore,
+  save,
+  flush,
+  update,
+}
+
+/** 组件内使用：订阅快照变化 */
 export function useAppSession() {
   const session = useStore(store)
   return { session, restore, save, flush, update }

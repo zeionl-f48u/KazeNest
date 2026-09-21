@@ -7,7 +7,7 @@
  */
 import { useSyncExternalStore } from 'react'
 import type { FolderNode, ManagedFile } from '@/component/files'
-import { useAppSession } from '@/hooks/useAppSession'
+import { appSession } from '@/hooks/useAppSession'
 
 /** 空间类型 */
 export type FileSpace = 'folder' | 'library' | 'private'
@@ -103,7 +103,7 @@ export function useFileManager() {
 /* =================== 持久化 =================== */
 
 function syncSession() {
-  useAppSessionApi.update((s) => {
+  appSession.update((s) => {
     s.files = {
       folderOpened,
       rootFolderName,
@@ -123,7 +123,7 @@ let sessionRestored = false
 export async function restoreFiles() {
   if (sessionRestored) return
   sessionRestored = true
-  const snap = (await useAppSessionApi.restore())?.files
+  const snap = (await appSession.restore())?.files
   if (!snap) return
   folderOpened = !!snap.folderOpened
   rootFolderName = snap.rootFolderName ?? ''
@@ -139,7 +139,7 @@ export async function restoreFiles() {
   bump()
 }
 
-const useAppSessionApi = useAppSession()
+
 
 /* =================== 操作 =================== */
 

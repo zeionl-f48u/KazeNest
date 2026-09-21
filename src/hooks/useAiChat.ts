@@ -6,7 +6,7 @@
  * - 持久化：AppSessionSnapshot.ai 切片（会话 / 消息 / 模型 / 计费）
  */
 import { useSyncExternalStore } from 'react'
-import { useAppSession } from '@/hooks/useAppSession'
+import { appSession } from '@/hooks/useAppSession'
 
 /* =================== 工作模式 / 模型 =================== */
 
@@ -109,10 +109,10 @@ export function useAiChat() {
 
 /* =================== 持久化 =================== */
 
-const sessionApi = useAppSession()
+
 
 function syncSession() {
-  sessionApi.update((s) => {
+  appSession.update((s) => {
     s.ai = {
       activeModel,
       sessions: sessions.map((sess) => ({
@@ -145,7 +145,7 @@ let aiRestored = false
 export async function restoreAi() {
   if (aiRestored) return
   aiRestored = true
-  const ai = (await sessionApi.restore())?.ai
+  const ai = (await appSession.restore())?.ai
   if (!ai) return
   activeModel = ai.activeModel || 'model-chat'
   if (ai.usage) usage = { inputTokens: ai.usage.inputTokens, outputTokens: ai.usage.outputTokens, cost: ai.usage.cost }
