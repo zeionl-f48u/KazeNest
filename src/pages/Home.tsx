@@ -5,7 +5,7 @@
  * - 最近打开：settings.json 读取（回到首页时刷新）
  * - 导航通过 onNavigate 回调（App 统一处理视图切换）
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { GlassCard } from '@/component/common/GlassCard'
 import { Icon } from '@/component/common/Icon'
@@ -13,6 +13,7 @@ import { Button } from '@/component/ui/button'
 import FluidOrb from '@/component/ui/fluid-orb'
 import { AnimatedCounter } from '@/component/ui/animated-counter'
 import GravityLetters from '@/component/ui/gravity-letters'
+import { GooeyNav } from '@/component/ui/gooey-nav'
 import { homeCards } from '@/data/homeCards'
 import { getRecentFiles, formatRelativeTime } from '@/utils'
 import type { RecentFile } from '@/utils'
@@ -31,6 +32,8 @@ const FALLBACK_RECENT: RecentFile[] = [
 
 export function Home({ onNavigate }: HomeProps) {
   const [recent, setRecent] = useState<RecentFile[]>(FALLBACK_RECENT)
+  const quickRef = useRef<HTMLElement | null>(null)
+  const recentRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -101,8 +104,24 @@ export function Home({ onNavigate }: HomeProps) {
         </div>
       </header>
 
+      {/* Rare UI 果冻导航：点击平滑滚动到对应区块 */}
+      <div className="home-nav">
+        <GooeyNav
+          size="sm"
+          items={[
+            { label: '快速开始', icon: <Icon name="sparkles" size={13} /> },
+            { label: '最近打开', icon: <Icon name="clock" size={13} /> },
+          ]}
+          activeColor="var(--kn-brand-500)"
+          onChange={(i: number) => {
+            const el = i === 0 ? quickRef.current : recentRef.current
+            el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }}
+        />
+      </div>
+
       {/* 快速开始 */}
-      <section className="home-section">
+      <section className="home-section" ref={quickRef}>
         <h2 className="home-section-title">
           <Icon name="sparkles" size={14} />
           快速开始
@@ -142,7 +161,7 @@ export function Home({ onNavigate }: HomeProps) {
       </section>
 
       {/* 最近打开 */}
-      <section className="home-section">
+      <section className="home-section" ref={recentRef}>
         <h2 className="home-section-title">
           <Icon name="clock" size={14} />
           最近打开

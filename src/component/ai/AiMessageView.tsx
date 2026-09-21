@@ -6,6 +6,8 @@
  */
 import { useState } from 'react'
 import { Icon } from '@/component/common/Icon'
+import TaskList from '@/component/ui/task-list'
+import EmojiReaction from '@/component/ui/emoji-reaction'
 import { renderMessage } from './render'
 import type { AiMessage } from '@/hooks/useAiChat'
 import { workByKind } from '@/hooks/useAiChat'
@@ -73,7 +75,26 @@ export function AiMessageView({
               </span>
             )}
           </button>
-          {thinking.open && thinking.text && <div className="ai-think-body">{thinking.text}</div>}
+          {thinking.open && thinking.text && (
+            <div className="ai-think-body">
+              {/* Rare UI 任务清单：思考步骤（最后一条 = 进行中） */}
+              <TaskList
+                className="ai-think-tasks"
+                size="sm"
+                accent="var(--kn-brand-500)"
+                tasks={thinking.text
+                  .split('\n')
+                  .map((line) => line.trim())
+                  .filter(Boolean)
+                  .map((label, i, arr) => ({
+                    id: `think-${i}`,
+                    label,
+                    done: i < arr.length - 1,
+                  }))}
+                onTasksChange={() => {}}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -107,6 +128,7 @@ export function AiMessageView({
 
             {m.role === 'assistant' && !isStreaming && (
               <div className="ai-msg-actions">
+                <EmojiReaction size="sm" onReact={() => {}} />
                 <button type="button" className="ai-act" aria-label="复制" onClick={() => copyMessage(m)}>
                   <Icon name={copiedId === m.id ? 'check' : 'copy'} size={12} />
                 </button>

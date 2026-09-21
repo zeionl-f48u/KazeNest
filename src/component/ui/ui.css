@@ -4,11 +4,7 @@
  * - 配色统一走 --kn-* 设计令牌（与项目视觉体系一致）
  */
 
-/* 弹层（Dialog / Dropdown）进出场 */
-@keyframes ui-pop-in {
-  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
+/* 弹层（Dialog / Dropdown）进的场由 Motion 驱动；此处保留搜索面板用的 CSS 动画 */
 @keyframes ui-overlay-in {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -18,9 +14,6 @@
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.ui-pop-in {
-  animation: ui-pop-in 0.14s var(--kn-ease-out);
-}
 .ui-overlay-in {
   animation: ui-overlay-in 0.16s var(--kn-ease-out);
 }

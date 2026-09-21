@@ -118,8 +118,13 @@ node scripts/add-rare-ui.mjs folder-component
 | `folder-component` | 文件管理「打开文件夹」空态的可开合文件夹动画 |
 | `scroll-progress` | 内容区顶部滚动进度条（全局） |
 | `notification-bell` | 顶栏通知铃（未读徽标 + 摇铃动画） |
+| `gooey-nav` | 首页「快速开始 / 最近打开」果冻滑动导航（点击滚动定位） |
+| `task-list` | AI 思考过程里的步骤清单（完成打勾 + 划线动画） |
+| `emoji-reaction` | AI 消息操作区的表情反馈（弹出 + 粒子爆发；已本地化表情字形） |
 
-组件清单见 [rareui.com/components](https://www.rareui.com/components)。
+Dialog 与 Dropdown 的进出场也已改由 Motion 弹簧驱动（尊重 `prefers-reduced-motion`）。
+
+组件清单见 [rareui.com/components](https://www.rareui.com/components)。`gooey-nav` 已剥离 Next.js 依赖，`emoji-reaction` 已改本地表情字形（离线可用、不受 CSP 限制）。
 
 ## 路线图
 
