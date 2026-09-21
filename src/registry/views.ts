@@ -6,8 +6,10 @@
  */
 import type { ComponentType } from 'react'
 import { Home } from '../pages/Home'
+import { Editor } from '../pages/Editor'
 import { ComingSoon } from '../component/common/ComingSoon'
 import { HomeSidebar } from '../component/sidebar/views/HomeSidebar'
+import { EditorSidebar } from '../component/sidebar/views/EditorSidebar'
 import type { ViewId, ComingSoonConfig } from '../data'
 import { comingSoonConfig } from '../data'
 
@@ -30,16 +32,7 @@ export interface ViewDefinition {
   menus?: readonly string[]
 }
 
-/* 未迁移视图的占位配置（编辑器 / 文件管理在 React 版迁移中） */
-const editorComingSoon: ComingSoonConfig = {
-  title: '编辑器',
-  subtitle: '代码编辑与预览',
-  icon: 'file-text',
-  tint: 'var(--kn-sky-500)',
-  desc: '编辑器正在迁移到 React 版（代码高亮 / 补全 / 查找替换将随迁移恢复）',
-  tags: ['语法高亮', '智能补全', '查找替换'],
-}
-
+/* 未迁移视图的占位配置（文件管理在 React 版迁移中） */
 const filesComingSoon: ComingSoonConfig = {
   title: '文件管理',
   subtitle: '资源管理器 · 资料空间 · 私有空间',
@@ -58,9 +51,10 @@ export const views: Record<ViewId, ViewDefinition> = {
     menus: ['文件', '编辑', '视图', '帮助'],
   },
   editor: {
-    page: ComingSoon,
-    comingSoon: editorComingSoon,
-    sidebarVisible: false,
+    page: Editor,
+    sidebar: EditorSidebar,
+    sidebarTitle: '资源管理器',
+    sidebarVisible: true,
     menus: ['文件', '编辑', '选择', '视图', '转到', '运行', '终端', '帮助'],
   },
   files: {

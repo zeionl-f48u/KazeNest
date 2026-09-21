@@ -44,10 +44,35 @@ function flush() {
   if (!restoring && snap) void setAppSession(snap)
 }
 
-/** 修改快照并触发订阅（浅拷贝以触发 useSyncExternalStore 比对） */
+/** 默认快照（从未保存过时首次写入用） */
+function defaultSnapshot(): AppSessionSnapshot {
+  return {
+    version: 1,
+    activeView: 'editor',
+    sideBarOpen: true,
+    editor: {
+      initialized: false,
+      openFileIds: [],
+      activeFileId: '',
+      contents: {},
+      modifiedIds: [],
+    },
+    ai: {
+      activeModel: 'model-chat',
+      sessions: [],
+      activeSessionId: '',
+      messages: [],
+    },
+  }
+}
+
+/** 修改快照并触发订阅（无快照时先建默认；浅拷贝以触发 useSyncExternalStore 比对） */
 function update(mutator: (snap: AppSessionSnapshot) => void) {
-  const snap = store.get()
-  if (!snap) return
+  let snap = store.get()
+  if (!snap) {
+    snap = defaultSnapshot()
+    store.set(snap)
+  }
   mutator(snap)
   store.set({ ...snap })
   save()

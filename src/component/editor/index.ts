@@ -1,10 +1,9 @@
 /**
- * Editor 组件入口
- * 一次性 import './tokens.css' 注册全局设计 token；
- * 之后按需 named import 即可。
+ * Editor 组件入口（React 版）
+ * 一次性 import tokens.css 注册编辑器设计令牌；之后按需 named import。
  */
 import './tokens.css'
 
-export { default as EditorTabs } from './EditorTabs.vue'
-export { default as CodeView } from './CodeView.vue'
-export { default as StatusBar } from './StatusBar.vue'
+export { EditorTabs } from './EditorTabs'
+export { CodeView } from './CodeView'
+export { StatusBar } from './StatusBar'

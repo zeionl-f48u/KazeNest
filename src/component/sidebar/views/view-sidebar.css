@@ -1,0 +1,13 @@
+/* 视图侧栏公共样式（React 版）：.vs 容器与 .vs-meta 右注 */
+.vs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 8px;
+}
+.vs-meta {
+  font-size: 10px;
+  opacity: 0.5;
+  flex-shrink: 0;
+  margin-left: 6px;
+}
