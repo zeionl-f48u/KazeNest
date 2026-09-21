@@ -469,15 +469,12 @@
   text-align: center;
   box-sizing: border-box;
 }
-.fm-open-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: var(--kn-radius-2xl);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--kn-sky-500) 22%, transparent), color-mix(in srgb, var(--kn-brand-500) 18%, transparent));
-  color: var(--kn-sky-500);
+
+/* Rare UI 文件夹动画容器（组件内部 321x270 基准，sm 缩放 0.65） */
+.fm-open-folder {
+  width: 209px;
+  height: 176px;
+  margin-bottom: -6px;
 }
 .fm-open-title {
   margin: 6px 0 0;

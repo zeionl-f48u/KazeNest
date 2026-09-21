@@ -117,6 +117,29 @@
   opacity: 0.5;
 }
 
+/* Rare UI 字母重力互动条（点按/按住掉落；children 提示居中） */
+.home-gravity {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  height: 84px;
+  margin-top: var(--kn-space-4);
+  border: 1px dashed var(--kn-border-strong);
+  border-radius: var(--kn-radius-xl);
+  overflow: hidden;
+  cursor: crosshair;
+}
+.home-gravity-hint {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: var(--kn-text-2xs);
+  color: var(--kn-fg-subtle);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 /* ============ 分区 ============ */
 .home-section {
   display: flex;

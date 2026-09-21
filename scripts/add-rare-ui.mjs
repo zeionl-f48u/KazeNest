@@ -51,8 +51,8 @@ for (const file of registry.files ?? []) {
   const rel = file.path.replace(/^components\/ui\//, 'src/component/ui/')
   const target = join(ROOT, rel)
   mkdirSync(dirname(target), { recursive: true })
-  /* 去掉 Next.js 的 'use client' 指令（Vite 下无意义） */
-  const content = (file.content ?? '').replace(/^'use client'\n\n?/, '')
+  /* 去掉 Next.js 的 'use client' 指令（Vite 下无意义；单/双引号都要处理） */
+  const content = (file.content ?? '').replace(/^\s*["']use client["'];?\s*\n+/, '')
   writeFileSync(target, content)
   console.log(`已写入 ${rel}`)
 }

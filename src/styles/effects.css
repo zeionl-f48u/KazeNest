@@ -116,3 +116,16 @@ body.ai-panel-resizing .app-content {
 .cs-float {
   animation: cs-float 3.5s var(--kn-ease-in-out) infinite;
 }
+
+/* ---------- 无障碍：偏好减少动态效果 ---------- */
+/* 装饰性动画与过渡统一降级（组件内自带降级的组件不受影响） */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

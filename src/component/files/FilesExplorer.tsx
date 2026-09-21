@@ -10,6 +10,7 @@ import { Icon } from '@/component/common/Icon'
 import { FileTable } from './FileTable'
 import { FileDetail } from './FileDetail'
 import { Button } from '@/component/ui/button'
+import FolderComponent from '@/component/ui/folder-component'
 import { kindMeta } from './types'
 import type { FolderNode, ManagedFile } from './types'
 import { SideBarTree } from '@/component/sidebar/SideBarTree'
@@ -101,8 +102,9 @@ export function FilesExplorer() {
     return (
       <div className="fm-open">
         <div className="fm-open-card">
-          <div className="fm-open-icon">
-            <Icon name="folder" size={28} />
+          {/* Rare UI 文件夹动画：悬停/点击可开合 */}
+          <div className="fm-open-folder">
+            <FolderComponent size="sm" color="blue" />
           </div>
           <h2 className="fm-open-title">打开本地文件夹</h2>
           <p className="fm-open-desc">

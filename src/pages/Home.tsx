@@ -1,6 +1,6 @@
 /**
  * Home：首页（React 版）
- * - 欢迎区（品牌 + 标语 + 主操作 + 状态条）
+ * - 欢迎区（品牌 + 标语 + 主操作 + 状态条；Rare UI：FluidOrb 背景 + GravityLetters 互动条）
  * - 快速开始：玻璃卡片网格（data/homeCards 驱动）
  * - 最近打开：settings.json 读取（回到首页时刷新）
  * - 导航通过 onNavigate 回调（App 统一处理视图切换）
@@ -10,6 +10,8 @@ import { GlassCard } from '@/component/common/GlassCard'
 import { Icon } from '@/component/common/Icon'
 import { Button } from '@/component/ui/button'
 import FluidOrb from '@/component/ui/fluid-orb'
+import { AnimatedCounter } from '@/component/ui/animated-counter'
+import GravityLetters from '@/component/ui/gravity-letters'
 import { homeCards } from '@/data/homeCards'
 import { getRecentFiles, formatRelativeTime } from '@/utils'
 import type { RecentFile } from '@/utils'
@@ -69,7 +71,7 @@ export function Home({ onNavigate }: HomeProps) {
         <div className="home-stats">
           <span className="home-stat">
             <Icon name="file-text" size={12} />
-            {recent.length} 个最近文件
+            <AnimatedCounter value={recent.length} /> 个最近文件
           </span>
           <span className="home-stat-dot" aria-hidden="true" />
           <span className="home-stat">
@@ -81,6 +83,20 @@ export function Home({ onNavigate }: HomeProps) {
             <Icon name="cloud" size={12} />
             云同步已开启
           </span>
+        </div>
+
+        {/* Rare UI 字母重力互动条：点按 / 按住掉落字母 */}
+        <div className="home-gravity">
+          <GravityLetters
+            type="letters"
+            items={['K', 'a', 'z', 'e', 'N', 'e', 's', 't', '☁']}
+            size={22}
+            color="var(--kn-brand-500)"
+            maxGlyphs={60}
+            className="h-full w-full"
+          >
+            <span className="home-gravity-hint">点按 / 按住掉落字母</span>
+          </GravityLetters>
         </div>
       </header>
 
