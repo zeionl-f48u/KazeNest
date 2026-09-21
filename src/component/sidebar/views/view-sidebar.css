@@ -21,3 +21,37 @@
   font-size: var(--kn-text-2xs);
   color: var(--kn-fg-subtle);
 }
+
+/* 侧栏搜索框（插件市场等） */
+.vs-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  margin: 8px 8px 4px;
+  padding: 0 8px;
+  border: 1px solid var(--sb-border);
+  border-radius: var(--kn-radius-md);
+  background: var(--kn-bg-elev);
+  transition: border-color var(--kn-dur-fast);
+}
+.vs-search:focus-within {
+  border-color: color-mix(in srgb, var(--kn-brand-500) 55%, transparent);
+}
+.vs-search-icon {
+  color: var(--sb-fg-muted);
+  flex-shrink: 0;
+}
+.vs-search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--sb-fg);
+  font: inherit;
+  font-size: var(--kn-text-sm);
+}
+.vs-search-input::placeholder {
+  color: var(--kn-fg-subtle);
+}

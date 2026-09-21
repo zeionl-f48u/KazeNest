@@ -1,7 +1,7 @@
 /**
  * 视图注册表（React 版）—— 全局视图定义的单一来源
  * - 每个视图一次定义：页面组件 / 侧栏 / 侧栏标题 / 占位配置 / 顶栏菜单
- * - 未迁移视图统一用 ComingSoon 占位（迁移进度可逐步替换 page）
+ * - 全部视图均为真实页面；未来新增建设中视图可复用 ComingSoon 组件
  * - 视图 id 的单一来源仍是 data/activityItems.ts 的 ViewId（漏配会编译报错）
  */
 import type { ComponentType } from 'react'
@@ -10,15 +10,16 @@ import { Editor } from '../pages/Editor'
 import { Files } from '../pages/Files'
 import { Browser } from '../pages/Browser'
 import { Settings } from '../pages/Settings'
+import { Marketplace } from '../pages/Marketplace'
+import { Account } from '../pages/Account'
+import { MarketplaceSidebar } from '../component/sidebar/views/MarketplaceSidebar'
 import { AiWorkspace } from '../component/ai'
-import { ComingSoon } from '../component/common/ComingSoon'
 import { HomeSidebar } from '../component/sidebar/views/HomeSidebar'
 import { EditorSidebar } from '../component/sidebar/views/EditorSidebar'
 import { FilesSidebar } from '../component/sidebar/views/FilesSidebar'
 import { BrowserSidebar } from '../component/sidebar/views/BrowserSidebar'
 import { AISidebar } from '../component/sidebar/views/AISidebar'
 import type { ViewId, ComingSoonConfig } from '../data'
-import { comingSoonConfig } from '../data'
 
 /** 单个视图的完整定义 */
 export interface ViewDefinition {
@@ -78,9 +79,10 @@ export const views: Record<ViewId, ViewDefinition> = {
     menus: ['文件', '编辑', '视图', '历史', '书签', '工具', '帮助'],
   },
   marketplace: {
-    page: ComingSoon,
-    comingSoon: comingSoonConfig.marketplace,
-    sidebarVisible: false,
+    page: Marketplace,
+    sidebar: MarketplaceSidebar,
+    sidebarTitle: '插件市场',
+    sidebarVisible: true,
     menus: ['文件', '编辑', '视图', '插件', '帮助'],
   },
   settings: {
@@ -89,8 +91,7 @@ export const views: Record<ViewId, ViewDefinition> = {
     menus: ['文件', '编辑', '视图', '帮助'],
   },
   account: {
-    page: ComingSoon,
-    comingSoon: comingSoonConfig.account,
+    page: Account,
     sidebarVisible: false,
     menus: ['文件', '编辑', '视图', '帮助'],
   },

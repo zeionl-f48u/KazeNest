@@ -1,0 +1,273 @@
+/*
+ * Marketplace 页面样式（React 版）
+ */
+
+.mk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kn-space-4);
+  animation: mk-in var(--kn-dur-slow) var(--kn-ease-out);
+}
+@keyframes mk-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mk-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mk-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--kn-text-2xl);
+  font-weight: 700;
+}
+.mk-title-icon {
+  color: var(--kn-brand-500);
+}
+.mk-subtitle {
+  margin: 0;
+  font-size: var(--kn-text-sm);
+  color: var(--kn-fg-muted);
+}
+
+/* ==================== 工具行 ==================== */
+.mk-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mk-search {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-lg);
+  background: var(--kn-bg-elev);
+  transition: border-color var(--kn-dur-fast), box-shadow var(--kn-dur-fast);
+}
+.mk-search:focus-within {
+  border-color: color-mix(in srgb, var(--kn-brand-500) 55%, transparent);
+  box-shadow: var(--kn-shadow-focus);
+}
+.mk-search-icon {
+  color: var(--kn-fg-muted);
+  flex-shrink: 0;
+}
+.mk-search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--kn-fg);
+  font: inherit;
+  font-size: var(--kn-text-sm);
+}
+.mk-search-input::placeholder {
+  color: var(--kn-fg-subtle);
+}
+.mk-search-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--kn-fg-subtle);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.mk-search-x:hover {
+  background: var(--kn-hover);
+  color: var(--kn-fg);
+}
+
+.mk-sort {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-lg);
+  background: var(--kn-bg-elev);
+  color: var(--kn-fg);
+  font: inherit;
+  font-size: var(--kn-text-sm);
+  outline: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.mk-sort:focus {
+  border-color: color-mix(in srgb, var(--kn-brand-500) 55%, transparent);
+}
+
+/* ==================== 分类筛选 ==================== */
+.mk-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mk-cat {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-pill);
+  background: transparent;
+  color: var(--kn-fg-muted);
+  font: inherit;
+  font-size: var(--kn-text-xs);
+  cursor: pointer;
+  transition: background var(--kn-dur-fast), color var(--kn-dur-fast), border-color var(--kn-dur-fast);
+}
+.mk-cat:hover {
+  color: var(--kn-fg);
+  background: var(--kn-hover);
+}
+.mk-cat.is-on {
+  border-color: color-mix(in srgb, var(--kn-brand-500) 40%, transparent);
+  background: color-mix(in srgb, var(--kn-brand-500) 12%, transparent);
+  color: var(--kn-brand-500);
+  font-weight: 600;
+}
+
+/* ==================== 卡片网格 ==================== */
+.mk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--kn-space-4);
+}
+.mk-grid > * {
+  animation: mk-card-in var(--kn-dur-slow) var(--kn-ease-out) backwards;
+}
+.mk-grid > *:nth-child(1) { animation-delay: 0.02s; }
+.mk-grid > *:nth-child(2) { animation-delay: 0.05s; }
+.mk-grid > *:nth-child(3) { animation-delay: 0.08s; }
+.mk-grid > *:nth-child(4) { animation-delay: 0.11s; }
+.mk-grid > *:nth-child(5) { animation-delay: 0.14s; }
+.mk-grid > *:nth-child(6) { animation-delay: 0.17s; }
+@keyframes mk-card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mk-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-xl);
+  background: var(--kn-bg-elev);
+  box-shadow: var(--kn-shadow-sm);
+  transition: transform var(--kn-dur-base) var(--kn-ease-out), box-shadow var(--kn-dur-base), border-color var(--kn-dur-base);
+}
+.mk-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--kn-shadow-lg);
+  border-color: color-mix(in srgb, var(--kn-brand-500) 22%, var(--kn-border));
+}
+
+.mk-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mk-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--kn-radius-lg);
+  background: color-mix(in srgb, var(--tint) 16%, transparent);
+  color: var(--tint);
+  flex-shrink: 0;
+}
+.mk-card-title {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+.mk-card-name {
+  font-size: var(--kn-text-sm);
+  font-weight: 600;
+  color: var(--kn-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mk-card-author {
+  font-size: 10px;
+  color: var(--kn-fg-subtle);
+}
+.mk-card-featured {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.mk-card-desc {
+  margin: 0;
+  font-size: var(--kn-text-xs);
+  line-height: 1.6;
+  color: var(--kn-fg-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 34px;
+}
+
+.mk-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--kn-border);
+}
+.mk-card-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--kn-fg-subtle);
+  font-variant-numeric: tabular-nums;
+}
+.mk-card-star {
+  color: var(--kn-amber-500);
+  margin-left: 4px;
+}
+
+/* ==================== 空态 / 提示 ==================== */
+.mk-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 0;
+  color: var(--kn-fg-subtle);
+  font-size: var(--kn-text-sm);
+}
+.mk-empty-hint {
+  font-size: var(--kn-text-2xs);
+  opacity: 0.85;
+}
+.mk-hint {
+  margin: 0;
+  font-size: var(--kn-text-2xs);
+  color: var(--kn-fg-subtle);
+}
