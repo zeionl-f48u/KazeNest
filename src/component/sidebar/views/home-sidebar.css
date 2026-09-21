@@ -1,0 +1,24 @@
+/* HomeSidebar 样式（React 版） */
+.home-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 8px;
+}
+.home-sidebar-arrow {
+  opacity: 0;
+  flex-shrink: 0;
+  transition:
+    opacity var(--sb-transition-fast),
+    transform var(--sb-transition-fast);
+}
+.sbrow:hover .home-sidebar-arrow {
+  opacity: 0.6;
+  transform: translateX(2px);
+}
+.home-sidebar-meta {
+  font-size: 10px;
+  opacity: 0.5;
+  flex-shrink: 0;
+  margin-left: 6px;
+}

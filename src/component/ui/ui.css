@@ -1,0 +1,42 @@
+/*
+ * UI 组件公共样式（Rare UI / shadcn 风格的基础层）
+ * - 只放 keyframes 与少量无法用 Tailwind 类表达的效果
+ * - 配色统一走 --kn-* 设计令牌（与项目视觉体系一致）
+ */
+
+/* 弹层（Dialog / Dropdown）进出场 */
+@keyframes ui-pop-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes ui-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes ui-dialog-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ui-pop-in {
+  animation: ui-pop-in 0.14s var(--kn-ease-out);
+}
+.ui-overlay-in {
+  animation: ui-overlay-in 0.16s var(--kn-ease-out);
+}
+.ui-dialog-in {
+  animation: ui-dialog-in 0.18s var(--kn-ease-out);
+}
+
+/* 按下反馈（Rare UI 风格的微交互） */
+.ui-press {
+  transition:
+    transform 0.12s var(--kn-ease-out),
+    filter 0.12s var(--kn-ease-out),
+    background-color 0.12s var(--kn-ease-out),
+    border-color 0.12s var(--kn-ease-out),
+    color 0.12s var(--kn-ease-out);
+}
+.ui-press:active:not(:disabled) {
+  transform: scale(0.97);
+}

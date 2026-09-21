@@ -1,128 +1,103 @@
 /**
- * ============================================================
- * 视图注册表 —— 全局视图定义的"单一事实来源"
- * ============================================================
- * 以前一个视图的定义散落在 4 处（活动栏数据 / 页面组件表 / 侧栏表 / 占位配置），
- * 新增视图要改 4 个文件。现在收敛成一张表：每个视图在这里一次定义
- *   - 主内容页面组件（page）
- *   - 侧栏组件与标题（sidebar / sidebarTitle，无侧栏的视图省略）
- *   - 占位页配置（comingSoon，仅建设中视图有）
- *   - 是否显示侧栏（sidebarVisible，设置/账户等全屏视图为 false）
- *
- * 类型守卫：`: Record<ViewId, ...>` 保证——
- *   - 活动栏加了新视图（ViewId 扩展）而这里漏配 → 编译报错
- *   - 视图 id 拼错 → 编译报错
- * 视图 id 的单一来源是 data/activityItems.ts 的 ViewId。
- *
- * 新增一个视图的流程（一处改动即可）：
- *   1. data/activityItems.ts 加活动栏条目（id 决定 ViewId）
- *   2. 在这里加一条：页面组件 + （可选）侧栏组件 + 占位配置
- * 此后 App.vue / 活动栏 / 侧边栏 / 占位页全部自动跟随。
+ * 视图注册表（React 版）—— 全局视图定义的单一来源
+ * - 每个视图一次定义：页面组件 / 侧栏 / 侧栏标题 / 占位配置 / 顶栏菜单
+ * - 未迁移视图统一用 ComingSoon 占位（迁移进度可逐步替换 page）
+ * - 视图 id 的单一来源仍是 data/activityItems.ts 的 ViewId（漏配会编译报错）
  */
-import type { Component } from 'vue'
-import { markRaw } from 'vue'
-
+import type { ComponentType } from 'react'
+import { Home } from '../pages/Home'
+import { ComingSoon } from '../component/common/ComingSoon'
+import { HomeSidebar } from '../component/sidebar/views/HomeSidebar'
 import type { ViewId, ComingSoonConfig } from '../data'
 import { comingSoonConfig } from '../data'
-import Home from '../pages/Home.vue'
-import Editor from '../pages/Editor.vue'
-import Files from '../pages/Files.vue'
-import Browser from '../pages/Browser.vue'
-import ComingSoon from '../component/common/ComingSoon.vue'
-import { AiWorkspace } from '../component/ai'
 
-import {
-  HomeSidebar,
-  EditorSidebar,
-  FilesSidebar,
-  AISidebar,
-  BrowserSidebar,
-  MarketplaceSidebar,
-} from '../component/sidebar/views'
-
-/** 单个视图的完整定义（见文件头部注释） */
+/** 单个视图的完整定义 */
 export interface ViewDefinition {
-  /** 主内容页面组件（渲染在 app-content 区域） */
-  page: Component
-  /** 侧栏内容组件（省略 = 该视图无侧栏，如设置/账户） */
-  sidebar?: Component
-  /** 侧栏标题（SideBar 标题栏显示；无侧栏时忽略） */
+  /** 主内容页面组件（渲染在 app-content 区域；props 由 registry 配置 + App 注入） */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  page: ComponentType<any>
+  /** 侧栏内容组件（省略 = 该视图无侧栏） */
+  sidebar?: ComponentType
+  /** 侧栏标题（SideBar 标题栏显示） */
   sidebarTitle?: string
-  /** 占位页配置（仅建设中视图有，驱动 ComingSoon 渲染） */
+  /** 占位页配置（ComingSoon 驱动） */
   comingSoon?: ComingSoonConfig
   /** 是否显示侧边栏（false = 全屏视图） */
   sidebarVisible: boolean
-  /** 切换到该视图时侧边栏是否默认展开（省略 = true；如浏览器默认收缩） */
+  /** 切换到该视图时侧边栏是否默认展开（省略 = true；浏览器默认收缩） */
   sidebarDefaultOpen?: boolean
-  /** 顶栏文字菜单（随视图自动切换；省略 = data/activityItems.ts 的默认 topMenus） */
+  /** 顶栏文字菜单（macOS 交给系统菜单，内绘留空） */
   menus?: readonly string[]
 }
 
-/**
- * 视图定义表：key = ViewId（活动栏条目 id）
- * 显式标注 `: Record<ViewId, ViewDefinition>`（不用 satisfies）——
- * 这样每个条目都是完整 ViewDefinition，App.vue 侧 `views[id].sidebar` 等属性
- * 可直接访问（satisfies 会保留各条目的字面量类型，属性访问反而报错）。
- * markRaw：组件是静态引用，标记为非响应式避免 Vue 做深度代理（性能 + 语义）
- */
+/* 未迁移视图的占位配置（编辑器 / 文件管理在 React 版迁移中） */
+const editorComingSoon: ComingSoonConfig = {
+  title: '编辑器',
+  subtitle: '代码编辑与预览',
+  icon: 'file-text',
+  tint: 'var(--kn-sky-500)',
+  desc: '编辑器正在迁移到 React 版（代码高亮 / 补全 / 查找替换将随迁移恢复）',
+  tags: ['语法高亮', '智能补全', '查找替换'],
+}
+
+const filesComingSoon: ComingSoonConfig = {
+  title: '文件管理',
+  subtitle: '资源管理器 · 资料空间 · 私有空间',
+  icon: 'folder-tree',
+  tint: 'var(--kn-amber-500)',
+  desc: '文件管理正在迁移到 React 版（真实文件系统接入后端后一并恢复）',
+  tags: ['资源管理器', '标签注释', '加密空间'],
+}
+
 export const views: Record<ViewId, ViewDefinition> = {
   home: {
-    page: markRaw(Home),
-    sidebar: markRaw(HomeSidebar),
+    page: Home,
+    sidebar: HomeSidebar,
     sidebarTitle: '首页',
     sidebarVisible: true,
     menus: ['文件', '编辑', '视图', '帮助'],
   },
   editor: {
-    page: markRaw(Editor),
-    sidebar: markRaw(EditorSidebar),
-    sidebarTitle: '资源管理器',
-    sidebarVisible: true,
-    /* VS Code 风格编辑器菜单（项多时自动收进 ⋯） */
+    page: ComingSoon,
+    comingSoon: editorComingSoon,
+    sidebarVisible: false,
     menus: ['文件', '编辑', '选择', '视图', '转到', '运行', '终端', '帮助'],
   },
   files: {
-    page: markRaw(Files),
-    sidebar: markRaw(FilesSidebar),
-    sidebarTitle: '文件管理',
-    sidebarVisible: true,
+    page: ComingSoon,
+    comingSoon: filesComingSoon,
+    sidebarVisible: false,
     menus: ['文件', '编辑', '视图', '空间', '工具', '帮助'],
   },
-  // 以下为建设中视图：占位页统一走 ComingSoon，侧栏仍按各自形态先行呈现
   ai: {
-    page: markRaw(AiWorkspace),
-    sidebar: markRaw(AISidebar),
-    sidebarTitle: 'AI 助手',
-    sidebarVisible: true,
+    page: ComingSoon,
+    comingSoon: comingSoonConfig.ai,
+    sidebarVisible: false,
     menus: ['文件', '编辑', '视图', '会话', '模型', '帮助'],
   },
   browser: {
-    page: markRaw(Browser),
-    sidebar: markRaw(BrowserSidebar),
-    sidebarTitle: '浏览器',
-    sidebarVisible: true,
-    /* 浏览器以内容为主：切换进入时侧栏默认收缩（可手动展开） */
+    page: ComingSoon,
+    comingSoon: comingSoonConfig.browser,
+    sidebarVisible: false,
     sidebarDefaultOpen: false,
     menus: ['文件', '编辑', '视图', '历史', '书签', '工具', '帮助'],
   },
   marketplace: {
-    page: markRaw(ComingSoon),
-    sidebar: markRaw(MarketplaceSidebar),
-    sidebarTitle: '插件市场',
-    sidebarVisible: true,
+    page: ComingSoon,
     comingSoon: comingSoonConfig.marketplace,
+    sidebarVisible: false,
     menus: ['文件', '编辑', '视图', '插件', '帮助'],
   },
   settings: {
-    page: markRaw(ComingSoon),
-    sidebarVisible: false,
+    page: ComingSoon,
     comingSoon: comingSoonConfig.settings,
+    sidebarVisible: false,
     menus: ['文件', '编辑', '视图', '帮助'],
   },
   account: {
-    page: markRaw(ComingSoon),
-    sidebarVisible: false,
+    page: ComingSoon,
     comingSoon: comingSoonConfig.account,
+    sidebarVisible: false,
     menus: ['文件', '编辑', '视图', '帮助'],
   },
 }

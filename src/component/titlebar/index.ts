@@ -1,14 +1,13 @@
 /**
- * Titlebar 组件入口
- * 一次性 import './tokens.css' 注册全局设计 token；
- * 之后按需 named import 即可。
+ * Titlebar 组件入口（React 版）
+ * 一次性 import tokens.css 注册设计令牌；之后按需 named import。
  */
 import './tokens.css'
 
-export { default as Titlebar } from './Titlebar.vue'
-export { default as TitlebarChrome } from './TitlebarChrome.vue'
-export { default as TbDropdown } from './TbDropdown.vue'
-export { default as SearchTrigger } from './SearchTrigger.vue'
-export { default as SearchPanel } from './SearchPanel.vue'
-export type { DropdownItem } from './TbDropdown.vue'
+export { Titlebar } from './Titlebar'
+export { TitlebarChrome } from './TitlebarChrome'
+export { SearchTrigger } from './SearchTrigger'
+export { SearchPanel } from './SearchPanel'
+export { Dropdown as TbDropdown } from '../ui/dropdown'
+export type { DropdownItem } from '../ui/dropdown'
 export type { SearchItem } from './types'

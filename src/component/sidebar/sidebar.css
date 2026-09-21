@@ -1,0 +1,351 @@
+/*
+ * Sidebar 组件样式（React 版；变量在 sidebar/tokens.css）
+ * - 类名与 Vue 版保持一致（ab-* / sb* / sbt-* / sbrow / sbsec）
+ * - 从各 Vue 组件的 scoped 样式合并平移
+ */
+
+/* ==================== ActivityBar ==================== */
+.ab {
+  width: var(--ab-width);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--ab-bg);
+  color: var(--ab-fg);
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ab-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 0;
+}
+.ab-item {
+  position: relative;
+  width: var(--ab-width);
+  height: var(--ab-action-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  padding: 0;
+  cursor: pointer;
+  color: var(--ab-inactive-fg);
+  transition: color var(--sb-transition-fast), background var(--sb-transition-fast);
+}
+.ab-item:hover {
+  color: var(--ab-fg);
+  background: var(--ab-hover);
+}
+.ab-item.is-active {
+  color: var(--ab-fg);
+  background: transparent;
+}
+.ab-item:active {
+  color: var(--ab-fg);
+  background: var(--ab-press);
+}
+.ab-item:active .ab-icon {
+  transform: scale(0.88);
+}
+.ab-icon {
+  line-height: 1;
+  transform-origin: center;
+  transition: transform var(--sb-transition-fast);
+}
+.ab-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: transparent;
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform var(--kn-dur-slow) var(--kn-ease-out), background var(--sb-transition-fast);
+}
+.ab-item.is-active .ab-indicator {
+  transform: scaleY(1);
+  background: var(--ab-active-border);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--ab-active-border) 55%, transparent);
+  animation: ab-edge 0.32s var(--kn-ease-out);
+}
+@keyframes ab-edge {
+  0% { transform: scaleY(0); }
+  55% { transform: scaleY(1.08); }
+  100% { transform: scaleY(1); }
+}
+.ab-badge {
+  position: absolute;
+  top: 5px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ab-badge-bg);
+  color: var(--ab-badge-fg);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: 999px;
+  border: 1.5px solid var(--ab-bg);
+  box-sizing: border-box;
+}
+
+/* ==================== SideBar 框架 ==================== */
+.sb {
+  position: relative;
+  width: var(--sb-width);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--sb-bg);
+  color: var(--sb-fg);
+  border-right: 1px solid var(--sb-border);
+  flex-shrink: 0;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: width var(--sb-resize-transition, 0s);
+}
+.sb-resize {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  transition: background var(--sb-transition-fast);
+}
+.sb-resize:hover {
+  background: color-mix(in srgb, var(--kn-brand-500) 25%, transparent);
+}
+.sb-resize:active {
+  background: color-mix(in srgb, var(--kn-brand-500) 40%, transparent);
+}
+.sb-titlebar {
+  height: var(--sb-titlebar-height);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px 0 16px;
+  box-sizing: border-box;
+}
+.sb-title {
+  font-size: var(--kn-text-md);
+  font-weight: 600;
+  letter-spacing: 0.1px;
+  color: var(--sb-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sb-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.sb-action {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--sb-fg-muted);
+  cursor: pointer;
+  transition: background var(--sb-transition-fast), color var(--sb-transition-fast);
+}
+.sb-action:hover {
+  background: var(--sb-hover);
+  color: var(--sb-fg);
+}
+.sb-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 8px;
+}
+
+/* ==================== SidebarRow ==================== */
+.sbrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: calc(100% - 12px);
+  height: var(--sb-row-height);
+  margin: 0 6px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sb-fg);
+  font: inherit;
+  font-size: var(--sb-font-size);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--sb-transition-fast);
+}
+.sbrow:hover {
+  background: var(--sb-item-hover);
+}
+.sbrow.is-selected {
+  background: var(--sb-selection-bg);
+  color: var(--sb-selection-fg);
+}
+.sbrow.is-selected .sbrow-icon {
+  color: inherit;
+}
+.sbrow-icon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+.sbrow-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ==================== SidebarSection ==================== */
+.sbsec {
+  display: flex;
+  flex-direction: column;
+}
+.sbsec-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  height: 24px;
+  padding: 0 10px;
+  background: transparent;
+  border: 0;
+  color: var(--sb-section-header-fg);
+  font: inherit;
+  font-size: var(--kn-text-sm);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--sb-transition-fast), color var(--sb-transition-fast);
+}
+.sbsec-header:hover {
+  background: var(--sb-section-header-hover);
+  color: var(--sb-fg);
+}
+.sbsec-chevron {
+  opacity: 0.7;
+  flex-shrink: 0;
+  width: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sbsec-icon {
+  opacity: 0.7;
+}
+.sbsec-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sbsec-count {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.5;
+}
+.sbsec-body {
+  padding: 2px 0 6px;
+}
+
+/* ==================== SideBarTree ==================== */
+.sbt {
+  display: flex;
+  flex-direction: column;
+}
+.sbt-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: calc(100% - 12px);
+  height: var(--sb-row-height);
+  margin: 0 6px;
+  padding-right: 6px;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: inherit;
+  font: inherit;
+  font-size: var(--sb-font-size);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background var(--sb-transition-fast);
+}
+.sbt-row:hover {
+  background: var(--sb-item-hover);
+}
+.sbt-row.is-selected {
+  background: var(--sb-selection-bg);
+  color: var(--sb-selection-fg);
+}
+.sbt-row.is-selected .sbt-icon,
+.sbt-row.is-selected .sbt-meta {
+  color: inherit;
+}
+.sbt-row.is-selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--kn-brand-500);
+}
+.sbt-chevron {
+  opacity: 0.6;
+  flex-shrink: 0;
+  width: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sbt-chevron-spacer {
+  flex-shrink: 0;
+  width: 12px;
+}
+.sbt-icon {
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+.sbt-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--sb-font-size);
+}
+.sbt-meta {
+  font-size: 10px;
+  opacity: 0.5;
+  flex-shrink: 0;
+}

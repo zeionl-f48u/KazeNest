@@ -1,23 +1,15 @@
 /**
- * Sidebar 组件入口
- * 一次性 import './tokens.css' 注册全局设计 token；
- * 之后按需 named import 即可。
+ * Sidebar 组件入口（React 版）
+ * 一次性 import 设计令牌与布局样式；之后按需 named import。
  *
- * 说明：视图↔侧栏的映射在 src/registry/views.ts（视图注册表），这里只导出组件本体。
+ * 说明：视图↔侧栏的映射在 registry/views（React 视图注册表），这里只导出组件本体。
  */
 import './tokens.css'
+import './sidebar.css'
 
-export { default as ActivityBar } from './ActivityBar.vue'
-export { default as SideBar } from './SideBar.vue'
-export { default as SideBarTree } from './SideBarTree.vue'
-export {
-  HomeSidebar,
-  EditorSidebar,
-  FilesSidebar,
-  AISidebar,
-  BrowserSidebar,
-  SidebarSection,
-  SidebarRow,
-} from './views'
-export type { ActivityItem, SideBarSection, SideBarSelection, TreeItem } from './types'
-export { AiWorkspace, AiMessageView, AiInputBar } from '../ai'
+export { ActivityBar } from './ActivityBar'
+export { SideBar } from './SideBar'
+export { SideBarTree } from './SideBarTree'
+export { HomeSidebar } from './views/HomeSidebar'
+export { SidebarSection, SidebarRow } from './views/SidebarRow'
+export type { ActivityItem, SideBarSection as SideBarSectionType, SideBarSelection, TreeItem } from './types'
