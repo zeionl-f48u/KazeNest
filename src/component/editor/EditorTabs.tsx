@@ -2,7 +2,7 @@
  * EditorTabs：编辑器标签页栏（React 版）
  * - 展示打开的文件；点击切换，× / 中键关闭，修改点（·）提示未保存
  * - ⋯ 菜单：关闭其他 / 关闭全部 / 关闭已保存
- * - 拖拽排序：鼠标跟随 + 布局坐标判定（与 Vue 版同一套稳定方案）
+ * - 拖拽排序：鼠标跟随 + 布局坐标判定（鼠标跟随 + 布局坐标判定，避免 transform 反噬）
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from '../common/Icon'

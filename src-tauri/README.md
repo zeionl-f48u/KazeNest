@@ -82,11 +82,11 @@ KazeNest 是 Tauri 2 桌面应用：前端（Vue 3）负责全部界面与交互
 | 职责 | 说明 | 对应前端接入点 |
 |---|---|---|
 | 窗口与标题栏 | 自绘标题栏 overlay、窗口控制 | `useAppBoot`、`component/titlebar` |
-| 本地文件系统 | 打开文件夹、读写文件、回收站删除、文件监听 | `component/files`、`useFileManager`、`pages/Editor.vue` |
+| 本地文件系统 | 打开文件夹、读写文件、回收站删除、文件监听 | `component/files`、`hooks/useFileManager.ts`、`pages/Editor.tsx` |
 | 系统对话框 | 选择文件夹/文件、确认框 | 文件管理"打开文件夹"按钮 |
-| 私有空间加密 | Argon2id 派生 + AES-256-GCM 加密存储 | `pages/Files.vue` 私有空间 |
-| AI 请求 | DeepSeek（OpenAI 兼容）流式转发、密钥保管 | `composables/useAiChat.ts` |
-| 持久化 | 设置/会话快照（store）、未来 SQLite 元数据 | `utils/persist.ts`、`useAppSession` |
+| 私有空间加密 | Argon2id 派生 + AES-256-GCM 加密存储 | `pages/Files.tsx` 私有空间 |
+| AI 请求 | DeepSeek（OpenAI 兼容）流式转发、密钥保管 | `hooks/useAiChat.ts` |
+| 持久化 | 设置/会话快照（store）、未来 SQLite 元数据 | `utils/persist.ts`、`hooks/useAppSession.ts` |
 | 菜单与系统集成 | macOS 原生菜单、系统文件管理器定位 | `utils/nativeMenu.ts` |
 
 设计原则：
@@ -453,10 +453,10 @@ ai_cancel(requestId) → cancel token → 请求被 drop → emit "ai:done"(canc
 |---|---|---|---|
 | `init_custom_titlebar` | 窗口 | `useAppBoot` | 已实现 |
 | `restore_native_titlebar` | 窗口 | 未接线 | 已实现（预留） |
-| `fs_list_dir` / `fs_read_text` / `fs_write_text` / `fs_create_dir` / `fs_create_file` / `fs_rename` / `fs_delete` / `fs_reveal` / `fs_search` | 文件 | `component/files`、`Editor.vue` | 规划 |
-| `dialog_pick_folder` / `dialog_pick_files` / `dialog_save_file` / `dialog_message` | 对话框 | `Files.vue`、危险操作 | 规划 |
-| `vault_status` / `vault_init` / `vault_unlock` / `vault_lock` / `vault_import` / `vault_list` / `vault_export` / `vault_delete` / `vault_change_password` | 私有空间 | `Files.vue` | 规划 |
-| `ai_chat` / `ai_cancel` / `ai_test_key` / `ai_list_models` | AI | `useAiChat` | 规划 |
+| `fs_list_dir` / `fs_read_text` / `fs_write_text` / `fs_create_dir` / `fs_create_file` / `fs_rename` / `fs_delete` / `fs_reveal` / `fs_search` | 文件 | `component/files`、`Editor.tsx` | 规划 |
+| `dialog_pick_folder` / `dialog_pick_files` / `dialog_save_file` / `dialog_message` | 对话框 | `Files.tsx`、危险操作 | 规划 |
+| `vault_status` / `vault_init` / `vault_unlock` / `vault_lock` / `vault_import` / `vault_list` / `vault_export` / `vault_delete` / `vault_change_password` | 私有空间 | `Files.tsx` | 规划 |
+| `ai_chat` / `ai_cancel` / `ai_test_key` / `ai_list_models` | AI | `hooks/useAiChat.ts` | 规划 |
 | `settings_get` / `settings_set` / `settings_all` / `settings_reset` | 设置 | 设置页 | 规划 |
 
 **事件总表（规划）**
@@ -615,7 +615,7 @@ cargo test              # core 层单测
 ### v0.4 AI 接入（建议顺序）
 
 1. `models::ai` + `core::ai_client`（先非流式打通，再 SSE）
-2. `commands::ai` + 事件回传 → `useAiChat` 替换 mock
+2. `commands::ai` + 事件回传 → `hooks/useAiChat.ts` 替换 mock
 3. 取消/重试/计费（真实 usage）
 4. 上下文引用（@当前文件/@选中代码）与长度裁剪
 5. Key 管理升级（Keyring/加密存储）

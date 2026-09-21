@@ -7,7 +7,7 @@
  * - 内容经 onUpdate 回传父级（父级持有数据与未保存标记）
  *
  * React 版要点：编辑操作只 emit 内容 + 记录「待恢复的光标位置」，
- * 等父级内容回流后由 useLayoutEffect 统一恢复焦点/选区（等价于 Vue 的 nextTick）
+ * 等父级内容回流后由 useLayoutEffect 统一恢复焦点/选区
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from '../common/Icon'
@@ -187,7 +187,7 @@ export function CodeView({ file, onUpdate, onCursor }: CodeViewProps) {
     [lines, commitLines]
   )
 
-  /** 内容回流后恢复焦点/选区（等价 Vue nextTick） */
+  /** 内容回流后恢复焦点/选区（nextTick 语义） */
   useLayoutEffect(() => {
     const p = pendingCaret.current
     if (!p) return

@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { GlassCard } from '@/component/common/GlassCard'
 import { Icon } from '@/component/common/Icon'
 import { Button } from '@/component/ui/button'
+import FluidOrb from '@/component/ui/fluid-orb'
 import { homeCards } from '@/data/homeCards'
 import { getRecentFiles, formatRelativeTime } from '@/utils'
 import type { RecentFile } from '@/utils'
@@ -42,6 +43,11 @@ export function Home({ onNavigate }: HomeProps) {
     <div className="home">
       {/* 欢迎区 */}
       <header className="home-hero">
+        {/* Rare UI 流体球：装饰性背景（尊重 prefers-reduced-motion，组件内已处理） */}
+        <div className="home-hero-orb" aria-hidden="true">
+          <FluidOrb size={360} />
+        </div>
+
         <div className="home-logo">
           <span className="home-logo-glow" aria-hidden="true" />
           <Icon name="cloud" size={34} />

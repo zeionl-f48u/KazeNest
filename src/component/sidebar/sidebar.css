@@ -1,7 +1,6 @@
 /*
  * Sidebar 组件样式（React 版；变量在 sidebar/tokens.css）
- * - 类名与 Vue 版保持一致（ab-* / sb* / sbt-* / sbrow / sbsec）
- * - 从各 Vue 组件的 scoped 样式合并平移
+ * - 类名统一（ab-* / sb* / sbt-* / sbrow / sbsec），活动栏/侧栏/树/行样式集中于此
  */
 
 /* ==================== ActivityBar ==================== */

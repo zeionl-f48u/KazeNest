@@ -13,12 +13,31 @@
 
 /* ============ 欢迎区 ============ */
 .home-hero {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--kn-space-3);
   padding: var(--kn-space-10) 0 var(--kn-space-6);
   text-align: center;
+}
+
+/* Rare UI 流体球：居中装饰背景（内容保持在其上方） */
+.home-hero-orb {
+  position: absolute;
+  top: -86px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 0;
+  opacity: 0.5;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(closest-side, #000 58%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 58%, transparent 100%);
+}
+.home-hero > *:not(.home-hero-orb) {
+  position: relative;
+  z-index: 1;
 }
 
 .home-logo {

@@ -1,7 +1,6 @@
 /*
  * Editor 组件样式（React 版；变量在 editor/tokens.css）
- * - 类名与 Vue 版一致（ed-code / ed-tabs / ed-status 等）
- * - 从 CodeView.vue / EditorTabs.vue / StatusBar.vue / Editor.vue 的 scoped 样式合并平移
+ * - 类名统一（ed-code / ed-tabs / ed-status 等），页面与组件样式集中于此
  */
 
 /* ==================== 编辑器页 ==================== */
