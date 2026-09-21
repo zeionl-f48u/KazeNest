@@ -1,4 +1,4 @@
-/* 视图侧栏公共样式（React 版）：.vs 容器与 .vs-meta 右注 */
+/* 视图侧栏公共样式（React 版）：.vs 容器 / .vs-meta 右注 / .vs-sep 分隔 / .vs-empty 空态 */
 .vs {
   display: flex;
   flex-direction: column;
@@ -10,4 +10,14 @@
   opacity: 0.5;
   flex-shrink: 0;
   margin-left: 6px;
+}
+.vs-sep {
+  height: 1px;
+  margin: 6px 10px;
+  background: var(--sb-border);
+}
+.vs-empty {
+  padding: 4px 10px 6px;
+  font-size: var(--kn-text-2xs);
+  color: var(--kn-fg-subtle);
 }

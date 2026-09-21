@@ -17,7 +17,7 @@ const QUICK_ACTIONS = [
 ]
 
 const FALLBACK_RECENT: RecentFile[] = [
-  { name: 'src/App.vue', icon: 'file-text', color: 'var(--kn-emerald-500)', timestamp: Date.now() - 2 * 60_000 },
+  { name: 'src/App.tsx', icon: 'file-text', color: 'var(--kn-emerald-500)', timestamp: Date.now() - 2 * 60_000 },
   { name: 'src/data/homeCards.ts', icon: 'file-text', color: 'var(--kn-sky-500)', timestamp: Date.now() - 60 * 60_000 },
   { name: 'README.md', icon: 'file-text', color: 'var(--kn-fg-muted)', timestamp: Date.now() - 24 * 60 * 60_000 },
 ]

@@ -4,7 +4,7 @@
  *   - ```lang\n code \n``` 围栏代码块 → 带语言标签的 <pre><code class="lang-xxx">
  *   - `行内代码` → <code>
  *   - **粗体** / *斜体* / ~~删除线~~ / [链接](url) / > 引用 / - 列表
- * 输入输出均为字符串（调用方用 v-html 渲染）。
+ * 输入输出均为字符串（调用方用 dangerouslySetInnerHTML 渲染）。
  *
  * 设计说明：这是为 AI 演示准备的轻量渲染器，只覆盖常见子集。
  * 若需要完整 Markdown 支持，接入 marked + highlight.js 替代本文件即可。

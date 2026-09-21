@@ -10,7 +10,7 @@ import type { ActivityItem } from '../component/sidebar'
  *  - 加一个视图：数组里加一条（id 决定 ViewId）→ registry/views.ts 补一条定义
  *  - 调徽标：badge 数字（如 ai 的 2，改为 0 或去掉即不显示）
  *  - 放到底部：position: 'bottom'
- *  - 图标名来自 Icon.vue 的 ICONS 表（不认识的名字会退化成圆点）
+ *  - 图标名来自 Icon.tsx 的 ICONS 表（不认识的名字会退化成圆点）
  */
 export const activityItems = [
   { id: 'home',        label: '首页',     icon: 'home' },

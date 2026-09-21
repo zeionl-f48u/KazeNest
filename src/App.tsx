@@ -1,18 +1,28 @@
 /**
  * App：React 版外壳
- * - 布局：Titlebar | ActivityBar + SideBar + 主内容（VS Code 式）
- * - 状态：activeView / sideBarOpen / 通知数 / 工作区名（会话快照持久化）
+ * - 布局：Titlebar | ActivityBar + SideBar + 内容舞台（主内容 + AI 右侧面板）
+ * - 状态：activeView / sideBarOpen / 通知数 / 工作区名 / AI 面板（会话快照持久化）
  * - 启动：useAppBoot（自定义标题栏 + 显示窗口）、会话恢复、macOS 原生菜单
- * - 视图：registry/views（未迁移视图由 ComingSoon 占位）
- * - 全局：DemoDialog（showDemo 事件驱动的点击画面）
+ * - AI 面板：常驻开关；位于 AI 视图时向左扩展铺满内容区（morph 动画）
+ * - 全局：DemoDialog（showDemo 事件驱动的点击画面）、Ctrl/Cmd+Alt+I 开合面板
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Titlebar } from '@/component/titlebar/Titlebar'
 import { TitlebarChrome } from '@/component/titlebar/TitlebarChrome'
 import { ActivityBar, SideBar } from '@/component/sidebar'
+import { AiPanel } from '@/component/ai'
 import { DemoDialog } from '@/component/common/DemoDialog'
 import { useAppSession } from '@/hooks/useAppSession'
-import { useAppBoot } from '@/composables/useAppBoot'
+import {
+  useAiPanel,
+  toggleAiPanel,
+  hideAiPanel,
+  showAiPanel,
+  restoreAiPanelWidth,
+  resetAiPanelWidth,
+  setAiPanelWidth,
+} from '@/hooks/useAiPanel'
+import { useAppBoot } from '@/hooks/useAppBoot'
 import { activityItems, searchItems, topMenus } from '@/data'
 import type { SearchItem, ViewId } from '@/data'
 import type { ActivityItem } from '@/component/sidebar'
@@ -21,7 +31,6 @@ import { cn } from '@/lib/utils'
 import { initMacNativeMenu, isMac, showDemo } from '@/utils'
 import './App.css'
 
-/** 防止 StrictMode 下启动流程执行两次（init_custom_titlebar 幂等性未知，保险起见表） */
 let bootStarted = false
 
 export default function App() {
@@ -31,7 +40,23 @@ export default function App() {
   const [workspaceName, setWorkspaceName] = useState('我的工作区')
   const [sessionReady, setSessionReady] = useState(false)
 
+  const panel = useAiPanel()
   const { restore, flush, update } = useAppSession()
+
+  /* ==================== 舞台宽度（面板 left 换算） ==================== */
+
+  const stageRef = useRef<HTMLDivElement>(null)
+  const [stageWidth, setStageWidth] = useState(() => window.innerWidth)
+
+  useEffect(() => {
+    const el = stageRef.current
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) setStageWidth(entry.contentRect.width)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   /* ==================== 启动：窗口 + 会话恢复 + 全局事件 ==================== */
 
@@ -45,7 +70,6 @@ export default function App() {
 
     let cancelled = false
 
-    /** 视图切换（活动栏 / 首页卡片 / macOS 菜单共用） */
     const go = (id: string) => {
       const target = id as ViewId
       if (!target || !views[target]) return
@@ -60,13 +84,18 @@ export default function App() {
     const onCommand = (e: Event) => {
       const detail = (e as CustomEvent<string>).detail
       if (detail === 'toggle-sidebar') setSideBarOpen((v) => !v)
-      else if (detail === 'toggle-ai-panel') {
-        showDemo({ title: 'AI 面板', desc: '演示模式：AI 面板将在 AI 视图迁移后恢复', icon: 'sparkles' })
+      else if (detail === 'toggle-ai-panel') toggleAiPanel()
+    }
+    const onKeydown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.altKey && !e.shiftKey && e.code === 'KeyI') {
+        e.preventDefault()
+        toggleAiPanel()
       }
     }
 
     window.addEventListener('kn:navigate', onNavigate)
     window.addEventListener('kn:command', onCommand)
+    window.addEventListener('keydown', onKeydown)
     window.addEventListener('beforeunload', flush)
 
     void restore().then((saved) => {
@@ -74,6 +103,10 @@ export default function App() {
       if (saved) {
         setActiveView(saved.activeView as ViewId)
         setSideBarOpen(saved.sideBarOpen)
+        if (saved.aiPanel) {
+          restoreAiPanelWidth(saved.aiPanel.width)
+          if (saved.aiPanel.open) showAiPanel()
+        }
       }
       setSessionReady(true)
     })
@@ -82,18 +115,20 @@ export default function App() {
       cancelled = true
       window.removeEventListener('kn:navigate', onNavigate)
       window.removeEventListener('kn:command', onCommand)
+      window.removeEventListener('keydown', onKeydown)
       window.removeEventListener('beforeunload', flush)
     }
   }, [restore, flush])
 
-  /* 活动视图 / 侧栏开关 → 写回会话快照（恢复完成后才开始写入） */
+  /* 活动视图 / 侧栏 / AI 面板 → 写回会话快照 */
   useEffect(() => {
     if (!sessionReady) return
     update((s) => {
       s.activeView = activeView
       s.sideBarOpen = sideBarOpen
+      s.aiPanel = { open: panel.open, width: panel.width }
     })
-  }, [activeView, sideBarOpen, sessionReady, update])
+  }, [activeView, sideBarOpen, panel.open, panel.width, sessionReady, update])
 
   /* ==================== 顶栏 handler ==================== */
 
@@ -107,7 +142,7 @@ export default function App() {
   }, [])
 
   const onAskAi = useCallback(() => {
-    showDemo({ title: 'AI 面板', desc: '演示模式：AI 面板将在 AI 视图迁移后恢复', icon: 'sparkles' })
+    toggleAiPanel()
   }, [])
 
   /* ==================== 活动栏 handler ==================== */
@@ -131,6 +166,11 @@ export default function App() {
   const menus = isMac ? [] : (active.menus ?? topMenus)
   const isFlush = activeView === 'editor' || activeView === 'ai' || activeView === 'browser'
 
+  /* AI 面板：展开（AI 视图，铺满） / 停靠（其它视图，右侧占位） */
+  const panelExpanded = panel.open && activeView === 'ai'
+  const panelDocked = panel.open && !panelExpanded
+  const panelLeft = panelExpanded ? 0 : Math.max(0, stageWidth - panel.width)
+
   return (
     <div className="app-shell">
       <Titlebar
@@ -149,7 +189,7 @@ export default function App() {
           <TitlebarChrome
             part="trailing"
             notifyCount={notifyCount}
-            aiActive={false}
+            aiActive={panel.open || activeView === 'ai'}
             onAskAi={onAskAi}
             onNotifyRead={() => setNotifyCount(0)}
           />
@@ -170,11 +210,30 @@ export default function App() {
           </SideBar>
         )}
 
-        <main className={cn('app-content', isFlush && 'is-flush')}>
-          <div key={activeView} className="view-anim">
-            <Page {...(active.comingSoon ?? {})} />
-          </div>
-        </main>
+        {/* 内容舞台：主内容 + AI 右侧面板 */}
+        <div className="app-stage" ref={stageRef}>
+          <main
+            className={cn('app-content', isFlush && 'is-flush')}
+            style={{ marginRight: panelDocked ? `${panel.width}px` : 0 }}
+          >
+            <div key={activeView} className="view-anim">
+              <Page {...(active.comingSoon ?? {})} />
+            </div>
+          </main>
+
+          {panel.open && (
+            <div className="ai-panel-wrap" style={{ left: `${panelLeft}px` }}>
+              <AiPanel
+                width={panel.width}
+                expanded={panelExpanded}
+                onExpand={() => window.dispatchEvent(new CustomEvent('kn:navigate', { detail: 'ai' }))}
+                onClose={hideAiPanel}
+                onWidthChange={setAiPanelWidth}
+                onResetWidth={resetAiPanelWidth}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       <DemoDialog />

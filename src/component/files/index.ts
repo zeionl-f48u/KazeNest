@@ -1,8 +1,10 @@
 /**
- * 文件管理组件入口
- * 引用方式：`import { FileTable, FileDetail } from '../component/files'`
+ * 文件管理组件入口（React 版）
  */
-export { default as FileTable } from './FileTable.vue'
-export { default as FileDetail } from './FileDetail.vue'
+export { FileTable } from './FileTable'
+export { FileDetail } from './FileDetail'
+export { FilesExplorer } from './FilesExplorer'
+export { FilesLibrary } from './FilesLibrary'
+export { PrivateVault } from './PrivateVault'
 export { kindMeta, KIND_META } from './types'
 export type { ManagedFile, FileKind, FolderNode } from './types'

@@ -1,11 +1,11 @@
 /**
  * 编辑器打开的文件（标签页 + 代码内容）
  * 实际项目：标签 = 侧边栏点击打开的文件；content 从 Tauri 文件系统读取
- * 这里内置几个示例文件，方便编辑器页演示
+ * 这里内置几个示例文件，方便编辑器页演示（React 版）
  *
  * 调节指南：
  *  - 增删示例文件：数组里加减一条（id 即文件名，也是标签的 key）
- *  - language 显示在状态栏；icon 名来自 Icon.vue 的 ICONS 表
+ *  - language 显示在状态栏；icon 名来自 Icon.tsx 的 ICONS 表
  *  - color 是标签图标的着色（支持 var(--kn-*) 语义色）
  */
 export interface EditorFile {
@@ -19,20 +19,15 @@ export interface EditorFile {
   modified?: boolean
 }
 
-const mainTs = `// KazeNest — Where Clouds Rest
-import { createApp } from 'vue'
-import App from './App.vue'
-import { useEditor } from './composables/editor'
+const mainTsx = `// KazeNest — Where Clouds Rest
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
 
-const editor = useEditor({
-  language: 'typescript',
-  theme: 'kazenest',
-  tabSize: 2,
-})
+import './styles/tailwind.css'
+import './styles/tokens.css'
+import './styles/effects.css'
 
-createApp(App)
-  .use(editor.plugin)
-  .mount('#app')
+import App from './App'
 
 /** 格式化源码：去掉每行首尾空白 */
 export function format(source: string): string {
@@ -41,41 +36,56 @@ export function format(source: string): string {
     .map((line) => line.trim())
     .filter(Boolean)
     .join('\\n')
+}
+
+const container = document.getElementById('root')
+if (!container) throw new Error('找不到 #root 挂载点')
+
+createRoot(container).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+)`
+
+const appTsx = `/**
+ * App：外壳（React 版）
+ * 布局：Titlebar | ActivityBar + SideBar + 内容舞台（主内容 + AI 右侧面板）
+ */
+export default function App() {
+  const [activeView, setActiveView] = useState<ViewId>('editor')
+  const [sideBarOpen, setSideBarOpen] = useState(true)
+
+  const active = views[activeView]
+  const Page = active.page
+
+  return (
+    <div className="app-shell">
+      <Titlebar title="KazeNest" searchItems={searchItems}>
+        <TitlebarChrome slot="leading" part="leading" menus={menus} />
+      </Titlebar>
+
+      <div className="app-body">
+        <ActivityBar
+          items={activityItems}
+          activeId={activeView}
+          onSelect={setActiveView}
+        />
+        {sideBarOpen && <SideBar title={active.sidebarTitle} />}
+        <main className="app-content">
+          <Page />
+        </main>
+      </div>
+    </div>
+  )
 }`
 
-const appVue = `<template>
-  <div class="app-shell">
-    <Titlebar title="KazeNest" @search-select="onSearchSelect">
-      <template #leading>
-        <TitlebarChrome part="leading" :menus="menus" />
-      </template>
-    </Titlebar>
-
-    <div class="app-body">
-      <ActivityBar :items="items" v-model="activeView" />
-      <SideBar v-if="sideBarOpen" :sections="sections" />
-      <main class="app-content">
-        <component :is="viewComponent" />
-      </main>
-    </div>
-  </div>
-</template>
-
-<script setup lang="ts">
-import { computed, ref } from 'vue'
-import { Titlebar } from './component/titlebar'
-
-const activeView = ref('editor')
-const sideBarOpen = ref(true)
-const viewComponent = computed(() => activeView.value)
-</script>`
-
-const stylesCss = `/* KazeNest — 全局样式 */
+const themeCss = `/* KazeNest — 设计令牌（节选） */
 :root {
-  --brand: #6366f1;
-  --brand-soft: rgba(99, 102, 241, 0.16);
-  --radius-pill: 999px;
-  --blur: 20px;
+  --kn-brand-500: #6366f1;
+  --kn-magenta-500: #ec4899;
+  --kn-radius-pill: 999px;
+  --kn-glass-blur: 20px;
+  --tb-height: 38px;
 }
 
 .app-shell {
@@ -88,9 +98,9 @@ const stylesCss = `/* KazeNest — 全局样式 */
   top: 0;
   left: 0;
   right: 0;
-  height: 38px;
+  height: var(--tb-height);
   background: rgba(248, 249, 252, 0.72);
-  backdrop-filter: saturate(180%) blur(var(--blur));
+  backdrop-filter: saturate(180%) blur(var(--kn-glass-blur));
 }
 
 .glass-card {
@@ -101,27 +111,27 @@ const stylesCss = `/* KazeNest — 全局样式 */
 
 export const editorFiles: EditorFile[] = [
   {
-    id: 'main.ts',
-    name: 'main.ts',
+    id: 'main.tsx',
+    name: 'main.tsx',
     language: 'TypeScript',
     icon: 'file-text',
     color: 'var(--kn-sky-500)',
-    content: mainTs,
+    content: mainTsx,
   },
   {
-    id: 'App.vue',
-    name: 'App.vue',
-    language: 'Vue',
+    id: 'App.tsx',
+    name: 'App.tsx',
+    language: 'React',
     icon: 'file-text',
     color: 'var(--kn-emerald-500)',
-    content: appVue,
+    content: appTsx,
   },
   {
-    id: 'styles.css',
-    name: 'styles.css',
+    id: 'theme.css',
+    name: 'theme.css',
     language: 'CSS',
     icon: 'file-text',
     color: 'var(--kn-magenta-500)',
-    content: stylesCss,
+    content: themeCss,
   },
 ]

@@ -1,8 +1,10 @@
 /**
- * AI 组件入口（AI 工作台 / 右侧面板）
- * 引用方式：`import { AiWorkspace, AiPanel, AiMessageView, AiInputBar } from '../component/ai'`
+ * AI 组件入口（React 版）
  */
-export { default as AiWorkspace } from './AiWorkspace.vue'
-export { default as AiPanel } from './AiPanel.vue'
-export { default as AiMessageView } from './AiMessageView.vue'
-export { default as AiInputBar } from './AiInputBar.vue'
+import './ai.css'
+
+export { AiWorkspace } from './AiWorkspace'
+export { AiPanel } from './AiPanel'
+export { AiMessageView } from './AiMessageView'
+export { AiInputBar } from './AiInputBar'
+export { renderMessage } from './render'

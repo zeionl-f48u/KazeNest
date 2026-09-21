@@ -1,8 +1,10 @@
 /**
- * 浏览器组件入口
- * 引用方式：`import { BrowserTabBar, BrowserToolbar, BrowserViewport } from '../component/browser'`
+ * 浏览器组件入口（React 版）
  */
-export { default as BrowserTabBar } from './BrowserTabBar.vue'
-export { default as BrowserToolbar } from './BrowserToolbar.vue'
-export { default as BrowserViewport } from './BrowserViewport.vue'
+import './browser.css'
+
+export { BrowserTabBar } from './BrowserTabBar'
+export { BrowserToolbar } from './BrowserToolbar'
+export { BrowserViewport } from './BrowserViewport'
 export { normalizeUrl, domainOf, faviconOf } from './favicon'
+export type { BrowserTab, BrowserGroup, Bookmark } from './types'

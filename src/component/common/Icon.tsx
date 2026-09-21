@@ -1,8 +1,8 @@
 /**
  * Icon（React 版）：统一图标组件
- * - ICONS / ALIASES 表由 Icon.vue 自动提取迁移（同一份数据，勿手改）
+ * - ICONS / ALIASES 表沿用原图标数据（单一来源，勿手改）
  * - 支持 name/size/color/className/style；未知图标回退为可见圆点
- * - 与 Icon.vue 并存于迁移期，Vue 代码删除后本文件成为唯一实现
+ * - 唯一图标实现：name/size/color/className/style，未知图标回退为可见圆点
  */
 import type { CSSProperties } from 'react'
 import './icon.css'

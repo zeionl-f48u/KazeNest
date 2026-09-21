@@ -1,6 +1,5 @@
 import { defineConfig } from "vite";
 import { fileURLToPath, URL } from "node:url";
-import vue from "@vitejs/plugin-vue";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -9,13 +8,7 @@ const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-  plugins: [
-    // React（react-rewrite 分支：迁移目标；shadcn/Rare UI 需要）
-    react(),
-    // Vue（过渡期保留：旧代码参考用，迁移完成后移除）
-    vue(),
-    tailwindcss(),
-  ],
+  plugins: [react(), tailwindcss()],
 
   resolve: {
     alias: {

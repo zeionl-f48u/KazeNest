@@ -1,6 +1,6 @@
 /**
  * 占位视图配置（插件市场 / 设置 / 账户）
- * 由 component/common/ComingSoon.vue 统一渲染
+ * 由 component/common/ComingSoon.tsx 统一渲染
  *
  * 调节指南：改对应视图的 title / desc / tags 等字段即可，
  * 模板与样式完全共用，不用再复制整页代码。

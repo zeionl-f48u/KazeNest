@@ -7,9 +7,15 @@
 import type { ComponentType } from 'react'
 import { Home } from '../pages/Home'
 import { Editor } from '../pages/Editor'
+import { Files } from '../pages/Files'
+import { Browser } from '../pages/Browser'
+import { AiWorkspace } from '../component/ai'
 import { ComingSoon } from '../component/common/ComingSoon'
 import { HomeSidebar } from '../component/sidebar/views/HomeSidebar'
 import { EditorSidebar } from '../component/sidebar/views/EditorSidebar'
+import { FilesSidebar } from '../component/sidebar/views/FilesSidebar'
+import { BrowserSidebar } from '../component/sidebar/views/BrowserSidebar'
+import { AISidebar } from '../component/sidebar/views/AISidebar'
 import type { ViewId, ComingSoonConfig } from '../data'
 import { comingSoonConfig } from '../data'
 
@@ -32,16 +38,6 @@ export interface ViewDefinition {
   menus?: readonly string[]
 }
 
-/* 未迁移视图的占位配置（文件管理在 React 版迁移中） */
-const filesComingSoon: ComingSoonConfig = {
-  title: '文件管理',
-  subtitle: '资源管理器 · 资料空间 · 私有空间',
-  icon: 'folder-tree',
-  tint: 'var(--kn-amber-500)',
-  desc: '文件管理正在迁移到 React 版（真实文件系统接入后端后一并恢复）',
-  tags: ['资源管理器', '标签注释', '加密空间'],
-}
-
 export const views: Record<ViewId, ViewDefinition> = {
   home: {
     page: Home,
@@ -58,21 +54,25 @@ export const views: Record<ViewId, ViewDefinition> = {
     menus: ['文件', '编辑', '选择', '视图', '转到', '运行', '终端', '帮助'],
   },
   files: {
-    page: ComingSoon,
-    comingSoon: filesComingSoon,
-    sidebarVisible: false,
+    page: Files,
+    sidebar: FilesSidebar,
+    sidebarTitle: '文件管理',
+    sidebarVisible: true,
     menus: ['文件', '编辑', '视图', '空间', '工具', '帮助'],
   },
   ai: {
-    page: ComingSoon,
-    comingSoon: comingSoonConfig.ai,
-    sidebarVisible: false,
+    page: AiWorkspace,
+    sidebar: AISidebar,
+    sidebarTitle: 'AI 助手',
+    sidebarVisible: true,
     menus: ['文件', '编辑', '视图', '会话', '模型', '帮助'],
   },
   browser: {
-    page: ComingSoon,
-    comingSoon: comingSoonConfig.browser,
-    sidebarVisible: false,
+    page: Browser,
+    sidebar: BrowserSidebar,
+    sidebarTitle: '浏览器',
+    sidebarVisible: true,
+    /* 浏览器以内容为主：切换进入时侧栏默认收缩（可手动展开） */
     sidebarDefaultOpen: false,
     menus: ['文件', '编辑', '视图', '历史', '书签', '工具', '帮助'],
   },
