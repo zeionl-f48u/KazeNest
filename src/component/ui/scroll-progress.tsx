@@ -22,6 +22,9 @@ const useIsoLayoutEffect =
 
 type Size = { width: number; height: number }
 
+/** 稳定空数组：默认参数若每次渲染新建，会让依赖它的 effect 每轮都重跑（曾导致无限更新） */
+const EMPTY_SECTIONS: ScrollProgressSection[] = []
+
 export type ScrollProgressProps = React.ComponentProps<"div"> & {
   sections?: ScrollProgressSection[]
   containerRef?: React.RefObject<HTMLElement | null>
@@ -30,7 +33,7 @@ export type ScrollProgressProps = React.ComponentProps<"div"> & {
 
 const ScrollProgress = ({
   className,
-  sections = [],
+  sections = EMPTY_SECTIONS,
   containerRef,
   offset = 120,
   ...props
@@ -96,18 +99,27 @@ const ScrollProgress = ({
 
   useIsoLayoutEffect(() => {
     const measure = () => {
-      if (labelRef.current) setLabelWidth(labelRef.current.offsetWidth)
+      if (labelRef.current) {
+        const width = labelRef.current.offsetWidth
+        setLabelWidth((prev) => (prev === width ? prev : width))
+      }
       if (collapsedRef.current) {
-        setCollapsedSize({
-          width: collapsedRef.current.offsetWidth,
-          height: collapsedRef.current.offsetHeight,
-        })
+        const width = collapsedRef.current.offsetWidth
+        const height = collapsedRef.current.offsetHeight
+        setCollapsedSize((prev) =>
+          prev && prev.width === width && prev.height === height
+            ? prev
+            : { width, height }
+        )
       }
       if (openRef.current) {
-        setOpenSize({
-          width: openRef.current.offsetWidth,
-          height: openRef.current.offsetHeight,
-        })
+        const width = openRef.current.offsetWidth
+        const height = openRef.current.offsetHeight
+        setOpenSize((prev) =>
+          prev && prev.width === width && prev.height === height
+            ? prev
+            : { width, height }
+        )
       }
     }
 
