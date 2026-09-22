@@ -17,15 +17,15 @@
 
 :root {
   /* ============ 标签页 ============ */
-  --ed-tabbar-bg: color-mix(in srgb, var(--kn-bg-sunken) 60%, transparent);
-  --ed-tabbar-border: var(--kn-border);
+  --ed-tabbar-bg: transparent;
+  --ed-tabbar-border: transparent;
   --ed-tab-bg: transparent;
   --ed-tab-fg: var(--kn-fg-muted);
   --ed-tab-hover: var(--kn-hover);
   --ed-tab-active-bg: var(--kn-bg-elev);
   --ed-tab-active-fg: var(--kn-fg);
   --ed-tab-active-border: var(--kn-brand-500);
-  --ed-tab-height: 34px;
+  --ed-tab-height: 46px;
 
   /* ============ 代码区 ============ */
   --ed-bg: var(--kn-bg-elev);

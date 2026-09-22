@@ -1,81 +1,73 @@
 /*
- * Sidebar 设计 tokens
+ * Sidebar 设计 tokens（Rare UI 官网侧栏语言）
  * 私有 token：--ab-*（活动栏） / --sb-*（侧边栏）
  * 颜色 / 圆角 / 间距 / 阴影直接引用全局 --kn-*（src/styles/tokens.css）
  *
  * 调节指南：
- *  - 活动栏宽度：--ab-width；每个按钮格高：--ab-action-size
- *  - 活动指示条颜色（选中时左侧 2px 竖条）：--ab-active-border
- *  - 徽标底色（右上角数字角标）：--ab-badge-bg
+ *  - 活动栏宽度：--ab-width；按钮格尺寸：--ab-action-size
  *  - 侧边栏默认宽度：--sb-width（hooks/useSidebarWidth 的 MIN/MAX/DEFAULT 常量与它对应）
  *  - 树行高：--sb-row-height；缩进步长：--sb-tree-indent
- *  - 列表选中底色：--sb-selection-bg（现在是品牌色 18% 半透明"柔和选中"）
- *  - 分组头深浅：--sb-section-header-bg / --sb-section-header-fg
+ *  - 选中：--sb-selection-bg（官网橙 10%）+ 虚线导航轨（--sb-rail）
  *
- * VS Code 风格：
- *  - 活动栏：activityBar.background 暗色 #333 / 亮色 #2C2C
- *  - 活动项左侧 2px 指示条
- *  - 侧边栏：sideBar.background 暗色 #262626 / 亮色 #f4f4f9（Rare 中性面）
- *  - 列表选中：list.activeSelectionBackground
+ * 官网风格要点（components/Sidebar/*）：
+ *  - 侧栏是独立的 squircle 浮动面板（radius 23，bg-background）
+ *  - 活动项：品牌橙"虚线"导航轨（repeating-linear-gradient）+ 上方圆角折线
+ *  - 分组标题：11px 大写、tracking 0.14em、foreground/40
+ *  - 活动栏：无底色，选中 = 橙色图标 + 橙色淡底
  */
 
 :root {
   /* ============ 活动栏（Activity Bar）============ */
-  --ab-width: 48px;
-  --ab-action-size: 48px;
-  --ab-icon-size: 21px;
+  --ab-width: 46px;
+  --ab-action-size: 36px;
+  --ab-icon-size: 20px;
   --ab-font-size: var(--kn-text-md);
 
-  /* 柔和：活动栏背景半透明，活动指示条用品牌色而非纯黑 */
-  --ab-bg: color-mix(in srgb, var(--kn-bg-sunken) 94%, transparent);
+  --ab-bg: transparent;
   --ab-fg: var(--kn-fg);
-  --ab-inactive-fg: color-mix(in srgb, var(--kn-fg) 45%, transparent);
+  --ab-inactive-fg: color-mix(in srgb, var(--kn-fg) 42%, transparent);
   --ab-hover: var(--kn-hover);
-  --ab-press: rgba(23, 23, 23, 0.14);   /* Win11 按压反馈 */
+  --ab-press: var(--kn-active);
   --ab-active-border: var(--kn-brand-500);
-  --ab-badge-bg: var(--kn-sky-500);
+  --ab-badge-bg: var(--kn-brand-500);
   --ab-badge-fg: #ffffff;
 
   /* ============ 侧边栏（Side Bar）============ */
   --sb-width: 300px;
-  --sb-titlebar-height: 35px;
+  --sb-titlebar-height: 44px;
   --sb-font-size: var(--kn-text-md);
-  --sb-row-height: 22px;
+  --sb-row-height: 30px;
   --sb-tree-indent: 12px;
 
-  --sb-bg: color-mix(in srgb, var(--kn-bg-elev) 96%, transparent);
+  --sb-bg: var(--kn-bg);                 /* 官网侧栏 = bg-background */
   --sb-fg: var(--kn-fg);
   --sb-fg-muted: var(--kn-fg-muted);
-  --sb-border: var(--kn-border);
+  --sb-border: transparent;              /* 浮动面板不需要分隔线 */
   --sb-hover: var(--kn-hover);
   --sb-active: var(--kn-active);
 
-  /* 柔和分组头：更浅的透明灰 */
-  --sb-section-header-bg: color-mix(in srgb, var(--kn-fg) 5%, transparent);
-  --sb-section-header-fg: var(--kn-fg-muted);
+  /* 分组头：11px 大写（官网 text-[11px] uppercase tracking-[0.14em]） */
+  --sb-section-header-bg: transparent;
+  --sb-section-header-fg: color-mix(in srgb, var(--kn-fg) 40%, transparent);
   --sb-section-header-hover: var(--kn-hover);
 
   --sb-item-hover: var(--kn-hover);
-  /* 柔和选中：品牌色 20% 半透明（不再用实心蓝） */
-  --sb-selection-bg: color-mix(in srgb, var(--kn-brand-500) 18%, transparent);
+  --sb-selection-bg: var(--kn-selected); /* 官网橙 10% */
   --sb-selection-fg: var(--kn-fg);
+  --sb-rail: var(--kn-brand-500);        /* 虚线导航轨颜色 */
 
   --sb-transition-fast: var(--kn-dur-fast);
 }
 
 html.dark {
-  --ab-bg: rgba(38, 38, 38, 0.85);
   --ab-hover: rgba(255, 255, 255, 0.08);
-  --ab-press: rgba(255, 255, 255, 0.18);   /* Win11 按压反馈 */
+  --ab-press: rgba(255, 255, 255, 0.18);
   --ab-active-border: var(--kn-brand-400);
 
-  --sb-bg: rgba(38, 38, 38, 0.9);
+  --sb-bg: var(--kn-bg);
   --sb-fg-muted: #a3a3a3;
-  --sb-section-header-bg: rgba(255, 255, 255, 0.04);
-  --sb-section-header-fg: #b8b8c2;
-  --sb-border: rgba(255, 255, 255, 0.06);
-  --sb-selection-bg: color-mix(in srgb, var(--kn-brand-400) 22%, transparent);
-  --sb-selection-fg: var(--kn-fg);
+  --sb-section-header-fg: color-mix(in srgb, #e5e5e5 42%, transparent);
+  --sb-selection-bg: rgba(252, 76, 1, 0.16);
   --sb-hover: rgba(255, 255, 255, 0.05);
   --sb-item-hover: rgba(255, 255, 255, 0.06);
 }

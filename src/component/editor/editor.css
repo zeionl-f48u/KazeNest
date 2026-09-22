@@ -21,12 +21,12 @@
 /* ==================== 标签栏 ==================== */
 .ed-tabs {
   display: flex;
-  align-items: stretch;
-  gap: 2px;
+  align-items: center;
+  gap: 4px;
   height: var(--ed-tab-height);
   background: var(--ed-tabbar-bg);
-  border-bottom: 1px solid var(--ed-tabbar-border);
-  padding: 4px 8px 0;
+  border-bottom: 0;
+  padding: 8px 10px;
   box-sizing: border-box;
   overflow-x: auto;
   overflow-y: hidden;
@@ -41,10 +41,10 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: calc(var(--ed-tab-height) - 4px);
-  padding: 0 8px 0 10px;
+  height: calc(var(--ed-tab-height) - 16px);
+  padding: 0 12px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--kn-radius-pill);
   background: var(--ed-tab-bg);
   color: var(--ed-tab-fg);
   font: inherit;
@@ -72,16 +72,7 @@
 .ed-tab.is-active {
   background: var(--ed-tab-active-bg);
   color: var(--ed-tab-active-fg);
-}
-.ed-tab.is-active::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 10px;
-  right: 10px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--ed-tab-active-border);
+  box-shadow: var(--kn-shadow-xs), var(--kn-glass-inset);
 }
 
 .ed-tab-icon { flex-shrink: 0; }

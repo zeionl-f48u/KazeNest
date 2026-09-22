@@ -2,29 +2,30 @@
  * ============================================================
  * KazeNest 全局设计系统 —— 全项目唯一的"调色/尺寸总开关"
  * ============================================================
+ * 视觉基线：Rare UI 官网（rareui.com）原生主题，色值逐一换算自官网 globals.css：
+ *   亮色 —— background #fff / card #ebebeb / primary #000 / border #e5e7eb
+ *           foreground #333333 / muted-fg #6b7280 / ring #3b82f6 / accent #e0f2fe
+ *   暗色 —— background #000 / card #121212 / popover #262626 / muted #171717
+ *           foreground #e5e5e5 / muted-fg #a3a3a3 / border #404040
+ *           ring 与 accent = Rare 主橙 #fc4c01
+ *   选中 —— rgba(252,76,1,.10) 底 + #fc4c01 字（官网 ::selection）
+ *
  * 改外观优先级（从高到低）：
  *   1. 先改这里（全局 --kn-*），所有模块的私有 token 会自动跟着变
  *   2. 想只调某一区域（顶栏/侧栏/编辑器），去对应模块的 tokens.css
- *   3. 想只调某个具体按钮，直接改该组件的 <style> 里引用 token 的写法
+ *   3. 想只调某个具体按钮，直接改该组件样式里引用 token 的写法
  *
  * 模块约定：
  *  - 全局基础 token：--kn-* (本文件)
+ *  - 外壳（官网同款）：--kn-shell-* / --kn-glass-*（页面框 + 浮动面板 + 玻璃胶囊）
  *  - 顶栏私有 token：--tb-* (component/titlebar/tokens.css)
  *  - 侧栏私有 token：--ab-* / --sb-* (component/sidebar/tokens.css)
  *  - 编辑器 token：  --ed-* / --ed-hl-* (component/editor/tokens.css)
  *    私有 token 一律引用全局 token 派生，不要在这里堆新颜色
  *
- * 配色哲学（Rare UI 原生）：
- *  - 品牌主橙：#FC4C01（Rare 强调色；悬停/选中/焦点环都由它派生）
- *  - 中性面：#F4F4F9 亮 / #262626 暗（Rare 组件同款表面色），文字近黑/近白
- *  - 弱文字：#868593（Rare 标志性紫灰），关键分隔用 #E0E0E0/#404040 级
- *  - 状态色：iOS 体系 —— #FF3B30 红 / #FF9500 橙 / #34C759 绿 /
- *    #50B1FD 蓝 / #BF5AF2 紫（通知铃等 Rare 组件内部也用它）
- *
  * 暗色主题 = 在 <html class="dark"> 上重新定义同名 token，
  * 因此每个 token 都要在 :root 和 html.dark 两处都改（否则会漏一处主题）。
- * 切主题方式：给 <html> 加/去 class="dark"（在 main.ts 配了 darkModeSelector）。
- * Rare 组件用的 shadcn 语义类（bg-background 等）在 styles/tailwind.css 里桥接到这里。
+ * Rare 组件用的 shadcn 语义类（bg-background 等）在 styles/tailwind.css 桥接到这里。
  */
 
 :root {
@@ -53,27 +54,50 @@
   --kn-emerald-500: #34c759;
   --kn-amber-500: #ff9500;
   --kn-rose-500: #ff3b30;
+  --kn-destructive: #ef4444;              /* 官网 destructive */
 
-  /* ============ 语义色（亮色）============ */
-  /* 调节：换整体底色 / 文字色就改这几个；注意三档灰 bg 的层级
-     （elev > bg > sunken），乱序会导致"面板浮不起来"。 */
-  --kn-bg:        #f4f4f9;                /* 主背景（Rare 浅色面板底） */
-  --kn-bg-elev:   #ffffff;                /* 浮起表面（卡片/侧栏/编辑器底） */
-  --kn-bg-sunken: #ececf3;                /* 凹陷表面（活动栏底/凹陷输入区） */
-  --kn-fg:        #171717;                /* 主文字（近黑中性色） */
-  --kn-fg-muted:  #737373;                /* 次级文字（说明/标签） */
-  --kn-fg-subtle: #868593;                /* 弱文字（时间/元信息/占位，Rare 标志色） */
-  --kn-border:    rgba(23, 23, 23, 0.1);  /* 常规分隔线 */
-  --kn-border-strong: rgba(23, 23, 23, 0.18); /* 强调分隔线/滚动条 */
+  /* ============ 语义色（亮色 = 官网）============ */
+  /* 层级：bg（页面/内层卡片）< panel（主内容面板）< bg-elev（浮层/弹窗） */
+  --kn-bg:        #ffffff;                /* background：页面框底 + 内层卡片 */
+  --kn-panel:     #ebebeb;                /* card：主内容面板（官网 rounded-[45px] 壳） */
+  --kn-bg-elev:   #ffffff;                /* popover：弹窗/菜单/浮起表面 */
+  --kn-bg-sunken: #f3f4f6;                /* secondary：凹陷/次级填充 */
+  --kn-muted:     #f9fafb;                /* muted：极浅填充 */
+  --kn-fg:        #333333;                /* 主文字（官网 foreground） */
+  --kn-fg-muted:  #6b7280;                /* 次级文字（官网 muted-foreground） */
+  --kn-fg-subtle: rgba(51, 51, 51, 0.45); /* 弱文字（时间/元信息/占位） */
+  --kn-border:    #e5e7eb;                /* 常规分隔线（官网 border） */
+  --kn-border-strong: #d1d5db;            /* 强调分隔线/滚动条 */
+
+  --kn-primary:    #000000;               /* 官网主操作色（黑色按钮） */
+  --kn-primary-fg: #ffffff;
+  --kn-ring:       #3b82f6;               /* 官网亮色 focus ring（蓝） */
 
   /* ============ 交互态（亮色）============ */
-  /* 调节：悬停 / 按下 / 选中 / 聚焦 的反馈深浅，改 alpha 值即可 */
-  --kn-hover:    rgba(23, 23, 23, 0.05);
-  --kn-active:   rgba(23, 23, 23, 0.09);
-  --kn-selected: rgba(252, 76, 1, 0.12);  /* 文本选中背景（Rare 主橙淡铺） */
-  --kn-focus:    rgba(252, 76, 1, 0.35);  /* 键盘 focus 外圈（effects.css :focus-visible） */
+  --kn-hover:      rgba(0, 0, 0, 0.045);
+  --kn-active:     rgba(0, 0, 0, 0.08);
+  --kn-selected:   rgba(252, 76, 1, 0.1); /* 文本选中底（官网 ::selection） */
+  --kn-selected-fg:#fc4c01;               /* 选中文字（官网） */
+  --kn-focus:      rgba(59, 130, 246, 0.5);
 
-  /* ============ 圆角（Rare 原生偏大：14px 是组件常用档）============ */
+  /* ============ 外壳（Rare UI 官网同款）============ */
+  --kn-frame-pad: 8px;                    /* 页面四周留白（官网 p-2） */
+  --kn-shell-radius: 45px;                /* 主内容面板圆角（官网 rounded-[45px]） */
+  --kn-shell-pad: 16px;                   /* 主面板内边距（官网 p-4） */
+  --kn-sidebar-radius: 23px;              /* 浮动侧栏面板圆角（官网 Squircle cornerRadius=23） */
+
+  /* ============ 玻璃胶囊（官网 Navbar 同款）============ */
+  --kn-glass-bg: rgba(255, 255, 255, 0.6);
+  --kn-glass-border: transparent;
+  --kn-glass-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.15);
+  --kn-glass-blur: 40px;                  /* backdrop-blur-2xl */
+  --kn-glass-saturation: 150%;
+  --kn-glass-inset:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.05);
+  --kn-glass-bump: rgba(0, 0, 0, 0.05);
+
+  /* ============ 圆角（Rare 组件常用 14px 档）============ */
   --kn-radius-xs: 4px;
   --kn-radius-sm: 6px;
   --kn-radius-md: 8px;
@@ -102,25 +126,20 @@
   --kn-text-2xl: 18px;
   --kn-text-3xl: 24px;
 
-  /* ============ 字体族（与 Tailwind/Rare 默认栈对齐：系统字体优先）============ */
-  --kn-font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+  /* ============ 字体族（与官网一致，文件见 fonts.css）============ */
+  --kn-font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --kn-font-display: "Open Runde", "Inter", ui-sans-serif, system-ui, sans-serif;
   --kn-font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
 
-  /* ============ 阴影（中性黑，Rare 弹层用大范围柔和影）============ */
-  --kn-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --kn-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.07);
-  --kn-shadow-md: 0 6px 16px rgba(0, 0, 0, 0.1);
-  --kn-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.14);
-  --kn-shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.22);
-  --kn-shadow-focus: 0 0 0 3px rgba(252, 76, 1, 0.25);
-
-  /* ============ 玻璃面板（顶栏 / 卡片 / 弹层 共享）============ */
-  --kn-glass-bg: rgba(255, 255, 255, 0.6);
-  --kn-glass-border: rgba(255, 255, 255, 0.65);
-  --kn-glass-shadow: var(--kn-shadow-md);
-  --kn-glass-blur: 16px;
-  --kn-glass-saturation: 180%;
+  /* ============ 阴影（官网小范围柔和影体系）============ */
+  --kn-shadow-xs: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  --kn-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --kn-shadow-md: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+  --kn-shadow-lg: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --kn-shadow-xl: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 8px 10px -1px rgba(0, 0, 0, 0.1);
+  --kn-shadow-2xl: 0 1px 3px 0 rgba(0, 0, 0, 0.25);
+  --kn-shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.25);
 
   /* ============ 动效 ============ */
   /* 调节：想让 App 更"跟手"就调小 dur；想要更从容就调大。
@@ -133,29 +152,36 @@
 }
 
 html.dark {
-  /* ============ 语义色（暗色，Rare 深色面 #262626）============ */
-  --kn-bg:        #171717;
-  --kn-bg-elev:   #262626;
-  --kn-bg-sunken: #101010;
-  --kn-fg:        #fafafa;
+  /* ============ 语义色（暗色 = 官网）============ */
+  --kn-bg:        #000000;                /* 官网暗色背景为纯黑 */
+  --kn-panel:     #121212;                /* card */
+  --kn-bg-elev:   #262626;                /* popover */
+  --kn-bg-sunken: #171717;                /* secondary / muted */
+  --kn-muted:     #171717;
+  --kn-fg:        #e5e5e5;
   --kn-fg-muted:  #a3a3a3;
-  --kn-fg-subtle: #8e8e9a;
-  --kn-border:    rgba(255, 255, 255, 0.1);
-  --kn-border-strong: rgba(255, 255, 255, 0.16);
+  --kn-fg-subtle: rgba(229, 229, 229, 0.45);
+  --kn-border:    #404040;
+  --kn-border-strong: #525252;
+
+  --kn-primary:    #ffffff;               /* 暗色下主操作反转为白（官网 primary 黑在纯黑底不可见） */
+  --kn-primary-fg: #000000;
+  --kn-ring:       #fc4c01;               /* 官网暗色 ring = 主橙 */
 
   /* ============ 交互态（暗色）============ */
-  --kn-hover:    rgba(255, 255, 255, 0.06);
-  --kn-active:   rgba(255, 255, 255, 0.12);
-  --kn-selected: rgba(252, 76, 1, 0.22);
-  --kn-focus:    rgba(255, 122, 61, 0.45);
+  --kn-hover:      rgba(255, 255, 255, 0.06);
+  --kn-active:     rgba(255, 255, 255, 0.12);
+  --kn-selected:   rgba(252, 76, 1, 0.16);
+  --kn-selected-fg:#fc4c01;
+  --kn-focus:      rgba(252, 76, 1, 0.5);
 
-  --kn-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --kn-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
-  --kn-shadow-md: 0 6px 16px rgba(0, 0, 0, 0.5);
-  --kn-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
-  --kn-shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.65);
-  --kn-shadow-focus: 0 0 0 3px rgba(255, 122, 61, 0.35);
+  /* ============ 玻璃胶囊（暗色 = 官网 dark:bg-white/[0.07]）============ */
+  --kn-glass-bg: rgba(255, 255, 255, 0.07);
+  --kn-glass-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.5);
+  --kn-glass-inset:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.3);
+  --kn-glass-bump: rgba(255, 255, 255, 0.08);
 
-  --kn-glass-bg: rgba(38, 38, 38, 0.55);
-  --kn-glass-border: rgba(255, 255, 255, 0.08);
+  --kn-shadow-focus: 0 0 0 3px rgba(252, 76, 1, 0.35);
 }

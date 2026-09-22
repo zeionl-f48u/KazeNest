@@ -37,12 +37,9 @@ export function SearchTrigger({ open, onOpen }: SearchTriggerProps) {
       onMouseEnter={() => setFocused(true)}
       onMouseLeave={() => setFocused(false)}
       className={cn(
-        'ui-press inline-flex h-[26px] w-[34vw] min-w-[220px] max-w-[600px] cursor-pointer items-center gap-2',
-        'rounded-full border px-3 text-left text-xs text-[var(--kn-fg-muted)]',
-        'border-[var(--kn-border)]',
-        focused || open
-          ? 'bg-[var(--kn-bg-elev)] shadow-[var(--kn-shadow-sm)]'
-          : 'bg-[color-mix(in_srgb,var(--kn-fg)_5%,transparent)]'
+        'tb-pill ui-press inline-flex h-[34px] w-[34vw] min-w-[240px] max-w-[560px] cursor-pointer items-center gap-2',
+        'px-3.5 text-left text-sm text-[var(--tb-fg-muted)] transition-colors duration-200',
+        (focused || open) && 'text-[var(--tb-fg)]'
       )}
       style={open ? { width: '80%' } : undefined}
     >

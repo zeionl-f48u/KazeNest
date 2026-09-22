@@ -105,7 +105,7 @@ body.ai-panel-resizing .app-content {
 /* ---------- 文本选择 ---------- */
 ::selection {
   background: var(--kn-selected);
-  color: var(--kn-fg);
+  color: var(--kn-selected-fg);
 }
 
 

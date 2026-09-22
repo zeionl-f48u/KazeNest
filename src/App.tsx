@@ -47,12 +47,15 @@ export default function App() {
   const contentRef = useRef<HTMLElement>(null)
   const [stageWidth, setStageWidth] = useState(() => window.innerWidth)
 
+  /* 主面板内边距（与 App.css 的 --kn-shell-pad 一致；面板按 padding box 定位） */
+  const SHELL_PAD = 16
+
   useEffect(() => {
     const el = stageRef.current
     if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) setStageWidth(entry.contentRect.width)
-    })
+    const measure = () => setStageWidth(el.clientWidth)
+    measure()
+    const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
@@ -163,7 +166,9 @@ export default function App() {
   /* AI 面板：展开（AI 视图，铺满） / 停靠（其它视图，右侧占位） */
   const panelExpanded = panel.open && activeView === 'ai'
   const panelDocked = panel.open && !panelExpanded
-  const panelLeft = panelExpanded ? 0 : Math.max(0, stageWidth - panel.width)
+  const panelLeft = panelExpanded
+    ? SHELL_PAD
+    : Math.max(SHELL_PAD, stageWidth - panel.width - SHELL_PAD)
 
   /* ==================== 离场动画（存在感状态） ==================== */
   /* React 条件渲染默认瞬间卸载；这里保留元素至离场动画播完再卸载 */
@@ -254,7 +259,7 @@ export default function App() {
           <main
             ref={contentRef}
             className={cn('app-content', isFlush && 'is-flush')}
-            style={{ marginRight: panelDocked ? `${panel.width}px` : 0 }}
+            style={{ marginRight: panelDocked ? `${panel.width + 8}px` : 0 }}
           >
             <div key={activeView} className="view-anim">
               <Page {...(active.comingSoon ?? {})} />

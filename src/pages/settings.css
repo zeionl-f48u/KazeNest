@@ -20,6 +20,8 @@
   gap: 4px;
 }
 .st-title {
+  font-family: var(--kn-font-display);
+  letter-spacing: -0.02em;
   display: flex;
   align-items: center;
   gap: 8px;

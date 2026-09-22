@@ -20,7 +20,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
   default:
     'border border-[var(--kn-border)] bg-[var(--kn-bg-elev)] text-[var(--kn-fg)] hover:bg-[var(--kn-hover)]',
   primary:
-    'is-glow border border-transparent text-white font-semibold bg-[var(--kn-brand-500)] hover:bg-[var(--kn-brand-600)]',
+    'border border-transparent font-semibold bg-[var(--kn-primary)] text-[var(--kn-primary-fg)] hover:opacity-90',
   ghost:
     'border border-transparent bg-transparent text-[var(--kn-fg-muted)] hover:bg-[var(--kn-hover)] hover:text-[var(--kn-fg)]',
   outline:

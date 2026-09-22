@@ -14,9 +14,9 @@
 .fm-tabs {
   display: inline-flex;
   gap: 2px;
-  padding: 3px;
-  border: 1px solid var(--kn-border);
-  border-radius: var(--kn-radius-lg);
+  padding: 4px;
+  border: 0;
+  border-radius: var(--kn-radius-pill);
   background: var(--kn-bg-sunken);
   align-self: flex-start;
 }
@@ -27,7 +27,7 @@
   height: 30px;
   padding: 0 14px;
   border: 0;
-  border-radius: var(--kn-radius-md);
+  border-radius: var(--kn-radius-pill);
   background: transparent;
   color: var(--kn-fg-muted);
   font: inherit;
@@ -42,7 +42,7 @@
 .fm-tabs button.is-on {
   background: var(--kn-bg-elev);
   color: var(--kn-fg);
-  box-shadow: var(--kn-shadow-md);
+  box-shadow: var(--kn-shadow-xs), var(--kn-glass-inset);
 }
 .fm-tabs-count {
   display: inline-flex;

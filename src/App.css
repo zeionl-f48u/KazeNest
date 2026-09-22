@@ -1,7 +1,12 @@
 /*
- * App（React 版）样式
- * - 全局基础（html/body/#root、背景渐变、字体）从 App.vue 全局 style 块平移
- * - 外壳布局：顶栏 + 活动栏 / 侧栏 / 主内容
+ * App（React 版）样式 —— Rare UI 官网外壳语言
+ * ------------------------------------------------------------
+ * 官网结构（app/components/(docs)/layout.tsx + components/Sidebar/DesktopShell.tsx）：
+ *   页面：p-2 的 frame（bg-background）
+ *   主内容：rounded-[45px] 的 card 面板（bg-card p-4，corner-shape: squircle）
+ *   侧栏：独立的 squircle 浮动面板（radius 23，bg-background），与主面板并排
+ *   顶部：透明拖拽条 + 玻璃胶囊控件（官网 Navbar）
+ * 本文件只负责"壳"：frame / 主面板 / 侧栏位 / AI 面板停靠 / 视图切换动画。
  */
 
 html,
@@ -12,14 +17,13 @@ body,
 }
 
 body {
-  background:
-    radial-gradient(1200px 600px at 10% 0%, rgba(252, 76, 1, 0.1), transparent 60%),
-    radial-gradient(900px 500px at 100% 100%, rgba(191, 90, 242, 0.08), transparent 60%),
-    var(--kn-bg);
+  background: var(--kn-bg);
   color: var(--kn-fg);
   font-family: var(--kn-font-sans);
   font-size: var(--kn-text-md);
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root,
@@ -30,30 +34,60 @@ body {
 
 .app-shell {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--kn-frame-pad) var(--kn-frame-pad);
+  box-sizing: border-box;
 }
 
-/* ============ 布局：活动栏 | 侧边栏 | 主内容 ============ */
+/* ============ 布局：活动栏 | 侧边栏 | 主内容面板 ============ */
 .app-body {
-  height: 100%;
-  padding-top: var(--tb-height, 38px);
+  flex: 1;
+  min-height: 0;
+  padding-top: var(--tb-height, 52px);
   display: flex;
   align-items: stretch;
+  gap: var(--kn-frame-pad);
   box-sizing: border-box;
   overflow: hidden;
 }
 
+/* ============ 内容舞台 = 官网的主 card 面板 ============ */
+.app-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  background: var(--kn-panel);
+  border-radius: var(--kn-shell-radius);
+  padding: var(--kn-shell-pad);
+  corner-shape: squircle;
+}
+
+/* 普通视图：内容直接铺在 card 面板上（官网 docs 页） */
 .app-content {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
-  padding: var(--kn-space-6);
+  padding: var(--kn-space-1) var(--kn-space-2) var(--kn-space-6);
   box-sizing: border-box;
+  border-radius: calc(var(--kn-shell-radius) - var(--kn-shell-pad));
+  transition: margin-right 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* 全宽视图（编辑器/AI/浏览器）：通栏铺满，内部自滚动 */
+/* 全宽工具视图（编辑器/AI/浏览器）：主面板内再垫一层 background 面板（官网 preview 卡） */
 .app-content.is-flush {
   padding: 0;
   overflow: hidden;
+  background: var(--kn-bg);
+  border-radius: var(--kn-radius-2xl);
+  corner-shape: squircle;
+}
+
+body.ai-panel-resizing .app-content {
+  transition: none !important;
 }
 
 /* ============ 视图切换动画（安卓 Activity 风格：淡入 + 上移） ============ */
@@ -110,29 +144,19 @@ body {
   pointer-events: none !important;
 }
 
-/* ============ 内容舞台 + AI 右侧面板 ============ */
-.app-stage {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: stretch;
-  overflow: hidden;
-}
-/* 面板停靠时主内容让位（与面板 left 同曲线同步） */
-.app-content {
-  transition: margin-right 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-}
-body.ai-panel-resizing .app-content {
-  transition: none !important;
-}
+/* ============ AI 右侧面板（主面板内的浮动卡） ============ */
 .ai-panel-wrap {
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  top: var(--kn-shell-pad);
+  right: var(--kn-shell-pad);
+  bottom: var(--kn-shell-pad);
   z-index: 20;
   display: flex;
+  overflow: hidden;
+  background: var(--kn-bg);
+  border-radius: var(--kn-radius-2xl);
+  corner-shape: squircle;
+  box-shadow: var(--kn-shadow-sm);
   transition: left 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: left;
   animation: ai-panel-in 0.24s var(--kn-ease-out);
@@ -150,12 +174,11 @@ body.ai-panel-resizing .app-content {
   to { opacity: 0; transform: translateX(24px); }
 }
 
-/* ============ Rare UI 滚动进度条（内容舞台顶部） ============ */
+/* ============ Rare UI 滚动进度条（主面板顶部居中） ============ */
 .app-progress {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: var(--kn-space-3);
+  bottom: auto;
   z-index: 25;
   pointer-events: none;
 }

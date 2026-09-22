@@ -1,6 +1,6 @@
 /*
  * Titlebar 布局样式（React 版；变量在 tokens.css）
- * - 从 Titlebar.vue 的 scoped 样式平移（类名保持一致）
+ * Rare UI 官网 Navbar 语言：透明拖拽条 + 玻璃胶囊控件
  * - 应用名收缩：宽度由脚本管理；is-collapsed 时完全隐藏
  */
 
@@ -22,22 +22,28 @@
   padding: 0 var(--tb-pad-x);
   gap: var(--tb-gap);
 
-  background: var(--tb-bg);
-  backdrop-filter: saturate(var(--tb-saturation)) blur(var(--tb-blur));
-  -webkit-backdrop-filter: saturate(var(--tb-saturation)) blur(var(--tb-blur));
-  border-bottom: 1px solid var(--tb-divider);
-  box-shadow: var(--tb-shadow);
+  /* 官网顶栏本身是透明的，只有控件是玻璃胶囊 */
+  background: transparent;
   color: var(--tb-fg);
   font-family: var(--kn-font-sans);
   font-size: var(--tb-title-font-size);
   font-weight: 400;
   letter-spacing: 0.1px;
-  transition: opacity var(--tb-transition-fast), background var(--tb-transition-fast);
+  transition: opacity var(--tb-transition-fast);
   overflow: hidden;
 }
 
 .tb.is-inactive {
   opacity: 0.6;
+}
+
+/* ============ 玻璃胶囊（官网 Navbar pill） ============ */
+.tb-pill {
+  background: var(--tb-pill-bg);
+  backdrop-filter: saturate(var(--tb-pill-saturation)) blur(var(--tb-pill-blur));
+  -webkit-backdrop-filter: saturate(var(--tb-pill-saturation)) blur(var(--tb-pill-blur));
+  box-shadow: var(--tb-pill-shadow), var(--tb-pill-inset);
+  border-radius: var(--kn-radius-pill);
 }
 
 /* ============ 左区（图标 + 应用名 + leading） ============ */
@@ -64,10 +70,11 @@
   color: inherit;
   padding: 0;
   flex-shrink: 0;
-  transition: background var(--tb-transition-fast);
+  transition: background var(--tb-transition-fast), box-shadow var(--tb-transition-fast);
 }
 .tb-icon-btn:hover {
   background: var(--tb-hover);
+  box-shadow: var(--tb-pill-inset);
 }
 .tb-icon-btn:active {
   background: var(--tb-active);
@@ -75,9 +82,10 @@
 
 /* 应用名：宽度由脚本管理（updateTitleWidth） */
 .tb-title {
+  font-family: var(--kn-font-display);
   font-size: var(--tb-title-font-size);
   font-weight: 600;
-  letter-spacing: 0.1px;
+  letter-spacing: -0.01em;
   color: var(--tb-fg);
   white-space: nowrap;
   overflow: hidden;
@@ -86,7 +94,6 @@
   min-width: 0;
   user-select: none;
   pointer-events: none;
-  opacity: 0.92;
 }
 .tb-title.is-collapsed {
   display: none;

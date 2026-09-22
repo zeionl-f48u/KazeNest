@@ -12,6 +12,7 @@ import { createRoot } from 'react-dom/client'
 
 import './styles/tailwind.css'
 import './styles/tokens.css'
+import './styles/fonts.css'
 import './styles/effects.css'
 
 import App from './App'

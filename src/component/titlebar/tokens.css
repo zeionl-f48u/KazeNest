@@ -1,89 +1,81 @@
 /*
- * Titlebar 设计 tokens
+ * Titlebar 设计 tokens（Rare UI 官网 Navbar 语言）
  * 私有 token：--tb-*（顶栏专用尺寸 / 顶栏特定配色）
  * 颜色 / 圆角 / 间距 / 阴影 / 字号直接引用全局 --kn-*（src/styles/tokens.css）
  *
  * 调节指南：
- *  - 顶栏高度：改 --tb-height（App.vue 的 --tb-height 消费它做内容区留白）
- *  - 毛玻璃：--tb-bg 的透明度 + --tb-blur（越大越糊）+ --tb-saturation
- *  - 整体配色：只改 :root 里亮色 + html.dark 里暗色两块
+ *  - 顶栏高度：改 --tb-height（App.css 的 .app-body 消费它做内容区留白）
+ *  - 玻璃胶囊：--tb-pill-*（官网 Navbar：white/60 + blur-2xl + 长柔影 + 内高光）
  *  - 搜索面板尺寸：--tb-panel-width / --tb-panel-max-height
- *  - 按钮圆角（胶囊 vs 直角）：--tb-btn-radius
- *  - 底部 caption（─☐✕）安全区：--tb-caption-right-clearance
  *
- * macOS 风格：柔和、克制、通透
- *  - 标题栏 = 毛玻璃（frosted glass）：半透明底 + backdrop blur + 发丝分隔线
- *  - 按钮 hover 为"胶囊"（pill），浅灰柔和高亮
- *  - 阴影极轻，整体走"轻"而不是"重"
+ * 官网风格要点（components/Navbar.tsx）：
+ *  - 顶栏本身透明，交互控件是独立"玻璃胶囊"（rounded-full）
+ *  - hover 出现一层 bump 玻璃（--tb-hover），带内高光内阴影
+ *  - 文字用 muted-foreground，激活用 foreground
  */
 
 :root {
-  /* ============ 尺寸（macOS 风格标题栏）============ */
-  --tb-height: 38px;
-  --tb-pad-x: 10px;
+  /* ============ 尺寸（官网导航高度 h-10 = 40px + 拖拽余量）============ */
+  --tb-height: 52px;
+  --tb-pad-x: 12px;
   --tb-icon-size: 17px;
-  --tb-btn-size: 28px;
-  --tb-title-font-size: var(--kn-text-md);
+  --tb-btn-size: 30px;
+  --tb-title-font-size: var(--kn-text-lg);
 
   /* 间距 */
-  --tb-gap: 4px;
-  --tb-toolbar-gap: 2px;
+  --tb-gap: 6px;
+  --tb-toolbar-gap: 4px;
 
   /* caption 控件（─ ☐ ✕）安全区兜底 */
   --tb-caption-right-clearance: 139px;
-  /* macOS 交通灯（红黄绿）左侧让位宽度（.tb.is-mac 消费）；插件注入
+  /* macOS 交通灯（红黄绿）左侧让位宽度（Titlebar 消费）；插件注入
    * --tauri-plugin-decoration-left-clearance 时以插件值为准 */
   --tb-traffic-lights: 78px;
 
-  /* ============ 配色（亮色 — macOS 毛玻璃）============ */
-  /* 主体：半透明白 + backdrop blur（blur 数值在 .tb 里消费） */
-  --tb-bg: rgba(248, 249, 252, 0.72);
-  --tb-blur: 20px;
-  --tb-saturation: 180%;
-  /* 发丝分隔线 + 顶光高光，让顶栏"透"起来 */
-  --tb-border: rgba(23, 23, 23, 0.08);
-  --tb-divider: rgba(23, 23, 23, 0.08);
-  --tb-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.65),
-    0 1px 2px rgba(23, 23, 23, 0.03);
+  /* ============ 玻璃胶囊（官网 Navbar pill）============ */
+  --tb-pill-bg: var(--kn-glass-bg);
+  --tb-pill-blur: var(--kn-glass-blur);
+  --tb-pill-saturation: var(--kn-glass-saturation);
+  --tb-pill-shadow: var(--kn-glass-shadow);
+  --tb-pill-inset: var(--kn-glass-inset);
 
   --tb-fg: var(--kn-fg);
   --tb-fg-muted: var(--kn-fg-muted);
 
-  /* 交互态：浅灰胶囊（macOS toolbar 风格） */
-  --tb-hover: rgba(23, 23, 23, 0.06);
-  --tb-active: rgba(23, 23, 23, 0.1);
+  /* 交互态：hover 玻璃 bump（官网 bg-black/[0.05] + 内高光） */
+  --tb-hover: var(--kn-glass-bump);
+  --tb-active: var(--kn-active);
   --tb-focus-ring: var(--kn-focus);
-  --tb-btn-radius: 999px;                 /* 胶囊 hover */
+  --tb-btn-radius: var(--kn-radius-pill);
 
   /* kbd / 标签 */
-  --tb-kbd-bg: color-mix(in srgb, var(--kn-fg) 5%, transparent);
-  --tb-kbd-border: color-mix(in srgb, var(--kn-fg) 9%, transparent);
+  --tb-kbd-bg: color-mix(in srgb, var(--kn-fg) 6%, transparent);
+  --tb-kbd-border: color-mix(in srgb, var(--kn-fg) 10%, transparent);
   --tb-kbd-fg: var(--kn-fg-muted);
 
-  /* 搜索触发器（命令中心）：柔和凹陷 */
-  --tb-search-bg: color-mix(in srgb, var(--kn-fg) 5%, transparent);
-  --tb-search-bg-hover: color-mix(in srgb, var(--kn-fg) 8%, transparent);
-  --tb-search-bg-focus: color-mix(in srgb, var(--kn-bg-elev) 92%, transparent);
-  --tb-search-border: color-mix(in srgb, var(--kn-fg) 10%, transparent);
-  --tb-search-border-focus: color-mix(in srgb, var(--kn-brand-500) 45%, transparent);
+  /* 搜索触发器（命令中心）：玻璃胶囊 */
+  --tb-search-bg: var(--kn-glass-bg);
+  --tb-search-bg-hover: color-mix(in srgb, var(--kn-fg) 8%, var(--kn-glass-bg));
+  --tb-search-bg-focus: var(--kn-bg-elev);
+  --tb-search-border: color-mix(in srgb, var(--kn-fg) 8%, transparent);
+  --tb-search-border-focus: color-mix(in srgb, var(--kn-ring) 45%, transparent);
   --tb-search-radius: var(--kn-radius-pill);
 
-  /* ============ 搜索面板 ============ */
-  --tb-panel-bg: color-mix(in srgb, var(--kn-bg-elev) 98%, transparent);
+  /* ============ 搜索面板（官网浮层语言：popover + 20px 圆角 + 柔影）============ */
+  --tb-panel-bg: var(--kn-bg-elev);
   --tb-panel-border: var(--kn-border);
   --tb-panel-shadow:
-    0 1px 0 rgba(255, 255, 255, 1) inset,
-    0 24px 64px rgba(23, 23, 23, 0.18),
-    0 4px 12px rgba(23, 23, 23, 0.06);
-  --tb-panel-radius: var(--kn-radius-xl);
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 24px 64px rgba(0, 0, 0, 0.18),
+    0 4px 12px rgba(0, 0, 0, 0.06);
+  --tb-panel-radius: var(--kn-radius-2xl);
   --tb-panel-width: min(560px, calc(100% - 48px));
   --tb-panel-max-height: min(520px, calc(100vh - 120px));
 
   --tb-overlay-bg: color-mix(in srgb, var(--kn-fg) 18%, transparent);
 
   --tb-item-hover: var(--kn-hover);
-  --tb-item-active: color-mix(in srgb, var(--kn-brand-500) 12%, transparent);
+  --tb-item-active: var(--kn-selected);
   --tb-item-group-bg: color-mix(in srgb, var(--kn-fg) 6%, transparent);
   --tb-item-group-fg: var(--kn-fg-muted);
   --tb-item-divider: var(--kn-border);
@@ -95,35 +87,27 @@
 }
 
 html.dark {
-  /* 暗色 macOS 毛玻璃：石墨色半透明 */
-  --tb-bg: rgba(38, 38, 38, 0.75);
-  --tb-blur: 20px;
-  --tb-saturation: 180%;
-  --tb-border: rgba(255, 255, 255, 0.09);
-  --tb-divider: rgba(255, 255, 255, 0.09);
-  --tb-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 1px 2px rgba(0, 0, 0, 0.35);
+  --tb-pill-shadow: var(--kn-glass-shadow);
+  --tb-pill-inset: var(--kn-glass-inset);
 
-  --tb-hover: rgba(255, 255, 255, 0.07);
-  --tb-active: rgba(255, 255, 255, 0.12);
+  --tb-hover: var(--kn-glass-bump);
+  --tb-active: var(--kn-active);
 
   --tb-kbd-bg: rgba(255, 255, 255, 0.06);
   --tb-kbd-border: rgba(255, 255, 255, 0.1);
 
-  --tb-search-bg: rgba(255, 255, 255, 0.06);
-  --tb-search-bg-hover: rgba(255, 255, 255, 0.1);
-  --tb-search-bg-focus: rgba(38, 38, 38, 0.92);
+  --tb-search-bg: var(--kn-glass-bg);
+  --tb-search-bg-hover: rgba(255, 255, 255, 0.12);
+  --tb-search-bg-focus: var(--kn-bg-sunken);
   --tb-search-border: rgba(255, 255, 255, 0.12);
   --tb-search-border-focus: rgba(252, 76, 1, 0.55);
 
-  --tb-panel-bg: color-mix(in srgb, #262626 98%, transparent);
+  --tb-panel-bg: var(--kn-bg-elev);
   --tb-panel-shadow:
     0 1px 0 rgba(255, 255, 255, 0.04) inset,
     0 24px 64px rgba(0, 0, 0, 0.55),
     0 4px 12px rgba(0, 0, 0, 0.35);
 
   --tb-overlay-bg: rgba(0, 0, 0, 0.45);
-  --tb-item-active: color-mix(in srgb, var(--kn-brand-400) 18%, transparent);
   --tb-item-group-bg: rgba(255, 255, 255, 0.08);
 }
