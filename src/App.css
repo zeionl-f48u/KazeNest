@@ -17,7 +17,10 @@ body,
 }
 
 body {
-  background: var(--kn-bg);
+  background:
+    radial-gradient(1200px 600px at 10% 0%, rgba(252, 76, 1, 0.08), transparent 60%),
+    radial-gradient(900px 500px at 100% 100%, rgba(191, 90, 242, 0.07), transparent 60%),
+    var(--kn-bg-sunken);
   color: var(--kn-fg);
   font-family: var(--kn-font-sans);
   font-size: var(--kn-text-md);
@@ -60,7 +63,7 @@ body {
   display: flex;
   align-items: stretch;
   overflow: hidden;
-  background: var(--kn-panel);
+  background: var(--kn-bg);
   border-radius: var(--kn-shell-radius);
   padding: var(--kn-shell-pad);
   corner-shape: squircle;
@@ -81,7 +84,7 @@ body {
 .app-content.is-flush {
   padding: 0;
   overflow: hidden;
-  background: var(--kn-bg);
+  background: var(--kn-bg-elev);
   border-radius: var(--kn-radius-2xl);
   corner-shape: squircle;
 }
@@ -153,7 +156,7 @@ body.ai-panel-resizing .app-content {
   z-index: 20;
   display: flex;
   overflow: hidden;
-  background: var(--kn-bg);
+  background: var(--kn-bg-elev);
   border-radius: var(--kn-radius-2xl);
   corner-shape: squircle;
   box-shadow: var(--kn-shadow-sm);

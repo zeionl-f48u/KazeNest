@@ -39,7 +39,7 @@
   --sb-row-height: 30px;
   --sb-tree-indent: 12px;
 
-  --sb-bg: var(--kn-bg);                 /* 官网侧栏 = bg-background */
+  --sb-bg: var(--kn-bg-elev);            /* 侧栏浮动面板 = 卡片色 */
   --sb-fg: var(--kn-fg);
   --sb-fg-muted: var(--kn-fg-muted);
   --sb-border: transparent;              /* 浮动面板不需要分隔线 */

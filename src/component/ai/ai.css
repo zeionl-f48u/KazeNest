@@ -10,7 +10,7 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background: var(--kn-bg);
+  background: transparent;
 }
 .aw-top {
   display: flex;

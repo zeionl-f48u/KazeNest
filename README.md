@@ -20,7 +20,7 @@ KazeNest 是一个基于 **Tauri 2 + React 19** 的桌面 IDE 外壳：VS Code �
 | **插件市场** | 卡片网格 + 搜索/分类/排序（演示数据）、安装状态与推荐角标；侧栏（已安装 / 推荐 / 分类）与页面共用数据 |
 | **设置 / 账户** | 设置页四分区（外观 / 编辑器 / 快捷键 / 关于；**主题切换真实生效**，其余为演示控件）；账户页支持未登录/已登录两种状态预览 |
 | **顶栏** | 命令中心搜索（⌘K / Ctrl+K）、视图联动菜单、工作区切换、通知中心、账户菜单；**macOS 使用系统原生菜单栏**，Windows/Linux 内绘菜单并按宽度自动收纳 |
-| **设计系统** | 视觉基线 = [Rare UI 官网](https://www.rareui.com/)：官网原生主题色（亮 `#fff/#ebebeb/#000`、暗 `#000/#121212/#fc4c01`）、Inter + Open Runde + JetBrains Mono（本地打包）、`p-2` 页面框 + `rounded-[45px]` squircle 主面板 + 玻璃胶囊顶栏 + squircle 浮动侧栏；Tailwind 4 + shadcn 语义类桥接 + 自研 UI 基础层 |
+| **设计系统** | 视觉基线 = [Rare UI 官网](https://www.rareui.com/) 的外壳与组件语言（`p-2` 页面框 + `rounded-[45px]` squircle 主面板 + 玻璃胶囊顶栏 + squircle 浮动侧栏）、Inter + Open Runde + JetBrains Mono（本地打包）；配色沿用 KazeNest 原调色板（主橙 `#fc4c01` + `#f4f4f9/#ffffff/#ececf3` 亮、`#171717/#262626/#101010` 暗）；Tailwind 4 + shadcn 语义类桥接 + 自研 UI 基础层 |
 | **持久化** | 会话快照：活动视图、侧栏开合与宽度、编辑器标签/内容/未保存标记、AI 会话与用量、文件管理状态、浏览器标签与书签 |
 | **平台适配** | Windows / macOS / Linux；macOS 交通灯让位、原生菜单、毛玻璃顶栏 |
 
@@ -124,11 +124,11 @@ node scripts/add-rare-ui.mjs folder-component
 
 Dialog 与 Dropdown 的进出场也已改由 Motion 弹簧驱动（尊重 `prefers-reduced-motion`）。
 
-整个界面已按官方仓库的官网主题与外壳重做：
+整个界面已按官方仓库的官网外壳与组件语言重做，**配色沿用 KazeNest 原调色板**：
 
-- **主题色**：逐值换算自官网 `app/globals.css` —— 亮色 `background #fff / card #ebebeb /
-  primary #000 / border #e5e7eb / ring #3b82f6`，暗色 `background #000 / card #121212 /
-  popover #262626 / ring #fc4c01`；选中 = 橙底 10% + 橙字
+- **主题色**：主橙 `#fc4c01`；亮色 底 `#f4f4f9` / 卡片 `#ffffff` / 框 `#ececf3`；
+  暗色 底 `#171717` / 卡片 `#262626` / 框 `#101010`；弱文字 `#868593`；
+  状态色 iOS 体系；选中 = 橙底 10% + 橙字
 - **外壳**：官网 `DesktopShell` 同款 —— `p-2` 页面框（`--kn-frame-pad`）、
   `rounded-[45px]` squircle 主面板（`--kn-shell-radius`，bg = card）、
   独立 squircle 浮动侧栏（radius 23）、透明拖拽顶栏 + 玻璃胶囊控件（`--kn-glass-*`）

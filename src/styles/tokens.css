@@ -2,13 +2,11 @@
  * ============================================================
  * KazeNest 全局设计系统 —— 全项目唯一的"调色/尺寸总开关"
  * ============================================================
- * 视觉基线：Rare UI 官网（rareui.com）原生主题，色值逐一换算自官网 globals.css：
- *   亮色 —— background #fff / card #ebebeb / primary #000 / border #e5e7eb
- *           foreground #333333 / muted-fg #6b7280 / ring #3b82f6 / accent #e0f2fe
- *   暗色 —— background #000 / card #121212 / popover #262626 / muted #171717
- *           foreground #e5e5e5 / muted-fg #a3a3a3 / border #404040
- *           ring 与 accent = Rare 主橙 #fc4c01
- *   选中 —— rgba(252,76,1,.10) 底 + #fc4c01 字（官网 ::selection）
+ * 视觉基线：外壳/字体/组件语言照 rareui.com 官网重做；
+ * 配色沿用 KazeNest 原调色板（即 Rare 组件自带色）：
+ *   品牌主橙 #fc4c01；亮色 底 #f4f4f9 / 卡片 #ffffff / 框 #ececf3；
+ *   暗色 底 #171717 / 卡片 #262626 / 框 #101010；弱文字 #868593；
+ *   状态色 iOS 体系（#FF3B30 / #FF9500 / #34C759 / #50B1FD / #BF5AF2）。
  *
  * 改外观优先级（从高到低）：
  *   1. 先改这里（全局 --kn-*），所有模块的私有 token 会自动跟着变
@@ -56,29 +54,29 @@
   --kn-rose-500: #ff3b30;
   --kn-destructive: #ef4444;              /* 官网 destructive */
 
-  /* ============ 语义色（亮色 = 官网）============ */
-  /* 层级：bg（页面/内层卡片）< panel（主内容面板）< bg-elev（浮层/弹窗） */
-  --kn-bg:        #ffffff;                /* background：页面框底 + 内层卡片 */
-  --kn-panel:     #ebebeb;                /* card：主内容面板（官网 rounded-[45px] 壳） */
-  --kn-bg-elev:   #ffffff;                /* popover：弹窗/菜单/浮起表面 */
-  --kn-bg-sunken: #f3f4f6;                /* secondary：凹陷/次级填充 */
-  --kn-muted:     #f9fafb;                /* muted：极浅填充 */
-  --kn-fg:        #333333;                /* 主文字（官网 foreground） */
-  --kn-fg-muted:  #6b7280;                /* 次级文字（官网 muted-foreground） */
-  --kn-fg-subtle: rgba(51, 51, 51, 0.45); /* 弱文字（时间/元信息/占位） */
-  --kn-border:    #e5e7eb;                /* 常规分隔线（官网 border） */
-  --kn-border-strong: #d1d5db;            /* 强调分隔线/滚动条 */
+  /* ============ 语义色（亮色，沿用 KazeNest 原调色板）============ */
+  /* 层级：sunken（页面框）< bg（主内容面板）< elev（卡片/浮层/工具面） */
+  --kn-bg:        #f4f4f9;                /* 主内容面板 / 内容底 */
+  --kn-panel:     var(--kn-bg);           /* 主面板 = 内容底（旧调色板无独立 panel 色） */
+  --kn-bg-elev:   #ffffff;                /* 卡片/侧栏/工具面/弹窗 */
+  --kn-bg-sunken: #ececf3;                /* 页面框 / 凹陷表面 */
+  --kn-muted:     #ececf3;                /* muted：极浅填充 */
+  --kn-fg:        #171717;                /* 主文字 */
+  --kn-fg-muted:  #737373;                /* 次级文字 */
+  --kn-fg-subtle: #868593;                /* 弱文字（Rare 标志性紫灰） */
+  --kn-border:    rgba(23, 23, 23, 0.1);  /* 常规分隔线 */
+  --kn-border-strong: rgba(23, 23, 23, 0.18); /* 强调分隔线/滚动条 */
 
-  --kn-primary:    #000000;               /* 官网主操作色（黑色按钮） */
+  --kn-primary:    #fc4c01;               /* 主操作色 = 品牌主橙 */
   --kn-primary-fg: #ffffff;
-  --kn-ring:       #3b82f6;               /* 官网亮色 focus ring（蓝） */
+  --kn-ring:       #fc4c01;               /* focus ring = 品牌主橙 */
 
   /* ============ 交互态（亮色）============ */
-  --kn-hover:      rgba(0, 0, 0, 0.045);
-  --kn-active:     rgba(0, 0, 0, 0.08);
-  --kn-selected:   rgba(252, 76, 1, 0.1); /* 文本选中底（官网 ::selection） */
-  --kn-selected-fg:#fc4c01;               /* 选中文字（官网） */
-  --kn-focus:      rgba(59, 130, 246, 0.5);
+  --kn-hover:      rgba(23, 23, 23, 0.05);
+  --kn-active:     rgba(23, 23, 23, 0.09);
+  --kn-selected:   rgba(252, 76, 1, 0.1);
+  --kn-selected-fg:#fc4c01;
+  --kn-focus:      rgba(252, 76, 1, 0.35);
 
   /* ============ 外壳（Rare UI 官网同款）============ */
   --kn-frame-pad: 8px;                    /* 页面四周留白（官网 p-2） */
@@ -87,9 +85,9 @@
   --kn-sidebar-radius: 23px;              /* 浮动侧栏面板圆角（官网 Squircle cornerRadius=23） */
 
   /* ============ 玻璃胶囊（官网 Navbar 同款）============ */
-  --kn-glass-bg: rgba(255, 255, 255, 0.6);
+  --kn-glass-bg: rgba(255, 255, 255, 0.65);
   --kn-glass-border: transparent;
-  --kn-glass-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.15);
+  --kn-glass-shadow: 0 12px 32px -12px rgba(23, 23, 23, 0.18);
   --kn-glass-blur: 40px;                  /* backdrop-blur-2xl */
   --kn-glass-saturation: 150%;
   --kn-glass-inset:
@@ -152,36 +150,35 @@
 }
 
 html.dark {
-  /* ============ 语义色（暗色 = 官网）============ */
-  --kn-bg:        #000000;                /* 官网暗色背景为纯黑 */
-  --kn-panel:     #121212;                /* card */
-  --kn-bg-elev:   #262626;                /* popover */
-  --kn-bg-sunken: #171717;                /* secondary / muted */
+  /* ============ 语义色（暗色，沿用 KazeNest 原调色板）============ */
+  --kn-bg:        #171717;                /* 主内容面板 / 内容底 */
+  --kn-bg-elev:   #262626;                /* 卡片/侧栏/工具面/弹窗 */
+  --kn-bg-sunken: #101010;                /* 页面框 / 凹陷表面 */
   --kn-muted:     #171717;
-  --kn-fg:        #e5e5e5;
+  --kn-fg:        #fafafa;
   --kn-fg-muted:  #a3a3a3;
-  --kn-fg-subtle: rgba(229, 229, 229, 0.45);
-  --kn-border:    #404040;
-  --kn-border-strong: #525252;
+  --kn-fg-subtle: #8e8e9a;
+  --kn-border:    rgba(255, 255, 255, 0.1);
+  --kn-border-strong: rgba(255, 255, 255, 0.16);
 
-  --kn-primary:    #ffffff;               /* 暗色下主操作反转为白（官网 primary 黑在纯黑底不可见） */
-  --kn-primary-fg: #000000;
-  --kn-ring:       #fc4c01;               /* 官网暗色 ring = 主橙 */
+  --kn-primary:    #fc4c01;               /* 主操作色 = 品牌主橙 */
+  --kn-primary-fg: #ffffff;
+  --kn-ring:       #fc4c01;
 
   /* ============ 交互态（暗色）============ */
   --kn-hover:      rgba(255, 255, 255, 0.06);
   --kn-active:     rgba(255, 255, 255, 0.12);
   --kn-selected:   rgba(252, 76, 1, 0.16);
   --kn-selected-fg:#fc4c01;
-  --kn-focus:      rgba(252, 76, 1, 0.5);
+  --kn-focus:      rgba(255, 122, 61, 0.45);
 
-  /* ============ 玻璃胶囊（暗色 = 官网 dark:bg-white/[0.07]）============ */
-  --kn-glass-bg: rgba(255, 255, 255, 0.07);
+  /* ============ 玻璃胶囊（暗色）============ */
+  --kn-glass-bg: rgba(38, 38, 38, 0.6);
   --kn-glass-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.5);
   --kn-glass-inset:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
     inset 0 -1px 2px 0 rgba(0, 0, 0, 0.3);
   --kn-glass-bump: rgba(255, 255, 255, 0.08);
 
-  --kn-shadow-focus: 0 0 0 3px rgba(252, 76, 1, 0.35);
+  --kn-shadow-focus: 0 0 0 3px rgba(255, 122, 61, 0.3);
 }
