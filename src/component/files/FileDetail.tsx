@@ -138,7 +138,7 @@ export function FileDetail({
       case 'code':
         return (
           <pre className="fd-pv-code">{`1  const theme = {
-2    brand: '#6366f1',
+2    brand: '#fc4c01',
 3    radius: 8,
 4  }`}</pre>
         )

@@ -51,7 +51,7 @@ export function Home({ onNavigate }: HomeProps) {
       <header className="home-hero">
         {/* Rare UI 流体球：装饰性背景（尊重 prefers-reduced-motion，组件内已处理） */}
         <div className="home-hero-orb" aria-hidden="true">
-          <FluidOrb size={360} />
+          <FluidOrb size={360} color="#fc4c01" />
         </div>
 
         <div className="home-logo">

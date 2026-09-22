@@ -46,7 +46,7 @@ export class ErrorBoundary extends Component<Props, State> {
           lineHeight: 1.7,
         }}
       >
-        <h1 style={{ margin: '0 0 8px', fontSize: 20, color: '#f43f5e' }}>
+        <h1 style={{ margin: '0 0 8px', fontSize: 20, color: '#ff3b30' }}>
           KazeNest 前端渲染出错
         </h1>
         <p style={{ margin: '0 0 16px', opacity: 0.75 }}>
@@ -94,7 +94,7 @@ export class ErrorBoundary extends Component<Props, State> {
             padding: '0 16px',
             border: 0,
             borderRadius: 8,
-            background: 'linear-gradient(135deg, #6366f1, #ec4899)',
+            background: 'linear-gradient(135deg, #fc4c01, #ff3b30)',
             color: '#fff',
             font: 'inherit',
             fontWeight: 600,

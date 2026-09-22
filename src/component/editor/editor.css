@@ -263,7 +263,7 @@
   box-sizing: border-box;
 }
 .ed-line-input::selection {
-  background: rgba(99, 102, 241, 0.25);
+  background: rgba(252, 76, 1, 0.25);
   color: transparent;
 }
 

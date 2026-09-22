@@ -189,7 +189,7 @@ export function AiWorkspace({ variant = 'page', closable = false, onExpand, onCl
               {/* Rare UI 流体球：空态装饰背景（面板形态省略，节省空间） */}
               {!isPanel && (
                 <div className="aw-hero-orb" aria-hidden="true">
-                  <FluidOrb size={300} />
+                  <FluidOrb size={300} color="#fc4c01" />
                 </div>
               )}
               <div className="aw-hero-logo">

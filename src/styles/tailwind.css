@@ -1,1 +1,37 @@
 @import "tailwindcss";
+
+/*
+ * ============================================================
+ * Rare UI 语义色桥接
+ * ============================================================
+ * Rare 组件原生使用 shadcn 风格类名（bg-background / text-foreground /
+ * border-border / ring-ring / bg-muted ...）。Tailwind 4 只有定义了对应
+ * --color-* 才会生成这些工具类，所以在 @theme 里把它们映射到 KazeNest 的
+ * 全局 token（--kn-*），组件原生类名即可直接生效。
+ *
+ * 用 `@theme inline`：工具类输出 var(--kn-*) 而不是把颜色值内联，
+ * 这样 html.dark 重定义 --kn-* 时，亮暗主题切换即时生效。
+ */
+@theme inline {
+  --color-background: var(--kn-bg);
+  --color-foreground: var(--kn-fg);
+
+  --color-card: var(--kn-bg-elev);
+  --color-card-foreground: var(--kn-fg);
+  --color-popover: var(--kn-bg-elev);
+  --color-popover-foreground: var(--kn-fg);
+
+  --color-primary: var(--kn-brand-500);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--kn-bg-sunken);
+  --color-secondary-foreground: var(--kn-fg);
+
+  --color-muted: var(--kn-bg-sunken);
+  --color-muted-foreground: var(--kn-fg-muted);
+  --color-accent: var(--kn-selected);
+  --color-accent-foreground: var(--kn-fg);
+
+  --color-border: var(--kn-border);
+  --color-input: var(--kn-border-strong);
+  --color-ring: var(--kn-brand-500);
+}

@@ -15,7 +15,7 @@
  * VS Code 风格：
  *  - 活动栏：activityBar.background 暗色 #333 / 亮色 #2C2C
  *  - 活动项左侧 2px 指示条
- *  - 侧边栏：sideBar.background 暗色 #252526 / 亮色 #F3F3F3
+ *  - 侧边栏：sideBar.background 暗色 #262626 / 亮色 #f4f4f9（Rare 中性面）
  *  - 列表选中：list.activeSelectionBackground
  */
 
@@ -31,7 +31,7 @@
   --ab-fg: var(--kn-fg);
   --ab-inactive-fg: color-mix(in srgb, var(--kn-fg) 45%, transparent);
   --ab-hover: var(--kn-hover);
-  --ab-press: rgba(15, 23, 42, 0.14);   /* Win11 按压反馈 */
+  --ab-press: rgba(23, 23, 23, 0.14);   /* Win11 按压反馈 */
   --ab-active-border: var(--kn-brand-500);
   --ab-badge-bg: var(--kn-sky-500);
   --ab-badge-fg: #ffffff;
@@ -64,15 +64,15 @@
 }
 
 html.dark {
-  --ab-bg: rgba(24, 26, 30, 0.85);
+  --ab-bg: rgba(38, 38, 38, 0.85);
   --ab-hover: rgba(255, 255, 255, 0.08);
   --ab-press: rgba(255, 255, 255, 0.18);   /* Win11 按压反馈 */
   --ab-active-border: var(--kn-brand-400);
 
-  --sb-bg: rgba(22, 25, 34, 0.88);
-  --sb-fg-muted: #9aa3b2;
+  --sb-bg: rgba(38, 38, 38, 0.9);
+  --sb-fg-muted: #a3a3a3;
   --sb-section-header-bg: rgba(255, 255, 255, 0.04);
-  --sb-section-header-fg: #b6bdca;
+  --sb-section-header-fg: #b8b8c2;
   --sb-border: rgba(255, 255, 255, 0.06);
   --sb-selection-bg: color-mix(in srgb, var(--kn-brand-400) 22%, transparent);
   --sb-selection-fg: var(--kn-fg);

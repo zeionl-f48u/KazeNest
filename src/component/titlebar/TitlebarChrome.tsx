@@ -398,7 +398,7 @@ export function TitlebarChrome({
           max={9}
           variant="count"
           size={30}
-          color="violet"
+          color="orange"
           aria-label="通知"
           onClick={openNotify}
         />

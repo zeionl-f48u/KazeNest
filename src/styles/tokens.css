@@ -14,70 +14,72 @@
  *  - 编辑器 token：  --ed-* / --ed-hl-* (component/editor/tokens.css)
  *    私有 token 一律引用全局 token 派生，不要在这里堆新颜色
  *
- * 配色哲学：
- *  - 品牌色：indigo-500 (#6366f1) + violet-500 (#8b5cf6) + pink-500 (#ec4899)
- *  - 中性色：slate 系（不是 VS Code 的纯灰，让全 App 更柔和）
- *  - 强调色：sky (#0ea5e9) 用于"已激活 / 选中"
- *  - 状态色：emerald / amber / rose
+ * 配色哲学（Rare UI 原生）：
+ *  - 品牌主橙：#FC4C01（Rare 强调色；悬停/选中/焦点环都由它派生）
+ *  - 中性面：#F4F4F9 亮 / #262626 暗（Rare 组件同款表面色），文字近黑/近白
+ *  - 弱文字：#868593（Rare 标志性紫灰），关键分隔用 #E0E0E0/#404040 级
+ *  - 状态色：iOS 体系 —— #FF3B30 红 / #FF9500 橙 / #34C759 绿 /
+ *    #50B1FD 蓝 / #BF5AF2 紫（通知铃等 Rare 组件内部也用它）
  *
  * 暗色主题 = 在 <html class="dark"> 上重新定义同名 token，
  * 因此每个 token 都要在 :root 和 html.dark 两处都改（否则会漏一处主题）。
  * 切主题方式：给 <html> 加/去 class="dark"（在 main.ts 配了 darkModeSelector）。
+ * Rare 组件用的 shadcn 语义类（bg-background 等）在 styles/tailwind.css 里桥接到这里。
  */
 
 :root {
-  /* ============ 品牌色 ============ */
-  --kn-brand-50:  #eef2ff;
-  --kn-brand-100: #e0e7ff;
-  --kn-brand-200: #c7d2fe;
-  --kn-brand-300: #a5b4fc;
-  --kn-brand-400: #818cf8;
-  --kn-brand-500: #6366f1;
-  --kn-brand-600: #4f46e5;
-  --kn-brand-700: #4338ca;
+  /* ============ 品牌色（Rare 主橙 #FC4C01 色阶）============ */
+  --kn-brand-50:  #fff3ec;
+  --kn-brand-100: #ffe3d3;
+  --kn-brand-200: #ffc6a6;
+  --kn-brand-300: #ffa171;
+  --kn-brand-400: #ff7a3d;
+  --kn-brand-500: #fc4c01;
+  --kn-brand-600: #e04300;
+  --kn-brand-700: #b83700;
 
-  --kn-accent-400: #a78bfa;
-  --kn-accent-500: #8b5cf6;
-  --kn-accent-600: #7c3aed;
+  --kn-accent-400: #d48cf7;
+  --kn-accent-500: #bf5af2;
+  --kn-accent-600: #af52de;
 
-  --kn-magenta-400: #f472b6;
-  --kn-magenta-500: #ec4899;
-  --kn-magenta-600: #db2777;
+  --kn-magenta-400: #ff6961;
+  --kn-magenta-500: #ff3b30;
+  --kn-magenta-600: #d92d20;
 
-  --kn-sky-400: #38bdf8;
-  --kn-sky-500: #0ea5e9;
-  --kn-sky-600: #0284c7;
+  --kn-sky-400: #7ec8ff;
+  --kn-sky-500: #50b1fd;
+  --kn-sky-600: #3a9ae8;
 
-  --kn-emerald-500: #10b981;
-  --kn-amber-500: #f59e0b;
-  --kn-rose-500: #f43f5e;
+  --kn-emerald-500: #34c759;
+  --kn-amber-500: #ff9500;
+  --kn-rose-500: #ff3b30;
 
   /* ============ 语义色（亮色）============ */
   /* 调节：换整体底色 / 文字色就改这几个；注意三档灰 bg 的层级
      （elev > bg > sunken），乱序会导致"面板浮不起来"。 */
-  --kn-bg:        #f8fafc;                /* 主背景（body 底色） */
+  --kn-bg:        #f4f4f9;                /* 主背景（Rare 浅色面板底） */
   --kn-bg-elev:   #ffffff;                /* 浮起表面（卡片/侧栏/编辑器底） */
-  --kn-bg-sunken: #f1f5f9;                /* 凹陷表面（活动栏底/凹陷输入区） */
-  --kn-fg:        #0f172a;                /* 主文字 */
-  --kn-fg-muted:  #475569;                /* 次级文字（说明/标签） */
-  --kn-fg-subtle: #94a3b8;                /* 弱文字（时间/元信息/占位） */
-  --kn-border:    rgba(15, 23, 42, 0.08); /* 常规分隔线 */
-  --kn-border-strong: rgba(15, 23, 42, 0.14); /* 强调分隔线/滚动条 */
+  --kn-bg-sunken: #ececf3;                /* 凹陷表面（活动栏底/凹陷输入区） */
+  --kn-fg:        #171717;                /* 主文字（近黑中性色） */
+  --kn-fg-muted:  #737373;                /* 次级文字（说明/标签） */
+  --kn-fg-subtle: #868593;                /* 弱文字（时间/元信息/占位，Rare 标志色） */
+  --kn-border:    rgba(23, 23, 23, 0.1);  /* 常规分隔线 */
+  --kn-border-strong: rgba(23, 23, 23, 0.18); /* 强调分隔线/滚动条 */
 
   /* ============ 交互态（亮色）============ */
   /* 调节：悬停 / 按下 / 选中 / 聚焦 的反馈深浅，改 alpha 值即可 */
-  --kn-hover:    rgba(15, 23, 42, 0.04);
-  --kn-active:   rgba(15, 23, 42, 0.08);
-  --kn-selected: var(--kn-brand-50);      /* 文本选中背景 */
-  --kn-focus:    rgba(99, 102, 241, 0.35); /* 键盘 focus 外圈（effects.css :focus-visible） */
+  --kn-hover:    rgba(23, 23, 23, 0.05);
+  --kn-active:   rgba(23, 23, 23, 0.09);
+  --kn-selected: rgba(252, 76, 1, 0.12);  /* 文本选中背景（Rare 主橙淡铺） */
+  --kn-focus:    rgba(252, 76, 1, 0.35);  /* 键盘 focus 外圈（effects.css :focus-visible） */
 
-  /* ============ 圆角 ============ */
-  --kn-radius-xs: 3px;
-  --kn-radius-sm: 4px;
-  --kn-radius-md: 6px;
-  --kn-radius-lg: 8px;
-  --kn-radius-xl: 12px;
-  --kn-radius-2xl: 16px;
+  /* ============ 圆角（Rare 原生偏大：14px 是组件常用档）============ */
+  --kn-radius-xs: 4px;
+  --kn-radius-sm: 6px;
+  --kn-radius-md: 8px;
+  --kn-radius-lg: 10px;
+  --kn-radius-xl: 14px;
+  --kn-radius-2xl: 20px;
   --kn-radius-pill: 999px;
 
   /* ============ 间距 ============ */
@@ -100,22 +102,22 @@
   --kn-text-2xl: 18px;
   --kn-text-3xl: 24px;
 
-  /* ============ 字体族 ============ */
-  --kn-font-sans: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont,
-    "PingFang SC", "Microsoft YaHei", sans-serif;
+  /* ============ 字体族（与 Tailwind/Rare 默认栈对齐：系统字体优先）============ */
+  --kn-font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   --kn-font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
 
-  /* ============ 阴影 ============ */
-  --kn-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --kn-shadow-sm: 0 2px 4px rgba(15, 23, 42, 0.06);
-  --kn-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
-  --kn-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.1);
-  --kn-shadow-xl: 0 24px 64px rgba(15, 23, 42, 0.18);
-  --kn-shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.25);
+  /* ============ 阴影（中性黑，Rare 弹层用大范围柔和影）============ */
+  --kn-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --kn-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.07);
+  --kn-shadow-md: 0 6px 16px rgba(0, 0, 0, 0.1);
+  --kn-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.14);
+  --kn-shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.22);
+  --kn-shadow-focus: 0 0 0 3px rgba(252, 76, 1, 0.25);
 
   /* ============ 玻璃面板（顶栏 / 卡片 / 弹层 共享）============ */
-  --kn-glass-bg: rgba(255, 255, 255, 0.55);
-  --kn-glass-border: rgba(255, 255, 255, 0.6);
+  --kn-glass-bg: rgba(255, 255, 255, 0.6);
+  --kn-glass-border: rgba(255, 255, 255, 0.65);
   --kn-glass-shadow: var(--kn-shadow-md);
   --kn-glass-blur: 16px;
   --kn-glass-saturation: 180%;
@@ -131,29 +133,29 @@
 }
 
 html.dark {
-  /* ============ 语义色（暗色）============ */
-  --kn-bg:        #0f1115;
-  --kn-bg-elev:   #161922;
-  --kn-bg-sunken: #0a0c10;
-  --kn-fg:        #e5e7eb;
-  --kn-fg-muted:  #94a3b8;
-  --kn-fg-subtle: #64748b;
-  --kn-border:    rgba(255, 255, 255, 0.06);
-  --kn-border-strong: rgba(255, 255, 255, 0.12);
+  /* ============ 语义色（暗色，Rare 深色面 #262626）============ */
+  --kn-bg:        #171717;
+  --kn-bg-elev:   #262626;
+  --kn-bg-sunken: #101010;
+  --kn-fg:        #fafafa;
+  --kn-fg-muted:  #a3a3a3;
+  --kn-fg-subtle: #8e8e9a;
+  --kn-border:    rgba(255, 255, 255, 0.1);
+  --kn-border-strong: rgba(255, 255, 255, 0.16);
 
   /* ============ 交互态（暗色）============ */
-  --kn-hover:    rgba(255, 255, 255, 0.05);
-  --kn-active:   rgba(255, 255, 255, 0.1);
-  --kn-selected: rgba(99, 102, 241, 0.18);
-  --kn-focus:    rgba(129, 140, 248, 0.45);
+  --kn-hover:    rgba(255, 255, 255, 0.06);
+  --kn-active:   rgba(255, 255, 255, 0.12);
+  --kn-selected: rgba(252, 76, 1, 0.22);
+  --kn-focus:    rgba(255, 122, 61, 0.45);
 
   --kn-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --kn-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
-  --kn-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
-  --kn-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --kn-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
+  --kn-shadow-md: 0 6px 16px rgba(0, 0, 0, 0.5);
+  --kn-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
   --kn-shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.65);
-  --kn-shadow-focus: 0 0 0 3px rgba(129, 140, 248, 0.35);
+  --kn-shadow-focus: 0 0 0 3px rgba(255, 122, 61, 0.35);
 
-  --kn-glass-bg: rgba(28, 30, 38, 0.55);
-  --kn-glass-border: rgba(255, 255, 255, 0.06);
+  --kn-glass-bg: rgba(38, 38, 38, 0.55);
+  --kn-glass-border: rgba(255, 255, 255, 0.08);
 }

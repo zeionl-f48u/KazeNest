@@ -124,6 +124,11 @@ node scripts/add-rare-ui.mjs folder-component
 
 Dialog 与 Dropdown 的进出场也已改由 Motion 弹簧驱动（尊重 `prefers-reduced-motion`）。
 
+全局调色板已对齐 Rare UI 原生：主橙 `#FC4C01`、中性面 `#F4F4F9`（亮）/ `#262626`（暗）、
+弱文字 `#868593`、状态色用 iOS 体系（`#FF3B30` / `#FF9500` / `#34C759` / `#50B1FD` / `#BF5AF2`）。
+Rare 组件的 shadcn 语义类（`bg-background` / `text-foreground` / `border-border` / `ring-ring`）
+在 `src/styles/tailwind.css` 的 `@theme inline` 里桥接到 `--kn-*` token，亮暗主题即时生效。
+
 组件清单见 [rareui.com/components](https://www.rareui.com/components)。`gooey-nav` 已剥离 Next.js 依赖，`emoji-reaction` 已改本地表情字形（离线可用、不受 CSP 限制）。
 
 ## 路线图
