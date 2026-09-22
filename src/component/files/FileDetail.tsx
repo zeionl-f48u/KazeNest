@@ -6,6 +6,8 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@/component/common/Icon'
+import DeleteButton from '@/component/ui/delete-button'
+import { showDemo } from '@/utils'
 import { kindMeta } from './types'
 import type { ManagedFile } from './types'
 import './files.css'
@@ -301,6 +303,27 @@ export function FileDetail({
           <Icon name="sparkles" size={12} />
           <span>{aiBusy ? 'AI 批注生成中…' : 'AI 一键批注'}</span>
         </button>
+      </div>
+
+      {/* Rare UI：删除按钮（点击两次确认，带删除动画） */}
+      <div className="fd-section fd-danger">
+        <div className="fd-section-title">
+          <Icon name="trash" size={12} />
+          <span>危险操作</span>
+        </div>
+        <div className="fd-danger-row">
+          <span className="fd-danger-desc">删除操作演示（不会真的删除文件）</span>
+          <DeleteButton
+            onConfirm={() =>
+              showDemo({
+                title: '删除（演示）',
+                desc: `演示模式：「${file.name}」不会被真的删除`,
+                icon: 'trash',
+              })
+            }
+            onCancel={() => {}}
+          />
+        </div>
       </div>
 
       <p className="fd-hint">标签与注释会被统一搜索命中（演示：即时保存在当前会话）</p>

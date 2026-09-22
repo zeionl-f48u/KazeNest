@@ -108,19 +108,31 @@ node scripts/add-rare-ui.mjs fluid-orb
 node scripts/add-rare-ui.mjs folder-component
 ```
 
-已接入并使用：
+注册表组件已全部接入（21/21，`utils` 由本项目 `@/lib/utils` 提供）：
 
 | 组件 | 落点 |
 |---|---|
 | `fluid-orb` | 首页欢迎区 / AI 空态的流体球装饰背景 |
 | `gravity-letters` | 首页「点按掉落字母」互动条 |
 | `animated-counter` | 首页统计数字滚动 |
-| `folder-component` | 文件管理「打开文件夹」空态的可开合文件夹动画 |
-| `scroll-progress` | 内容区顶部滚动进度条（全局） |
+| `gooey-nav` | 首页「快速开始 / 最近打开」果冻滑动导航（滚动定位） |
+| `scroll-progress` | 内容区滚动进度条（全局，跟随主滚动容器） |
 | `notification-bell` | 顶栏通知铃（未读徽标 + 摇铃动画） |
-| `gooey-nav` | 首页「快速开始 / 最近打开」果冻滑动导航（点击滚动定位） |
-| `task-list` | AI 思考过程里的步骤清单（完成打勾 + 划线动画） |
-| `emoji-reaction` | AI 消息操作区的表情反馈（弹出 + 粒子爆发；已本地化表情字形） |
+| `task-list` | AI 思考过程的步骤清单（打勾 + 划线动画） |
+| `emoji-reaction` | AI 消息操作区表情反馈（已本地化表情字形，离线可用） |
+| `folder-component` | 文件管理「打开文件夹」空态的可开合文件夹动画 |
+| `delete-button` | 文件详情「危险操作」删除按钮（二次确认 + 删除动画） |
+| `hook-sidebar` | 文件管理左侧「快捷视图」导航轨 |
+| `bounce-sidebar` | 设置页左侧分区导航（弹性滑动 + 圆点） |
+| `otp-input` | 设置页「Rare 组件演示」两步验证码输入 |
+| `duration-picker` | 设置页「Rare 组件演示」AI 最长思考时长（时/分滚轮） |
+| `code-block` | 设置页「Rare 组件演示」代码块（Prism 高亮 + 复制） |
+| `proximity-sidebar` | 插件市场左侧贴近式分区导航（随滚动高亮） |
+| `step-player` | 插件市场「安装流程」自动播放步骤条 |
+| `github-activity` | 账户页「已登录」贡献热力图（演示数据） |
+| `matrix-orb` | 账户页同步状态球 |
+| `grid-reveal` | 账户页工作区封面揭示（data URI 封面，滚动触发） |
+| `family-drawer` | 账户页家庭钱包恢复抽屉（vaul 抽屉，多视图切换） |
 
 Dialog 与 Dropdown 的进出场也已改由 Motion 弹簧驱动（尊重 `prefers-reduced-motion`）。
 
@@ -140,7 +152,7 @@ Dialog 与 Dropdown 的进出场也已改由 Motion 弹簧驱动（尊重 `prefe
   Rare 组件 shadcn 语义类（`bg-background` 等）在 `src/styles/tailwind.css` 的
   `@theme inline` 桥接到 `--kn-*`，亮暗主题即时生效
 
-组件清单见 [rareui.com/components](https://www.rareui.com/components)。`gooey-nav` 已剥离 Next.js 依赖，`emoji-reaction` 已改本地表情字形（离线可用、不受 CSP 限制）。
+组件清单见 [rareui.com/components](https://www.rareui.com/components)。为适配 Vite/Tauri 已做的最小改动：`gooey-nav` / `bounce-sidebar` / `hook-sidebar` 剥离 Next.js 依赖（Link/usePathname → 受控值），`emoji-reaction` 改用本地表情字形（离线可用、不受 CSP 限制），`code-block` 改用自有 `Icon`（去掉 lucide-react）。依赖新增：`motion`、`vaul`、`react-use-measure`、`figma-squircle`、`flubber`、`prism-react-renderer`（类型声明见 `src/types/flubber.d.ts`）。
 
 ## 路线图
 

@@ -202,3 +202,35 @@
   font-size: var(--kn-text-2xs);
   color: var(--kn-fg-subtle);
 }
+
+/* ==================== Rare 组件演示：分区导航 + 演示区 ==================== */
+.st-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+.st-nav {
+  position: sticky;
+  top: 4px;
+  width: 150px;
+  flex-shrink: 0;
+  padding: 6px;
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-2xl);
+  corner-shape: squircle;
+  background: var(--kn-bg-sunken);
+}
+.st-code {
+  margin-top: 14px;
+  border-radius: var(--kn-radius-xl);
+  overflow: hidden;
+}
+.st-layout .st {
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 860px) {
+  .st-nav {
+    display: none;
+  }
+}

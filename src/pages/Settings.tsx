@@ -3,15 +3,27 @@
  * - 分区：外观 / 编辑器 / 快捷键 / 关于
  * - 主题切换为真实能力（useTheme）；其余控件提供视觉反馈并标注"演示"
  */
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Icon } from '@/component/common/Icon'
 import { Button } from '@/component/ui/button'
 import { Switch, Slider, Segmented } from '@/component/ui/controls'
 import { Kbd } from '@/component/ui/primitives'
+import { BounceSidebar } from '@/component/ui/bounce-sidebar'
+import OtpInput from '@/component/ui/otp-input'
+import DurationPicker from '@/component/ui/duration-picker'
+import type { DurationValue } from '@/component/ui/duration-picker'
+import CodeBlock from '@/component/ui/code-block'
 import { useTheme } from '@/hooks/useTheme'
 import type { ThemeMode } from '@/hooks/useTheme'
 import { showDemo } from '@/utils'
 import './settings.css'
+
+const DEMO_CODE = `// Rare UI · CodeBlock 演示
+export function greet(name: string) {
+  const cloud = name ?? 'KazeNest'
+  return \`你好，\${cloud}！\`
+}
+`
 
 const SHORTCUTS: { keys: string; label: string }[] = [
   { keys: 'Ctrl+K', label: '命令中心搜索' },
@@ -36,8 +48,41 @@ export function Settings() {
   const [minimap, setMinimap] = useState(false)
   const [bracket, setBracket] = useState(true)
 
+  /* Rare 组件演示状态 */
+  const [otp, setOtp] = useState('')
+  const [duration, setDuration] = useState<DurationValue>({ hours: 0, minutes: 30 })
+
+  /* 分区导航（BounceSidebar → 滚动定位） */
+  const appearanceRef = useRef<HTMLElement | null>(null)
+  const editorRef = useRef<HTMLElement | null>(null)
+  const keysRef = useRef<HTMLElement | null>(null)
+  const demoRef = useRef<HTMLElement | null>(null)
+  const aboutRef = useRef<HTMLElement | null>(null)
+  const sectionRefs = [appearanceRef, editorRef, keysRef, demoRef, aboutRef]
+  const [navIndex, setNavIndex] = useState(0)
+
   return (
-    <div className="st">
+    <div className="st-layout">
+      {/* Rare UI：弹性侧边分区导航 */}
+      <div className="st-nav">
+        <BounceSidebar
+          items={[
+            { label: '外观' },
+            { label: '编辑器' },
+            { label: '快捷键' },
+            { label: 'Rare 演示' },
+            { label: '关于' },
+          ]}
+          value={navIndex}
+          onChange={(i: number) => {
+            setNavIndex(i)
+            sectionRefs[i]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }}
+          dotColor="var(--kn-brand-500)"
+        />
+      </div>
+
+      <div className="st">
       <header className="st-head">
         <h1 className="st-title">
           <Icon name="cog" size={20} className="st-title-icon" />
@@ -47,7 +92,7 @@ export function Settings() {
       </header>
 
       {/* ==================== 外观 ==================== */}
-      <section className="st-section">
+      <section className="st-section" ref={appearanceRef}>
         <div className="st-section-head">
           <Icon name="palette" size={14} />
           <span>外观</span>
@@ -107,7 +152,7 @@ export function Settings() {
       </section>
 
       {/* ==================== 编辑器 ==================== */}
-      <section className="st-section">
+      <section className="st-section" ref={editorRef}>
         <div className="st-section-head">
           <Icon name="file-text" size={14} />
           <span>编辑器</span>
@@ -172,7 +217,7 @@ export function Settings() {
       </section>
 
       {/* ==================== 快捷键 ==================== */}
-      <section className="st-section">
+      <section className="st-section" ref={keysRef}>
         <div className="st-section-head">
           <Icon name="keyboard" size={14} />
           <span>快捷键</span>
@@ -192,8 +237,51 @@ export function Settings() {
         </div>
       </section>
 
+      {/* ==================== Rare 组件演示 ==================== */}
+      <section className="st-section" ref={demoRef}>
+        <div className="st-section-head">
+          <Icon name="sparkles" size={14} />
+          <span>Rare 组件演示</span>
+          <span className="st-demo-tag">演示</span>
+        </div>
+        <div className="st-rows">
+          <div className="st-row">
+            <div className="st-row-main">
+              <span className="st-row-title">两步验证码</span>
+              <span className="st-row-desc">OTP Input：6 位验证码输入框</span>
+            </div>
+            <OtpInput
+              length={6}
+              value={otp}
+              onChange={setOtp}
+              onComplete={(v) =>
+                showDemo({ title: '验证码已输入', desc: `演示模式：收到 ${v}`, icon: 'shield' })
+              }
+            />
+          </div>
+
+          <div className="st-row">
+            <div className="st-row-main">
+              <span className="st-row-title">AI 最长思考时长</span>
+              <span className="st-row-desc">Duration Picker：小时 / 分钟滚轮</span>
+            </div>
+            <DurationPicker
+              value={duration}
+              onChange={setDuration}
+              maxHours={9}
+              hoursLabel="时"
+              minutesLabel="分"
+            />
+          </div>
+        </div>
+
+        <div className="st-code">
+          <CodeBlock code={DEMO_CODE} language="tsx" accent="#fc4c01" />
+        </div>
+      </section>
+
       {/* ==================== 关于 ==================== */}
-      <section className="st-section">
+      <section className="st-section" ref={aboutRef}>
         <div className="st-section-head">
           <Icon name="cloud" size={14} />
           <span>关于</span>
@@ -225,6 +313,7 @@ export function Settings() {
       </section>
 
       <p className="st-hint">演示模式：除主题外，设置项暂未持久化（接后端设置服务后生效）</p>
+      </div>
     </div>
   )
 }

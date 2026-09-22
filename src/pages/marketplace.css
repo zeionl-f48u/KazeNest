@@ -259,3 +259,30 @@
   font-size: var(--kn-text-2xs);
   color: var(--kn-fg-subtle);
 }
+
+/* ==================== Rare 组件演示：贴近式侧栏 + 安装流程 ==================== */
+.mk.mk-with-rail {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 20px;
+}
+.mk-rail {
+  flex-shrink: 0;
+  align-self: stretch;
+  min-width: 72px;
+}
+.mk-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+.mk-steps {
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-2xl);
+  corner-shape: squircle;
+  background: var(--kn-bg-sunken);
+  padding: 14px 16px;
+  overflow: hidden;
+}

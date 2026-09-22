@@ -267,3 +267,54 @@
   font-size: var(--kn-text-2xs);
   color: var(--kn-fg-subtle);
 }
+
+/* ==================== Rare 组件演示区 ==================== */
+.ac-demo {
+  border: 1px solid var(--kn-border);
+  border-radius: var(--kn-radius-2xl);
+  corner-shape: squircle;
+  background: var(--kn-bg-sunken);
+  padding: 14px 16px 16px;
+}
+.ac-demo-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: var(--kn-text-sm);
+  font-weight: 600;
+  color: var(--kn-fg-muted);
+}
+.ac-demo-tag {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: var(--kn-radius-pill);
+  background: var(--kn-selected);
+  color: var(--kn-selected-fg);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.ac-demo-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) 1fr;
+  gap: 12px;
+}
+@media (max-width: 720px) {
+  .ac-demo-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.ac-demo-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+}
+.ac-drawer-stage {
+  position: relative;
+  min-height: 132px;
+  border-radius: var(--kn-radius-xl);
+  background:
+    radial-gradient(240px 120px at 50% 0%, color-mix(in srgb, var(--kn-brand-500) 10%, transparent), transparent 70%);
+}

@@ -11,6 +11,8 @@ import { Button } from '@/component/ui/button'
 import { Badge } from '@/component/ui/primitives'
 import { plugins, pluginCategories } from '@/data/plugins'
 import type { PluginDef } from '@/data/plugins'
+import ProximitySidebar from '@/component/ui/proximity-sidebar'
+import StepPlayer from '@/component/ui/step-player'
 import { showDemo } from '@/utils'
 import './marketplace.css'
 
@@ -50,8 +52,20 @@ export function Marketplace() {
   }
 
   return (
-    <div className="mk">
-      <header className="mk-head">
+    <div className="mk mk-with-rail">
+      {/* Rare UI：贴近式侧边导航（滚动联动高亮） */}
+      <ProximitySidebar
+        className="mk-rail"
+        sections={[
+          { id: 'mk-head', label: '插件市场', kind: 'title' },
+          { id: 'mk-tools', label: '搜索与排序', kind: 'section' },
+          { id: 'mk-steps', label: '安装流程', kind: 'section' },
+          { id: 'mk-grid', label: '插件列表', kind: 'section' },
+        ]}
+      />
+
+      <div className="mk-main">
+      <header className="mk-head" id="mk-head">
         <h1 className="mk-title">
           <Icon name="extensions" size={20} className="mk-title-icon" />
           插件市场
@@ -60,7 +74,7 @@ export function Marketplace() {
       </header>
 
       {/* 工具行 */}
-      <div className="mk-tools">
+      <div className="mk-tools" id="mk-tools">
         <div className="mk-search">
           <Icon name="search" size={14} className="mk-search-icon" />
           <input
@@ -89,6 +103,22 @@ export function Marketplace() {
         </select>
       </div>
 
+      {/* Rare UI：安装流程演示（自动播放的 StepPlayer） */}
+      <div className="mk-steps" id="mk-steps">
+        <StepPlayer
+          steps={[
+            { label: '搜索插件', duration: 1.3 },
+            { label: '一键安装', duration: 1.3 },
+            { label: '授权权限', duration: 1.3 },
+            { label: '就绪可用', duration: 1.3 },
+          ]}
+          defaultPlaying
+          loop
+          showControl
+          controlPosition="right"
+        />
+      </div>
+
       {/* 分类筛选 */}
       <div className="mk-cats">
         {pluginCategories.map((c) => (
@@ -111,7 +141,7 @@ export function Marketplace() {
           <span className="mk-empty-hint">试试其他关键词或切换分类</span>
         </div>
       ) : (
-        <div className="mk-grid">
+        <div className="mk-grid" id="mk-grid">
           {filtered.map((p, i) => (
             <motion.article
               key={p.id}
@@ -165,6 +195,7 @@ export function Marketplace() {
       )}
 
       <p className="mk-hint">演示模式：插件数据为内置示例，安装与运行尚未接入</p>
+      </div>
     </div>
   )
 }
