@@ -784,6 +784,7 @@
   flex: 1;
   background: transparent;
   overflow: hidden;
+  border-radius: inherit; /* 圆角裁切由面板窗口块继承 */
 }
 .aip-freeze {
   display: flex;

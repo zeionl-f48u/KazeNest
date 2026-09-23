@@ -177,7 +177,7 @@ body.ai-panel-resizing .ai-panel-wrap {
   position: relative;
   flex-shrink: 0;
   display: flex;
-  overflow: hidden;
+  overflow: visible; /* 拖拽线要画到与主内容块的间隙中间 */
   background: var(--kn-bg-elev);
   border: 1px solid var(--kn-border);
   border-radius: var(--kn-shell-radius);
@@ -187,4 +187,25 @@ body.ai-panel-resizing .ai-panel-wrap {
     width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.25s var(--kn-ease-out);
   will-change: width;
+}
+/* 调整宽度的线：居中在 8px 间隙里（gap/2 = 4px，线宽 2px → left = -5px） */
+.ai-panel-wrap::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--kn-frame-pad) / -2 - 1px);
+  width: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background var(--kn-dur-fast);
+  z-index: 30;
+}
+.ai-panel-wrap:has(.aip-resize:hover)::before,
+.ai-panel-wrap:has(.aip-resize:active)::before {
+  background: color-mix(in srgb, var(--kn-brand-500) 45%, transparent);
+}
+/* 展开（AI 视图）与离开时没有间隙，不显示拖拽线 */
+.ai-panel-wrap.is-expanded::before {
+  display: none;
 }
