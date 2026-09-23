@@ -5,6 +5,7 @@ import './ai.css'
 
 export { AiWorkspace } from './AiWorkspace'
 export { AiPanel } from './AiPanel'
+export { AiPanelDivider } from './AiPanelDivider'
 export { AiMessageView } from './AiMessageView'
 export { AiInputBar } from './AiInputBar'
 export { renderMessage } from './render'

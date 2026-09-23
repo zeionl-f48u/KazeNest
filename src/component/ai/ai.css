@@ -800,21 +800,6 @@
   opacity: 0;
   transition: opacity 0.19s var(--kn-ease-out) 0.24s;
 }
-.aip-resize {
-  position: absolute;
-  left: -2px;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-  z-index: 6;
-  cursor: col-resize;
-  transition: background var(--kn-dur-fast);
-}
-.aip-resize:hover,
-.aip-resize:active {
-  background: color-mix(in srgb, var(--kn-brand-500) 45%, transparent);
-}
-
 /* ==================== AI 侧栏 AISidebar ==================== */
 .ais {
   display: flex;

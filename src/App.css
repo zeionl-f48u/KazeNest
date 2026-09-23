@@ -62,7 +62,8 @@ body {
   min-width: 0;
   display: flex;
   align-items: stretch;
-  gap: var(--kn-frame-pad);
+  /* 3px + 分隔线 2px + 3px = 8px（线居中在间隙） */
+  gap: 3px;
   overflow: hidden;
 }
 /* 展开（AI 视图）：AI 面板占满主区域，主内容块让位收缩 */
@@ -177,7 +178,7 @@ body.ai-panel-resizing .ai-panel-wrap {
   position: relative;
   flex-shrink: 0;
   display: flex;
-  overflow: visible; /* 拖拽线要画到与主内容块的间隙中间 */
+  overflow: hidden;
   background: var(--kn-bg-elev);
   border: 1px solid var(--kn-border);
   border-radius: var(--kn-shell-radius);
@@ -188,24 +189,30 @@ body.ai-panel-resizing .ai-panel-wrap {
     opacity 0.25s var(--kn-ease-out);
   will-change: width;
 }
-/* 调整宽度的线：居中在 8px 间隙里（gap/2 = 4px，线宽 2px → left = -5px） */
-.ai-panel-wrap::before {
+/* 独立分隔线：常驻显示在区块间隙正中，可拖拽 */
+.aip-divider {
+  position: relative;
+  flex-shrink: 0;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--kn-border);
+  cursor: col-resize;
+  transition: background var(--kn-dur-fast);
+}
+/* 扩大拖拽热区（视觉线仍是 2px） */
+.aip-divider::after {
   content: '';
   position: absolute;
   top: 0;
   bottom: 0;
-  left: calc(var(--kn-frame-pad) / -2 - 1px);
-  width: 2px;
-  border-radius: 2px;
-  background: transparent;
-  transition: background var(--kn-dur-fast);
-  z-index: 30;
+  left: -4px;
+  right: -4px;
 }
-.ai-panel-wrap:has(.aip-resize:hover)::before,
-.ai-panel-wrap:has(.aip-resize:active)::before {
-  background: color-mix(in srgb, var(--kn-brand-500) 45%, transparent);
+.aip-divider:hover,
+.aip-divider:active,
+body.ai-panel-resizing .aip-divider {
+  background: color-mix(in srgb, var(--kn-brand-500) 60%, transparent);
 }
-/* 展开（AI 视图）与离开时没有间隙，不显示拖拽线 */
-.ai-panel-wrap.is-expanded::before {
-  display: none;
+.aip-divider.is-idle {
+  pointer-events: none;
 }

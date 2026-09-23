@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Titlebar } from '@/component/titlebar/Titlebar'
 import { TitlebarChrome } from '@/component/titlebar/TitlebarChrome'
 import { ActivityBar, SideBar } from '@/component/sidebar'
-import { AiPanel } from '@/component/ai'
+import { AiPanel, AiPanelDivider } from '@/component/ai'
 import { DemoDialog } from '@/component/common/DemoDialog'
 import { useAppSession } from '@/hooks/useAppSession'
 import {
@@ -259,18 +259,25 @@ export default function App() {
             </main>
           </div>
 
+          {panelRendered && !panelExpanded && (
+            <AiPanelDivider
+              idle={!panel.open}
+              width={panel.width}
+              onWidthChange={setAiPanelWidth}
+              onClose={hideAiPanel}
+              onResetWidth={resetAiPanelWidth}
+            />
+          )}
+
           {panelRendered && (
             <div
               className={cn('ai-panel-wrap', panelExpanded && 'is-expanded')}
               style={{ width: panelWidthAnim, opacity: panel.open ? 1 : 0 }}
             >
               <AiPanel
-                width={panel.width}
                 expanded={panelExpanded}
                 onExpand={() => window.dispatchEvent(new CustomEvent('kn:navigate', { detail: 'ai' }))}
                 onClose={hideAiPanel}
-                onWidthChange={setAiPanelWidth}
-                onResetWidth={resetAiPanelWidth}
               />
             </div>
           )}

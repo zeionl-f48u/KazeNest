@@ -6,21 +6,17 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { AiWorkspace } from './AiWorkspace'
-import { AI_PANEL_SNAP_CLOSE } from '@/hooks/useAiPanel'
 import './ai.css'
 
 export interface AiPanelProps {
-  width: number
   expanded: boolean
   onExpand: () => void
   onClose: () => void
-  onWidthChange: (width: number) => void
-  onResetWidth: () => void
 }
 
 const RETRACT_MS = 430
 
-export function AiPanel({ width, expanded, onExpand, onClose, onWidthChange, onResetWidth }: AiPanelProps) {
+export function AiPanel({ expanded, onExpand, onClose }: AiPanelProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const [variant, setVariant] = useState<'page' | 'panel'>(expanded ? 'page' : 'panel')
   const [retracting, setRetracting] = useState(false)
@@ -48,47 +44,11 @@ export function AiPanel({ width, expanded, onExpand, onClose, onWidthChange, onR
 
   useEffect(() => () => window.clearTimeout(settleTimer.current), [])
 
-  /* ==================== 拖拽调宽 ==================== */
-
-  const onResizeStart = (e: React.MouseEvent) => {
-    if (expanded || retracting) return
-    e.preventDefault()
-    const startX = e.clientX
-    const startWidth = width
-    let lastWidth = startWidth
-
-    const onMove = (ev: MouseEvent) => {
-      lastWidth = startWidth + (startX - ev.clientX)
-      onWidthChange(lastWidth)
-    }
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
-      document.body.classList.remove('ai-panel-resizing')
-      if (lastWidth <= AI_PANEL_SNAP_CLOSE) onClose()
-    }
-
-    document.body.classList.add('ai-panel-resizing')
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
-  }
-
   return (
     <div
       ref={rootRef}
       className={`aip${expanded ? ' is-expanded' : ''}${retracting ? ' is-retracting' : ''}`}
     >
-      {!expanded && !retracting && (
-        <div
-          className="aip-resize"
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="调整面板宽度"
-          onMouseDown={onResizeStart}
-          onDoubleClick={onResetWidth}
-        />
-      )}
-
       <div
         className="aip-freeze"
         style={retracting ? { width: `${freezeWidth}px` } : undefined}
