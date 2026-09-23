@@ -214,7 +214,15 @@ body.ai-panel-resizing .ai-panel-wrap {
 .gap-divider:hover,
 .gap-divider:active,
 .gap-divider.is-active {
-  background: color-mix(in srgb, var(--kn-brand-500) 60%, transparent);
+  /* 两端渐隐 + 品牌色，避免生硬的一条实线 */
+  background-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    color-mix(in srgb, var(--kn-brand-500) 55%, transparent) 12%,
+    color-mix(in srgb, var(--kn-brand-500) 55%, transparent) 88%,
+    transparent 100%
+  );
+  background-color: transparent;
 }
 .gap-divider.is-idle {
   pointer-events: none;
