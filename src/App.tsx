@@ -42,17 +42,14 @@ export default function App() {
 
   /* ==================== 舞台宽度（面板 left 换算） ==================== */
 
-  const stageRef = useRef<HTMLDivElement>(null)
+  const mainAreaRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLElement>(null)
-  const [stageWidth, setStageWidth] = useState(() => window.innerWidth)
-
-  /* 主面板内边距（与 App.css 的 --kn-shell-pad 一致；面板按 padding box 定位） */
-  const SHELL_PAD = 16
+  const [mainAreaWidth, setMainAreaWidth] = useState(() => window.innerWidth)
 
   useEffect(() => {
-    const el = stageRef.current
+    const el = mainAreaRef.current
     if (!el) return
-    const measure = () => setStageWidth(el.clientWidth)
+    const measure = () => setMainAreaWidth(el.clientWidth)
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(el)
@@ -162,12 +159,9 @@ export default function App() {
   const menus = isMac ? [] : (active.menus ?? topMenus)
   const isFlush = activeView === 'editor' || activeView === 'ai' || activeView === 'browser'
 
-  /* AI 面板：展开（AI 视图，铺满） / 停靠（其它视图，右侧占位） */
+  /* AI 面板：展开（AI 视图，占满主区域） / 停靠（其它视图，独立一列） */
   const panelExpanded = panel.open && activeView === 'ai'
-  const panelDocked = panel.open && !panelExpanded
-  const panelLeft = panelExpanded
-    ? SHELL_PAD
-    : Math.max(SHELL_PAD, stageWidth - panel.width - SHELL_PAD)
+  const panelTargetWidth = panelExpanded ? mainAreaWidth : panel.width
 
   /* ==================== 离场动画（存在感状态） ==================== */
   /* React 条件渲染默认瞬间卸载；这里保留元素至离场动画播完再卸载 */
@@ -190,23 +184,28 @@ export default function App() {
     return () => window.clearTimeout(t)
   }, [sideBarVisible, sideBarRendered])
 
+  /* 独立列：宽度做 0 ↔ 目标宽 的过渡（开合与展开/停靠切换都走同一动画） */
   const [panelRendered, setPanelRendered] = useState(panel.open)
-  const [panelClosing, setPanelClosing] = useState(false)
+  const [panelWidthAnim, setPanelWidthAnim] = useState(0)
 
   useEffect(() => {
+    let raf = 0
+    let timer = 0
     if (panel.open) {
       setPanelRendered(true)
-      setPanelClosing(false)
-      return
+      /* 下一帧再给目标宽度，保证从 0 开始有过渡 */
+      raf = window.requestAnimationFrame(() => setPanelWidthAnim(panelTargetWidth))
+    } else {
+      setPanelWidthAnim(0)
+      if (panelRendered) {
+        timer = window.setTimeout(() => setPanelRendered(false), 430)
+      }
     }
-    if (!panelRendered) return
-    setPanelClosing(true)
-    const t = window.setTimeout(() => {
-      setPanelRendered(false)
-      setPanelClosing(false)
-    }, 240)
-    return () => window.clearTimeout(t)
-  }, [panel.open, panelRendered])
+    return () => {
+      window.cancelAnimationFrame(raf)
+      window.clearTimeout(timer)
+    }
+  }, [panel.open, panelTargetWidth, panelRendered])
 
   return (
     <div className="app-shell">
@@ -250,22 +249,20 @@ export default function App() {
           </div>
         )}
 
-        {/* 内容舞台：主内容 + AI 右侧面板（flush 视图铺满主区块，不再套内层框） */}
-        <div className={cn('app-stage', isFlush && 'is-flush')} ref={stageRef}>
-          <main
-            ref={contentRef}
-            className={cn('app-content', isFlush && 'is-flush')}
-            style={{ marginRight: panelDocked ? `${panel.width + 8}px` : 0 }}
-          >
-            <div key={activeView} className="view-anim">
-              <Page {...(active.comingSoon ?? {})} />
-            </div>
-          </main>
+        {/* 主区域：主内容块 + AI 面板块（三个区块并列，互不重叠） */}
+        <div className={cn('app-main-area', panelExpanded && 'is-expanded')} ref={mainAreaRef}>
+          <div className={cn('app-stage', isFlush && 'is-flush', panelExpanded && 'is-expanded')}>
+            <main ref={contentRef} className={cn('app-content', isFlush && 'is-flush')}>
+              <div key={activeView} className="view-anim">
+                <Page {...(active.comingSoon ?? {})} />
+              </div>
+            </main>
+          </div>
 
           {panelRendered && (
             <div
-              className={`ai-panel-wrap${panelClosing ? ' is-closing' : ''}`}
-              style={{ left: `${panelLeft}px` }}
+              className={cn('ai-panel-wrap', panelExpanded && 'is-expanded')}
+              style={{ width: panelWidthAnim, opacity: panel.open ? 1 : 0 }}
             >
               <AiPanel
                 width={panel.width}

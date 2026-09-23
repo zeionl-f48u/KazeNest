@@ -55,6 +55,21 @@ body {
   overflow: hidden;
 }
 
+/* ============ 主区域：主内容块 + AI 面板块（并列，不重叠） ============ */
+.app-main-area {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  gap: var(--kn-frame-pad);
+  overflow: hidden;
+}
+/* 展开（AI 视图）：AI 面板占满主区域，主内容块让位收缩 */
+.app-main-area.is-expanded {
+  gap: 0;
+}
+
 /* ============ 内容舞台 = 官网的主 card 面板 ============ */
 .app-stage {
   position: relative;
@@ -85,6 +100,12 @@ body {
 .app-stage.is-flush {
   padding: 0;
 }
+/* AI 视图展开：主内容块收缩为 0，让位给 AI 面板 */
+.app-stage.is-expanded {
+  flex: 0 0 0;
+  width: 0;
+  min-width: 0;
+}
 .app-content.is-flush {
   padding: 0;
   overflow: hidden;
@@ -93,7 +114,7 @@ body {
   corner-shape: squircle;
 }
 
-body.ai-panel-resizing .app-content {
+body.ai-panel-resizing .ai-panel-wrap {
   transition: none !important;
 }
 
@@ -151,33 +172,19 @@ body.ai-panel-resizing .app-content {
   pointer-events: none !important;
 }
 
-/* ============ AI 右侧面板（主面板内的浮动卡） ============ */
+/* ============ AI 面板：独立窗口块（与侧栏/主内容并列，宽度过渡） ============ */
 .ai-panel-wrap {
-  position: absolute;
-  top: var(--kn-shell-pad);
-  right: var(--kn-shell-pad);
-  bottom: var(--kn-shell-pad);
-  z-index: 20;
+  position: relative;
+  flex-shrink: 0;
   display: flex;
   overflow: hidden;
   background: var(--kn-bg-elev);
   border: 1px solid var(--kn-border);
-  border-radius: var(--kn-radius-2xl);
+  border-radius: var(--kn-shell-radius);
   corner-shape: squircle;
   box-shadow: var(--kn-shadow-sm);
-  transition: left 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: left;
-  animation: ai-panel-in 0.24s var(--kn-ease-out);
-}
-/* 关闭：向右滑出淡出（播完后由 App 卸载） */
-.ai-panel-wrap.is-closing {
-  animation: ai-panel-out 0.24s var(--kn-ease-out) forwards;
-  pointer-events: none;
-}
-@keyframes ai-panel-in {
-  from { opacity: 0; transform: translateX(24px); }
-  to   { opacity: 1; transform: none; }
-}
-@keyframes ai-panel-out {
-  to { opacity: 0; transform: translateX(24px); }
+  transition:
+    width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s var(--kn-ease-out);
+  will-change: width;
 }
