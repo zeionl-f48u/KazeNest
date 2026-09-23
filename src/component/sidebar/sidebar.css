@@ -107,7 +107,7 @@
   flex-direction: column;
   background: var(--sb-bg);
   color: var(--sb-fg);
-  border-radius: 0 var(--kn-sidebar-radius) var(--kn-sidebar-radius) 0;
+  border-radius: var(--kn-sidebar-radius);
   corner-shape: squircle;
   border-right: 0;
   flex-shrink: 0;

@@ -141,7 +141,7 @@ Dialog 与 Dropdown 的进出场也已改由 Motion 弹簧驱动（尊重 `prefe
 - **主题色**：主橙 `#fc4c01`；亮色 底 `#f4f4f9` / 卡片 `#ffffff` / 框 `#ececf3`；
   暗色 底 `#171717` / 卡片 `#262626` / 框 `#101010`；弱文字 `#868593`；
   状态色 iOS 体系；选中 = 橙底 10% + 橙字
-- **外壳**：官网 `DesktopShell` 同款区块布局（无外层留白；贴窗口边缘的角切平，仅保留块间 8px 间隙）、
+- **外壳**：官网 `DesktopShell` 同款 —— `p-2` 页面框（`--kn-frame-pad`）、
   `rounded-[45px]` squircle 主面板（`--kn-shell-radius`，bg = card）、
   独立 squircle 浮动侧栏（radius 23）、透明拖拽顶栏 + 玻璃胶囊控件（`--kn-glass-*`）
 - **导航**：官网 `SidebarNav` 语言 —— 选中项橙色虚线导航轨、分组标题 11px 大写 `tracking-[0.14em]`、

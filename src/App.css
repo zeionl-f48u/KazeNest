@@ -39,7 +39,7 @@ body {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 0;
+  padding: 0 var(--kn-frame-pad) var(--kn-frame-pad);
   box-sizing: border-box;
 }
 
@@ -64,7 +64,7 @@ body {
   align-items: stretch;
   overflow: hidden;
   background: var(--kn-bg);
-  border-radius: var(--kn-shell-radius) 0 0 var(--kn-shell-radius);
+  border-radius: var(--kn-shell-radius);
   padding: var(--kn-shell-pad);
   corner-shape: squircle;
 }
