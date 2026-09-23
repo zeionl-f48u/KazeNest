@@ -250,8 +250,8 @@ export default function App() {
           </div>
         )}
 
-        {/* 内容舞台：主内容 + AI 右侧面板 */}
-        <div className="app-stage" ref={stageRef}>
+        {/* 内容舞台：主内容 + AI 右侧面板（flush 视图铺满主区块，不再套内层框） */}
+        <div className={cn('app-stage', isFlush && 'is-flush')} ref={stageRef}>
           <main
             ref={contentRef}
             className={cn('app-content', isFlush && 'is-flush')}

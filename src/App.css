@@ -80,12 +80,15 @@ body {
   transition: margin-right 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* 全宽工具视图（编辑器/AI/浏览器）：主面板内再垫一层 background 面板（官网 preview 卡） */
+/* 全宽工具视图（编辑器/AI/浏览器）：直接铺满主区块，去掉内层白框 */
+.app-stage.is-flush {
+  padding: 0;
+}
 .app-content.is-flush {
   padding: 0;
   overflow: hidden;
   background: var(--kn-bg-elev);
-  border-radius: var(--kn-radius-2xl);
+  border-radius: 0;
   corner-shape: squircle;
 }
 
