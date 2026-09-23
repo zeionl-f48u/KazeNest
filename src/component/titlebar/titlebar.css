@@ -134,6 +134,7 @@
 .tb-slot--leading {
   flex-shrink: 1;
   min-width: 0;
+  overflow: hidden; /* 兜底：即使计量有误差也只裁切，不压到相邻控件 */
 }
 .tb-slot * {
   pointer-events: auto !important;

@@ -39,7 +39,13 @@ interface DropdownState {
 }
 
 const MORE_BTN_W = 28
-const BUFFER = 6
+/* 布局计量（必须与实际 DOM 一致，否则收缩时按钮会重叠）：
+   - 容器 gap-1 = 4px；工作区与菜单间的分隔线 = w-px + mx-1*2 = 9px
+   - SAFE 为取整/字体渲染误差预留 */
+const GAP = 4
+const DIVIDER_W = 9
+const WS_ICON_W = 33
+const SAFE = 10
 
 export function TitlebarChrome({
   part,
@@ -214,36 +220,37 @@ export function TitlebarChrome({
     }
 
     const wsW = wsWidthRef.current
-    const totalMenus = menuWidthsRef.current.reduce((a, b) => a + b, 0)
+    const menuWidths = menuWidthsRef.current
+
+    /* 某档收纳方案的实际占宽：count 个可见菜单（withMore = 是否显示 ⋯） */
+    const widthOf = (count: number, withMore: boolean, iconOnly: boolean) => {
+      const menusW = menuWidths.slice(0, count).reduce((a, b) => a + b, 0)
+      const elems = 2 + count + (withMore ? 1 : 0) // 工作区 + 分隔线 + 菜单 + 可选 ⋯
+      const used = iconOnly ? WS_ICON_W : wsW
+      return used + DIVIDER_W + menusW + (withMore ? MORE_BTN_W : 0) + Math.max(0, elems - 1) * GAP
+    }
 
     /* 1) 工作区：空间不足则图标化 */
-    const needIconOnly = wsW + totalMenus + BUFFER > avail
+    const needIconOnly = widthOf(menus.length, false, false) + SAFE > avail
     if (needIconOnly !== wsIconOnlyRef.current) {
       wsIconOnlyRef.current = needIconOnly
       setWsIconOnly(needIconOnly)
     }
 
     /* 上报自然宽度（供 Titlebar 的应用名收缩计算） */
-    const natural = (needIconOnly ? 33 : wsW) + totalMenus + MORE_BTN_W + (menus.length + 2) * 4 + 10
+    const natural = widthOf(menus.length, false, needIconOnly) + SAFE + 4
     setNaturalWidth((prev) => (Math.abs(prev - natural) > 1 ? natural : prev))
 
-    /* 2) 菜单：从右往左收进 ⋯ */
+    /* 2) 菜单：从右往左收进 ⋯（逐档试探，取能放下的最大档） */
     let nextCount = menus.length
-    const fitsAll = wsW + totalMenus + BUFFER <= avail
-    if (!fitsAll) {
-      const used = needIconOnly ? 33 : wsW
-      let acc = 0
-      let count = 0
-      for (const w of menuWidthsRef.current) {
-        if (used + acc + w + MORE_BTN_W + BUFFER <= avail) {
-          acc += w
-          count++
-        } else {
+    if (widthOf(menus.length, false, needIconOnly) + SAFE > avail) {
+      nextCount = 0
+      for (let k = menus.length - 1; k >= 0; k--) {
+        if (widthOf(k, true, needIconOnly) + SAFE <= avail) {
+          nextCount = k
           break
         }
       }
-      if (count < menus.length && used + acc + MORE_BTN_W + BUFFER > avail) count = 0
-      nextCount = count
     }
     if (nextCount !== visibleCountRef.current) {
       visibleCountRef.current = nextCount
@@ -262,6 +269,22 @@ export function TitlebarChrome({
       ro.disconnect()
       window.removeEventListener('resize', layout)
     }
+  }, [part, layout])
+
+  /* 字体（Inter）就绪后重测：回退字体的测量结果会偏小，导致收缩收纳不准 */
+  useEffect(() => {
+    if (part !== 'leading') return
+    const fonts = (document as Document & { fonts?: FontFaceSet }).fonts
+    void fonts?.ready.then(() => {
+      visibleCountRef.current = menusRef.current.length
+      wsIconOnlyRef.current = false
+      setVisibleCount(menusRef.current.length)
+      setWsIconOnly(false)
+      menuWidthsRef.current = []
+      wsWidthRef.current = 0
+      window.setTimeout(layout, 30)
+      window.setTimeout(layout, 140)
+    })
   }, [part, layout])
 
   /* 菜单内容变化（视图切换）时重置收纳状态再重排；身份变化不触发 */
