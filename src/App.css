@@ -62,9 +62,12 @@ body {
   min-width: 0;
   display: flex;
   align-items: stretch;
-  /* 3px + 分隔线 2px + 3px = 8px（线居中在间隙） */
+  /* 3px + 分隔线 2px + 3px = 8px；活动栏后再补 5px ≈ 原来的 8px 间距 */
   gap: 3px;
   overflow: hidden;
+}
+.app-body > .ab {
+  margin-right: 5px;
 }
 /* 展开（AI 视图）：AI 面板占满主区域，主内容块让位收缩 */
 .app-main-area.is-expanded {
@@ -189,18 +192,18 @@ body.ai-panel-resizing .ai-panel-wrap {
     opacity 0.25s var(--kn-ease-out);
   will-change: width;
 }
-/* 独立分隔线：常驻显示在区块间隙正中，可拖拽 */
-.aip-divider {
+/* 独立中线：位于区块间隙正中；默认不显示，鼠标碰到才显示 */
+.gap-divider {
   position: relative;
   flex-shrink: 0;
   width: 2px;
   border-radius: 2px;
-  background: var(--kn-border);
+  background: transparent;
   cursor: col-resize;
   transition: background var(--kn-dur-fast);
 }
 /* 扩大拖拽热区（视觉线仍是 2px） */
-.aip-divider::after {
+.gap-divider::after {
   content: '';
   position: absolute;
   top: 0;
@@ -208,11 +211,11 @@ body.ai-panel-resizing .ai-panel-wrap {
   left: -4px;
   right: -4px;
 }
-.aip-divider:hover,
-.aip-divider:active,
-body.ai-panel-resizing .aip-divider {
+.gap-divider:hover,
+.gap-divider:active,
+.gap-divider.is-active {
   background: color-mix(in srgb, var(--kn-brand-500) 60%, transparent);
 }
-.aip-divider.is-idle {
+.gap-divider.is-idle {
   pointer-events: none;
 }

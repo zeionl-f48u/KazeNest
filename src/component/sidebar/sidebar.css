@@ -116,22 +116,6 @@
   -webkit-user-select: none;
   transition: width var(--sb-resize-transition, 0s);
 }
-.sb-resize {
-  position: absolute;
-  top: 0;
-  right: -3px;
-  width: 6px;
-  height: 100%;
-  cursor: col-resize;
-  z-index: 10;
-  transition: background var(--sb-transition-fast);
-}
-.sb-resize:hover {
-  background: color-mix(in srgb, var(--kn-brand-500) 25%, transparent);
-}
-.sb-resize:active {
-  background: color-mix(in srgb, var(--kn-brand-500) 40%, transparent);
-}
 .sb-titlebar {
   height: var(--sb-titlebar-height);
   flex-shrink: 0;

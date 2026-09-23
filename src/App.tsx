@@ -10,9 +10,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Titlebar } from '@/component/titlebar/Titlebar'
 import { TitlebarChrome } from '@/component/titlebar/TitlebarChrome'
 import { ActivityBar, SideBar } from '@/component/sidebar'
-import { AiPanel, AiPanelDivider } from '@/component/ai'
+import { AiPanel } from '@/component/ai'
 import { DemoDialog } from '@/component/common/DemoDialog'
+import { GapDivider } from '@/component/common/GapDivider'
 import { useAppSession } from '@/hooks/useAppSession'
+import { AI_PANEL_SNAP_CLOSE } from '@/hooks/useAiPanel'
+import { useSidebarWidth, clampWidth, SIDEBAR_SNAP_CLOSE } from '@/hooks/useSidebarWidth'
 import {
   useAiPanel,
   toggleAiPanel,
@@ -38,6 +41,7 @@ export default function App() {
   const [sessionReady, setSessionReady] = useState(false)
 
   const panel = useAiPanel()
+  const sidebarWidth = useSidebarWidth()
   const { restore, flush, update } = useAppSession()
 
   /* ==================== 舞台宽度（面板 left 换算） ==================== */
@@ -249,6 +253,26 @@ export default function App() {
           </div>
         )}
 
+        {/* 中线（左）：侧栏 ↔ 主内容，悬停显示、可拖拽调宽 */}
+        {sideBarRendered && (
+          <GapDivider
+            idle={sideBarClosing}
+            dir="right"
+            width={sidebarWidth.width}
+            clamp={clampWidth}
+            snapClose={SIDEBAR_SNAP_CLOSE}
+            onChange={sidebarWidth.setWidth}
+            onCommit={sidebarWidth.persist}
+            onSnapClose={() => {
+              setSideBarOpen(false)
+              sidebarWidth.resetToDefault()
+            }}
+            onReset={sidebarWidth.resetToDefault}
+            resizingClass="sb-resizing"
+            label="调整侧边栏宽度"
+          />
+        )}
+
         {/* 主区域：主内容块 + AI 面板块（三个区块并列，互不重叠） */}
         <div className={cn('app-main-area', panelExpanded && 'is-expanded')} ref={mainAreaRef}>
           <div className={cn('app-stage', isFlush && 'is-flush', panelExpanded && 'is-expanded')}>
@@ -260,12 +284,16 @@ export default function App() {
           </div>
 
           {panelRendered && !panelExpanded && (
-            <AiPanelDivider
+            <GapDivider
               idle={!panel.open}
+              dir="left"
               width={panel.width}
-              onWidthChange={setAiPanelWidth}
-              onClose={hideAiPanel}
-              onResetWidth={resetAiPanelWidth}
+              snapClose={AI_PANEL_SNAP_CLOSE}
+              onChange={setAiPanelWidth}
+              onSnapClose={hideAiPanel}
+              onReset={resetAiPanelWidth}
+              resizingClass="ai-panel-resizing"
+              label="调整 AI 面板宽度"
             />
           )}
 

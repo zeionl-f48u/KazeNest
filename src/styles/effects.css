@@ -68,10 +68,6 @@ body.ai-panel-resizing {
   user-select: none !important;
   -webkit-user-select: none !important;
 }
-body.ai-panel-resizing .app-content {
-  transition: none !important;
-}
-
 /* ---------- 全局滚动条美化 ---------- */
 * {
   scrollbar-width: thin;
