@@ -128,7 +128,7 @@ node scripts/add-rare-ui.mjs folder-component
 | `duration-picker` | 设置页「Rare 组件演示」AI 最长思考时长（时/分滚轮） |
 | `code-block` | 设置页「Rare 组件演示」代码块（Prism 高亮 + 复制） |
 | `proximity-sidebar` | 插件市场左侧贴近式分区导航（随滚动高亮） |
-| `step-player` | 插件市场「安装流程」自动播放步骤条 |
+| `step-player` | 插件市场安装流程：点插件「安装」后逐步演示（搜索→下载→校验→就绪，可播放/暂停/跳步，完成标记已安装） |
 | `github-activity` | 账户页「已登录」贡献热力图（演示数据） |
 | `matrix-orb` | 账户页同步状态球 |
 | `grid-reveal` | 账户页工作区封面揭示（data URI 封面，滚动触发） |

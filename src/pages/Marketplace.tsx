@@ -18,10 +18,29 @@ import './marketplace.css'
 
 type SortKey = 'popular' | 'rating' | 'name'
 
+/* 安装流程演示步骤（StepPlayer 驱动） */
+const INSTALL_STEPS = [
+  { label: '搜索插件', duration: 1 },
+  { label: '下载安装包', duration: 1.1 },
+  { label: '校验并注册', duration: 1.1 },
+  { label: '就绪可用', duration: 0.9 },
+]
+
 export function Marketplace() {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string>('全部')
   const [sort, setSort] = useState<SortKey>('popular')
+
+  /* 安装流程演示状态：StepPlayer 随安装动作推进 */
+  const [installingId, setInstallingId] = useState<string | null>(null)
+  const [installStep, setInstallStep] = useState(0)
+  const [installPlaying, setInstallPlaying] = useState(false)
+  const [installedIds, setInstalledIds] = useState<string[]>(
+    () => plugins.filter((p) => p.installed).map((p) => p.id)
+  )
+
+  const installing = plugins.find((p) => p.id === installingId) ?? null
+  const isInstalled = (p: PluginDef) => installedIds.includes(p.id)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -42,10 +61,30 @@ export function Marketplace() {
     return list
   }, [query, category, sort])
 
-  const onInstall = (p: PluginDef) => {
+  const startInstall = (p: PluginDef) => {
+    if (isInstalled(p)) {
+      showDemo({
+        title: `已安装：${p.name}`,
+        desc: '演示模式：插件安装与运行尚未接入',
+        icon: p.icon,
+        tint: p.color,
+      })
+      return
+    }
+    setInstallingId(p.id)
+    setInstallStep(0)
+    setInstallPlaying(true)
+  }
+
+  const finishInstall = () => {
+    setInstallPlaying(false)
+    const p = plugins.find((x) => x.id === installingId)
+    if (!p) return
+    setInstalledIds((ids) => (ids.includes(p.id) ? ids : [...ids, p.id]))
+    setInstallingId(null)
     showDemo({
-      title: p.installed ? `已安装：${p.name}` : `安装 ${p.name}`,
-      desc: '演示模式：插件安装与运行尚未接入',
+      title: `${p.name} 安装完成`,
+      desc: '演示模式：安装流程已跑完（未真正安装）',
       icon: p.icon,
       tint: p.color,
     })
@@ -103,19 +142,31 @@ export function Marketplace() {
         </select>
       </div>
 
-      {/* Rare UI：安装流程演示（自动播放的 StepPlayer） */}
+      {/* Rare UI：安装流程（点击插件「安装」后由 StepPlayer 逐步演示） */}
       <div className="mk-steps" id="mk-steps">
+        <div className="mk-steps-info">
+          <span className="mk-steps-title">
+            <Icon name="extensions" size={12} />
+            安装流程
+          </span>
+          <span className="mk-steps-desc">
+            {installing
+              ? `${installing.name} · 步骤 ${installStep + 1}/${INSTALL_STEPS.length} · ${
+                  INSTALL_STEPS[installStep]?.label ?? ''
+                }`
+              : '点击任意插件的「安装」，这里会演示安装进度'}
+          </span>
+        </div>
         <StepPlayer
-          steps={[
-            { label: '搜索插件', duration: 1.3 },
-            { label: '一键安装', duration: 1.3 },
-            { label: '授权权限', duration: 1.3 },
-            { label: '就绪可用', duration: 1.3 },
-          ]}
-          defaultPlaying
-          loop
+          steps={INSTALL_STEPS}
+          value={installStep}
+          onValueChange={setInstallStep}
+          playing={installPlaying}
+          onPlayingChange={setInstallPlaying}
+          onComplete={finishInstall}
+          seekable={!!installing}
           showControl
-          controlPosition="right"
+          controlPosition="left"
         />
       </div>
 
@@ -173,10 +224,16 @@ export function Marketplace() {
                 </span>
                 <Button
                   size="sm"
-                  variant={p.installed ? 'outline' : 'primary'}
-                  onClick={() => onInstall(p)}
+                  variant={isInstalled(p) ? 'outline' : 'primary'}
+                  disabled={installingId === p.id}
+                  onClick={() => startInstall(p)}
                 >
-                  {p.installed ? (
+                  {installingId === p.id ? (
+                    <>
+                      <Icon name="refresh" size={12} />
+                      安装中
+                    </>
+                  ) : isInstalled(p) ? (
                     <>
                       <Icon name="check" size={12} />
                       已安装
