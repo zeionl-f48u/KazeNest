@@ -34,8 +34,8 @@ export function Files() {
         />
       </aside>
 
-      <div className="fm-main">
-      <div className="fm-tabs">
+      <div className="fm-page">
+        <div className="fm-tabs">
         <button
           type="button"
           className={fm.space === 'folder' ? 'is-on' : ''}

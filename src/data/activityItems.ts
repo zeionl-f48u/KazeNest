@@ -19,8 +19,8 @@ export const activityItems = [
   { id: 'ai',          label: 'AI 助手',  icon: 'sparkles', badge: 2, hideTooltip: true },
   { id: 'browser',     label: '浏览器',   icon: 'globe' },
   { id: 'marketplace', label: '插件市场', icon: 'extensions' },
-  { id: 'settings',    label: '设置',     icon: 'cog', position: 'bottom' },
   { id: 'account',     label: '账户',     icon: 'user', position: 'bottom' },
+  { id: 'settings',    label: '设置',     icon: 'cog', position: 'bottom' },
 ] as const satisfies ActivityItem[]
 
 /**
