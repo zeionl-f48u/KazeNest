@@ -116,7 +116,7 @@ node scripts/add-rare-ui.mjs folder-component
 | `gravity-letters` | 首页「点按掉落字母」互动条 |
 | `animated-counter` | 首页统计数字滚动 |
 | `gooey-nav` | 首页「快速开始 / 最近打开」果冻滑动导航（滚动定位） |
-| `scroll-progress` | 内容区滚动进度条（全局，跟随主滚动容器） |
+| `scroll-progress` | 内容区滚动进度（按需求未挂载；组件保留在 `ui/`，需要时再启用） |
 | `notification-bell` | 顶栏通知铃（未读徽标 + 摇铃动画） |
 | `task-list` | AI 思考过程的步骤清单（打勾 + 划线动画） |
 | `emoji-reaction` | AI 消息操作区表情反馈（已本地化表情字形，离线可用） |

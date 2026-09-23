@@ -176,12 +176,3 @@ body.ai-panel-resizing .app-content {
 @keyframes ai-panel-out {
   to { opacity: 0; transform: translateX(24px); }
 }
-
-/* ============ Rare UI 滚动进度条（主面板顶部居中） ============ */
-.app-progress {
-  position: absolute;
-  top: var(--kn-space-3);
-  bottom: auto;
-  z-index: 25;
-  pointer-events: none;
-}
