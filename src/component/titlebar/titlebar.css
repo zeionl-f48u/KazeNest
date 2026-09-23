@@ -37,11 +37,12 @@
   opacity: 0.6;
 }
 
-/* ============ 玻璃胶囊（官网 Navbar pill） ============ */
+/* ============ 玻璃胶囊（官网 Navbar pill） ============
+ * 注意：顶栏背后是静态页面底色，没有内容从下方滚过，
+ * 因此不使用 backdrop-filter（Windows WebView2 下会造成重绘频闪），
+ * 玻璃质感由半透明底 + 内高光 + 柔和阴影表达。 */
 .tb-pill {
   background: var(--tb-pill-bg);
-  backdrop-filter: saturate(var(--tb-pill-saturation)) blur(var(--tb-pill-blur));
-  -webkit-backdrop-filter: saturate(var(--tb-pill-saturation)) blur(var(--tb-pill-blur));
   box-shadow: var(--tb-pill-shadow), var(--tb-pill-inset);
   border-radius: var(--kn-radius-pill);
 }

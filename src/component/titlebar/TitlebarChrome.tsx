@@ -179,6 +179,11 @@ export function TitlebarChrome({
   const menuRefs = useRef<(HTMLButtonElement | null)[]>([])
   const wsWidthRef = useRef(0)
   const menuWidthsRef = useRef<number[]>([])
+  /* 菜单内容签名：只有菜单真正变化才重置收纳状态。
+     父组件每次渲染传入新数组身份时不再触发重排，避免频闪 */
+  const menusKey = useMemo(() => menus.map((m) => m).join('\u0000'), [menus])
+  const menusRef = useRef(menus)
+  menusRef.current = menus
   /* 收纳状态同时存 state（渲染）与 ref（layout 读取）。
    * layout 只依赖 menus（不依赖 state），避免「state → layout → state」的无限循环频闪 */
   const [visibleCount, setVisibleCount] = useState(menus.length)
@@ -190,6 +195,7 @@ export function TitlebarChrome({
 
   const layout = useCallback(() => {
     if (part !== 'leading') return
+    const menus = menusRef.current
     const container = containerRef.current
     if (!container) return
     const avail = container.clientWidth
@@ -243,7 +249,7 @@ export function TitlebarChrome({
       visibleCountRef.current = nextCount
       setVisibleCount(nextCount)
     }
-  }, [part, menus])
+  }, [part])
 
   useEffect(() => {
     if (part !== 'leading') return
@@ -258,11 +264,11 @@ export function TitlebarChrome({
     }
   }, [part, layout])
 
-  /* 菜单变化（视图切换）时重置收纳状态再重排（延时兜底首帧未就绪的情况） */
+  /* 菜单内容变化（视图切换）时重置收纳状态再重排；身份变化不触发 */
   useEffect(() => {
-    visibleCountRef.current = menus.length
+    visibleCountRef.current = menusRef.current.length
     wsIconOnlyRef.current = false
-    setVisibleCount(menus.length)
+    setVisibleCount(menusRef.current.length)
     setWsIconOnly(false)
     menuWidthsRef.current = []
     wsWidthRef.current = 0
@@ -272,7 +278,7 @@ export function TitlebarChrome({
       window.clearTimeout(t1)
       window.clearTimeout(t2)
     }
-  }, [menus, layout])
+  }, [menusKey, layout])
 
   const hiddenMenus = useMemo(() => menus.slice(visibleCount), [menus, visibleCount])
 

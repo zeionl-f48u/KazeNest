@@ -6,7 +6,7 @@
  * - AI 面板：常驻开关；位于 AI 视图时向左扩展铺满内容区（morph 动画）
  * - 全局：DemoDialog（showDemo 事件驱动的点击画面）、Ctrl/Cmd+Alt+I 开合面板
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Titlebar } from '@/component/titlebar/Titlebar'
 import { TitlebarChrome } from '@/component/titlebar/TitlebarChrome'
 import { ActivityBar, SideBar } from '@/component/sidebar'
@@ -138,9 +138,42 @@ export default function App() {
     showDemo({ title: item.title, desc: `演示模式：${item.desc}（尚未接入）`, icon: item.icon })
   }, [])
 
+  const active = views[activeView]
+  const menus = useMemo(() => (isMac ? [] : [...(active.menus ?? topMenus)]), [active])
+
   const onAskAi = useCallback(() => {
     toggleAiPanel()
   }, [])
+
+  const onNotifyRead = useCallback(() => setNotifyCount(0), [])
+  const onNotifyReadOne = useCallback(() => setNotifyCount((c) => Math.max(0, c - 1)), [])
+
+  /* 顶栏内容 memo 化：身份稳定 → 顶栏测量/收纳逻辑不会每次重渲染都重排（此前导致频闪） */
+  const titlebarLeading = useMemo(
+    () => (
+      <TitlebarChrome
+        part="leading"
+        workspaceName={workspaceName}
+        menus={menus}
+        onWorkspaceSelect={setWorkspaceName}
+      />
+    ),
+    [workspaceName, menus]
+  )
+
+  const titlebarTrailing = useMemo(
+    () => (
+      <TitlebarChrome
+        part="trailing"
+        notifyCount={notifyCount}
+        aiActive={panel.open || activeView === 'ai'}
+        onAskAi={onAskAi}
+        onNotifyRead={onNotifyRead}
+        onNotifyReadOne={onNotifyReadOne}
+      />
+    ),
+    [notifyCount, panel.open, activeView, onAskAi, onNotifyRead, onNotifyReadOne]
+  )
 
   /* ==================== 活动栏 handler ==================== */
 
@@ -156,11 +189,9 @@ export default function App() {
 
   /* ==================== 渲染 ==================== */
 
-  const active = views[activeView]
   const Page = active.page
   const SidebarComp = active.sidebar
   const sideBarVisible = sideBarOpen && active.sidebarVisible && !!SidebarComp
-  const menus = isMac ? [] : (active.menus ?? topMenus)
   const isFlush = activeView === 'editor' || activeView === 'ai' || activeView === 'browser'
 
   /* AI 面板：展开（AI 视图，占满主区域） / 停靠（其它视图，独立一列） */
@@ -217,24 +248,8 @@ export default function App() {
         title="KazeNest"
         searchItems={searchItems}
         onSearchSelect={onSearchSelect}
-        leading={
-          <TitlebarChrome
-            part="leading"
-            workspaceName={workspaceName}
-            menus={[...menus]}
-            onWorkspaceSelect={setWorkspaceName}
-          />
-        }
-        trailing={
-          <TitlebarChrome
-            part="trailing"
-            notifyCount={notifyCount}
-            aiActive={panel.open || activeView === 'ai'}
-            onAskAi={onAskAi}
-            onNotifyRead={() => setNotifyCount(0)}
-            onNotifyReadOne={() => setNotifyCount((c) => Math.max(0, c - 1))}
-          />
-        }
+        leading={titlebarLeading}
+        trailing={titlebarTrailing}
       />
 
       <div className="app-body">
