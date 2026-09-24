@@ -7,6 +7,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
+import { CARD_IN, CARD_VIEWPORT, SPRING, cardDelay } from '@/lib/motion'
 import { GlassCard } from '@/component/common/GlassCard'
 import { Icon } from '@/component/common/Icon'
 import { Button } from '@/component/ui/button'
@@ -130,9 +131,10 @@ export function Home({ onNavigate }: HomeProps) {
           {homeCards.map((card, i) => (
             <motion.div
               key={card.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.04 * i, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              initial={CARD_IN.initial}
+              whileInView={CARD_IN.animate}
+              viewport={CARD_VIEWPORT}
+              transition={{ ...SPRING.smooth, ...cardDelay(i) }}
             >
               <GlassCard
               title={card.title}

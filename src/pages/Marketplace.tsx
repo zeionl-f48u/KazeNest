@@ -6,6 +6,7 @@
  */
 import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
+import { CARD_IN, CARD_VIEWPORT, SPRING, cardDelay } from '@/lib/motion'
 import { Icon } from '@/component/common/Icon'
 import { Button } from '@/component/ui/button'
 import { Badge } from '@/component/ui/primitives'
@@ -197,10 +198,11 @@ export function Marketplace() {
             <motion.article
               key={p.id}
               className="mk-card"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.03 * i, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              whileHover={{ y: -3 }}
+              initial={CARD_IN.initial}
+              whileInView={CARD_IN.animate}
+              viewport={CARD_VIEWPORT}
+              transition={{ ...SPRING.smooth, ...cardDelay(i, 0.03) }}
+              whileHover={{ y: -3, transition: SPRING.snappy }}
             >
               <div className="mk-card-head">
                 <span className="mk-card-icon" style={{ '--tint': p.color } as React.CSSProperties}>

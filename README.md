@@ -148,6 +148,11 @@ Dialog 与 Dropdown 的进出场也已改由 Motion 弹簧驱动（尊重 `prefe
 - **字体**：Inter（UI 正文）/ JetBrains Mono（代码）走 `@fontsource-variable` 的 woff2
   按 unicode-range 子集按需加载（实际只加载用到的字形，约 60KB，替代原先 1MB 的整份 TTF）；
   Open Runde（展示标题）为本地 woff2，声明见 `src/styles/fonts.css`，全部离线可用
+- **动效系统（克制 macOS 风）**：统一 token 在 `src/lib/motion.ts`
+  （弹簧 `smooth/snappy/gentle` + 曲线 `apple/inOut` + 浮层/卡片变体）；视图切换为**方向感交叉过渡**
+  （按活动栏顺序左右推进，grid 叠层只动 transform/opacity，退出 130ms < 进入弹簧，滚动语义不变、切换复位滚动、会话恢复不播动画）；
+  AI 面板与侧栏的宽度由 Motion 弹簧驱动（可中断，拖拽时 1:1 跟手，侧栏内容固定宽只裁剪+左滑）；
+  Segmented 选中胶囊用共享 `layoutId` 滑动；卡片入场改 `whileInView` + 错峰（上限 8）；`MotionConfig reducedMotion="user"` 全局尊重系统"减少动态效果"
 - **性能**：页面组件按视图懒加载 + 渲染后 `requestIdleCallback` 空闲预取（首屏 JS 约 -42%）；
   `MatrixOrb` / `FluidOrb` 的动画循环在离屏或切后台时自动暂停（`hooks/useAnimationActive.ts`）；
   首次进入视图有轻量 spinner 兜底

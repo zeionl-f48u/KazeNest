@@ -87,10 +87,11 @@ export function cardDelay(index: number, step = 0.035, max = 8): Transition {
   return { delay: Math.min(index, max) * step }
 }
 
-export const CARD_IN: Variants = {
+/** 卡片入场（配合 whileInView 使用；普通对象便于直接作为 props） */
+export const CARD_IN = {
   initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0 },
-}
+} as const
 
 /** 视口内触发的入场（配合 whileInView 使用） */
 export const CARD_VIEWPORT = { once: true, margin: '0px 0px -10% 0px' } as const

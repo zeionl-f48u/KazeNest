@@ -7,11 +7,6 @@
   flex-direction: column;
   gap: var(--kn-space-5);
   max-width: 760px;
-  animation: st-in var(--kn-dur-slow) var(--kn-ease-out);
-}
-@keyframes st-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 
 .st-head {
@@ -232,5 +227,5 @@
 @media (max-width: 860px) {
   .st-nav {
     display: none;
-  }
+}
 }

@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { SPRING, EASE } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { Icon } from '@/component/common/Icon'
 import './ui.css'
@@ -63,7 +64,7 @@ export function Dropdown({ items, title, x, y, onSelect, onClose }: DropdownProp
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: reduced ? 0 : 0.14 }}
+          transition={reduced ? { duration: 0 } : { duration: 0.14, ease: EASE.apple }}
           className="fixed inset-0 z-[2900]"
           onClick={close}
         >
@@ -73,7 +74,7 @@ export function Dropdown({ items, title, x, y, onSelect, onClose }: DropdownProp
             initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: -6 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.97, y: -4 }}
-            transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 640, damping: 40, mass: 0.85 }}
+            transition={reduced ? { duration: 0 } : SPRING.snappy}
             className={cn(
               'fixed z-[3000] flex max-h-[min(420px,calc(100vh-80px))] flex-col overflow-y-auto',
               'rounded-xl border border-[var(--kn-border-strong)] bg-[var(--kn-bg-elev)] p-1.5 shadow-[var(--kn-shadow-lg)]'

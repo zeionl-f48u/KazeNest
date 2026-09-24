@@ -6,6 +6,7 @@
 import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { SPRING, EASE } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { Icon } from '@/component/common/Icon'
 import './ui.css'
@@ -41,7 +42,7 @@ export function Dialog({ open, onClose, label, closable = true, className, child
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: reduced ? 0 : 0.18 }}
+          transition={reduced ? { duration: 0 } : { duration: 0.18, ease: EASE.apple }}
           className="fixed inset-0 z-[4000] flex items-center justify-center bg-[color-mix(in_srgb,#000_32%,transparent)] p-6 backdrop-blur-[2px]"
           onClick={onClose}
         >
@@ -51,7 +52,7 @@ export function Dialog({ open, onClose, label, closable = true, className, child
             initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.94, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.97, y: 8 }}
-            transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 560, damping: 36, mass: 0.9 }}
+            transition={reduced ? { duration: 0 } : SPRING.snappy}
             className={cn(
               'relative flex max-h-[calc(100vh-80px)] w-[380px] max-w-full flex-col overflow-hidden',
               'rounded-2xl border border-[var(--kn-border-strong)] bg-[var(--kn-bg-elev)] shadow-[var(--kn-shadow-lg)]',

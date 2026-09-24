@@ -5,8 +5,11 @@
  * - Slider：原生 range + 品牌色轨道 + 数值徽标
  * - Segmented：分段选择（胶囊容器 + 激活项浮起）
  */
+import { useId } from 'react'
 import type { ReactNode } from 'react'
+import { motion } from 'motion/react'
 import { cn } from '@/lib/utils'
+import { SPRING } from '@/lib/motion'
 
 /* ==================== Switch ==================== */
 
@@ -96,6 +99,7 @@ export interface SegmentedProps<T extends string> {
 }
 
 export function Segmented<T extends string>({ value, options, onChange, ...rest }: SegmentedProps<T>) {
+  const groupId = useId()
   return (
     <div
       role="radiogroup"
@@ -110,13 +114,21 @@ export function Segmented<T extends string>({ value, options, onChange, ...rest 
           aria-checked={opt.value === value}
           onClick={() => onChange(opt.value)}
           className={cn(
-            'ui-press inline-flex h-[24px] cursor-pointer items-center rounded-md px-3 text-xs font-medium',
+            'ui-press relative inline-flex h-[24px] cursor-pointer items-center rounded-md px-3 text-xs font-medium',
             opt.value === value
-              ? 'bg-[var(--kn-bg-elev)] text-[var(--kn-fg)] shadow-[var(--kn-shadow-md)]'
+              ? 'text-[var(--kn-fg)]'
               : 'text-[var(--kn-fg-muted)] hover:text-[var(--kn-fg)]'
           )}
         >
-          {opt.label}
+          {/* 选中胶囊滑动（共享 layoutId） */}
+          {opt.value === value && (
+            <motion.span
+              layoutId={`segmented-${groupId}`}
+              className="absolute inset-0 rounded-md bg-[var(--kn-bg-elev)] shadow-[var(--kn-shadow-md)]"
+              transition={SPRING.snappy}
+            />
+          )}
+          <span className="relative">{opt.label}</span>
         </button>
       ))}
     </div>

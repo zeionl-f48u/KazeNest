@@ -7,7 +7,7 @@
  * - 全局：DemoDialog（showDemo 事件驱动的点击画面）、Ctrl/Cmd+Alt+I 开合面板
  */
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion, useSpring, useTransform } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion, useSpring, useTransform } from 'motion/react'
 import { Titlebar } from '@/component/titlebar/Titlebar'
 import { TitlebarChrome } from '@/component/titlebar/TitlebarChrome'
 import { ActivityBar, SideBar } from '@/component/sidebar'
@@ -57,6 +57,7 @@ export default function App() {
 
   const panel = useAiPanel()
   const sidebarWidth = useSidebarWidth()
+  const reduceMotion = useReducedMotion() ?? false
   const { restore, flush, update } = useAppSession()
 
   /* ==================== 舞台宽度（面板 left 换算） ==================== */
@@ -227,11 +228,11 @@ export default function App() {
   )
 
   useEffect(() => {
-    const resizing = document.body.classList.contains('sb-resizing')
+    const jump = reduceMotion || document.body.classList.contains('sb-resizing')
     const target = sideBarVisible ? sidebarWidth.width : 0
-    if (resizing) sideBarWidthSpring.jump(target)
+    if (jump) sideBarWidthSpring.jump(target)
     else sideBarWidthSpring.set(target)
-  }, [sideBarVisible, sidebarWidth.width, sideBarWidthSpring])
+  }, [sideBarVisible, sidebarWidth.width, sideBarWidthSpring, reduceMotion])
 
   /* 独立列：宽度做 0 ↔ 目标宽 的过渡（开合与展开/停靠切换都走同一动画） */
   const [panelRendered, setPanelRendered] = useState(panel.open)
@@ -240,21 +241,21 @@ export default function App() {
 
   useEffect(() => {
     let timer = 0
-    /* 拖拽调宽中：直接赋值，避免弹簧滞后于指针 */
-    const resizing = document.body.classList.contains('ai-panel-resizing')
+    /* 拖拽调宽中或系统开启"减少动态效果"：直接赋值，避免弹簧滞后/动画 */
+    const jump = reduceMotion || document.body.classList.contains('ai-panel-resizing')
     if (panel.open) {
       setPanelRendered(true)
-      if (resizing) panelWidth.jump(panelTargetWidth)
+      if (jump) panelWidth.jump(panelTargetWidth)
       else panelWidth.set(panelTargetWidth)
     } else {
-      if (resizing) panelWidth.jump(0)
+      if (jump) panelWidth.jump(0)
       else panelWidth.set(0)
       if (panelRendered) {
-        timer = window.setTimeout(() => setPanelRendered(false), 520)
+        timer = window.setTimeout(() => setPanelRendered(false), jump ? 80 : 520)
       }
     }
     return () => window.clearTimeout(timer)
-  }, [panel.open, panelTargetWidth, panelRendered, panelWidth])
+  }, [panel.open, panelTargetWidth, panelRendered, panelWidth, reduceMotion])
 
   /* 视图落位后：清除"不播动画"标记并复位滚动 */
   useEffect(() => {
