@@ -975,3 +975,27 @@
   color: var(--sb-fg-subtle);
   font-variant-numeric: tabular-nums;
 }
+
+
+/* ==================== Rare UI MatrixOrb：AI 形象 ==================== */
+/* 组件自带状态文字（Idle/Listening/Thinking），作为形象使用时隐藏 */
+.ai-orb {
+  gap: 0;
+}
+.ai-orb > span[role='status'] {
+  display: none;
+}
+.aw-title-orb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+/* 空态：Orb 即形象，去掉原来的渐变方块底 */
+.aw-hero-logo.is-orb {
+  background: transparent;
+  box-shadow: none;
+}
+.ai-msg-orb {
+  flex-shrink: 0;
+}

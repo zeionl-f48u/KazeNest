@@ -8,6 +8,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from '@/component/common/Icon'
 import FluidOrb from '@/component/ui/fluid-orb'
+import MatrixOrb from '@/component/ui/matrix-orb'
+import type { MatrixOrbState } from '@/component/ui/matrix-orb'
 import { AiMessageView } from './AiMessageView'
 import { AiInputBar } from './AiInputBar'
 import { useAiChat } from '@/hooks/useAiChat'
@@ -44,10 +46,20 @@ export function AiWorkspace({ variant = 'page', closable = false, onExpand, onCl
 
   const chatRef = useRef<HTMLDivElement>(null)
   const [showScrollBtn, setShowScrollBtn] = useState(false)
+  /* 输入框聚焦 → Orb listening（AI 形象状态联动） */
+  const [inputFocused, setInputFocused] = useState(false)
 
   const messages = chat.messages
   const streaming = chat.streaming
   const thinking = chat.thinking
+
+  /* AI 形象（MatrixOrb）状态：生成/思考中 → thinking；输入聚焦 → listening；否则 idle */
+  const orbState: MatrixOrbState =
+    streaming || (thinking && thinking.text === '')
+      ? 'thinking'
+      : inputFocused
+        ? 'listening'
+        : 'idle'
 
   const lastAssistantId = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -123,7 +135,10 @@ export function AiWorkspace({ variant = 'page', closable = false, onExpand, onCl
     <div className="ai-workspace">
       <div className={`aw-top${isPanel ? ' is-panel' : ''}`}>
         <div className="aw-title">
-          <Icon name="sparkles" size={isPanel ? 14 : 15} className="aw-title-icon" />
+          {/* Rare UI MatrixOrb：AI 形象（随生成/输入状态变化） */}
+          <span className="aw-title-orb" aria-hidden="true">
+            <MatrixOrb size={isPanel ? 18 : 20} state={orbState} className="ai-orb" />
+          </span>
           <span>{isPanel ? 'AI 助手' : 'AI 工作台'}</span>
           {!isPanel && chat.activeSession && <span className="aw-session-name">{chat.activeSession.label}</span>}
         </div>
@@ -192,8 +207,12 @@ export function AiWorkspace({ variant = 'page', closable = false, onExpand, onCl
                   <FluidOrb size={300} color="#fc4c01" />
                 </div>
               )}
-              <div className="aw-hero-logo">
-                <Icon name="cloud" size={isPanel ? 26 : 34} />
+              <div className="aw-hero-logo is-orb">
+                <MatrixOrb
+                  size={isPanel ? 54 : 72}
+                  state={orbState}
+                  className="ai-orb"
+                />
               </div>
               <h2 className="aw-hero-title">
                 {isPanel ? '你好，我是 AI 助手' : '你好，我是 KazeNest 开发工作助手'}
@@ -203,7 +222,11 @@ export function AiWorkspace({ variant = 'page', closable = false, onExpand, onCl
               )}
 
               <div className="aw-hero-input">
-                <AiInputBar onSend={onSend} onStop={chat.stopStreaming} />
+                <AiInputBar
+                  onSend={onSend}
+                  onStop={chat.stopStreaming}
+                  onFocusChange={setInputFocused}
+                />
               </div>
 
               <div className={`aw-suggests${isPanel ? ' is-panel' : ''}`}>
@@ -251,7 +274,12 @@ export function AiWorkspace({ variant = 'page', closable = false, onExpand, onCl
 
       {messages.length > 0 && (
         <div className={`aw-input-area${isPanel ? ' is-panel' : ''}`}>
-          <AiInputBar streaming={!!streaming} onSend={onSend} onStop={chat.stopStreaming} />
+          <AiInputBar
+            streaming={!!streaming}
+            onSend={onSend}
+            onStop={chat.stopStreaming}
+            onFocusChange={setInputFocused}
+          />
           {!isPanel && <p className="aw-disclaimer">内容由 AI 生成，请仔细甄别</p>}
         </div>
       )}

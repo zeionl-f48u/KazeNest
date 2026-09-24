@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { Icon } from '@/component/common/Icon'
 import TaskList from '@/component/ui/task-list'
+import MatrixOrb from '@/component/ui/matrix-orb'
 import EmojiReaction from '@/component/ui/emoji-reaction'
 import { renderMessage } from './render'
 import type { AiMessage } from '@/hooks/useAiChat'
@@ -104,7 +105,12 @@ export function AiMessageView({
         return (
           <div key={m.id} className={`ai-msg is-${m.role}`}>
             <div className="ai-msg-head">
-              <Icon name={m.role === 'user' ? 'user' : 'sparkles'} size={11} className="ai-msg-role-icon" />
+              {m.role === 'assistant' && isStreaming ? (
+                /* Rare UI MatrixOrb：生成中的 AI 形象 */
+                <MatrixOrb size={16} state="thinking" className="ai-orb ai-msg-orb" />
+              ) : (
+                <Icon name={m.role === 'user' ? 'user' : 'sparkles'} size={11} className="ai-msg-role-icon" />
+              )}
               <span className="ai-msg-role">{m.role === 'user' ? '你' : modelLabel}</span>
               {work && (
                 <span className="ai-work-tag" style={{ '--tint': work.color } as React.CSSProperties}>

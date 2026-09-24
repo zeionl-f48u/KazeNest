@@ -130,7 +130,7 @@ node scripts/add-rare-ui.mjs folder-component
 | `proximity-sidebar` | 插件市场左侧贴近式分区导航（随滚动高亮） |
 | `step-player` | 插件市场安装流程：点插件「安装」后逐步演示（搜索→下载→校验→就绪，可播放/暂停/跳步，完成标记已安装） |
 | `github-activity` | 账户页「已登录」贡献热力图（演示数据） |
-| `matrix-orb` | 账户页同步状态球 |
+| `matrix-orb` | AI 形象：AI 工作台/面板头部 + 空态大 Orb + 生成中的助手头像（idle / listening / thinking 随状态联动）；账户页同步状态球 |
 | `grid-reveal` | 账户页工作区封面揭示（data URI 封面，滚动触发） |
 | `family-drawer` | 账户页家庭钱包恢复抽屉（vaul 抽屉，多视图切换） |
 

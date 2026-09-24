@@ -20,6 +20,8 @@ export interface AiInputBarProps {
   streaming?: boolean
   onSend: (payload: { text: string; attachments: string[] }) => void
   onStop: () => void
+  /** 输入框聚焦变化（AI 形象 Orb 的 listening 状态） */
+  onFocusChange?: (focused: boolean) => void
 }
 
 const EMOJIS = ['😊', '👍', '🎉', '🔥', '💡', '⚡', '✅', '❌', '🔍', '📝', '🎯', '🚀', '💻', '🐛', '📌', '📚']
@@ -54,6 +56,7 @@ export function AiInputBar({
   streaming = false,
   onSend,
   onStop,
+  onFocusChange,
 }: AiInputBarProps) {
   const [text, setText] = useState('')
   const [focused, setFocused] = useState(false)
@@ -154,8 +157,14 @@ export function AiInputBar({
           placeholder={placeholder}
           spellCheck={false}
           value={text}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onFocus={() => {
+            setFocused(true)
+            onFocusChange?.(true)
+          }}
+          onBlur={() => {
+            setFocused(false)
+            onFocusChange?.(false)
+          }}
           onChange={(e) => {
             setText(e.target.value)
             autoGrow()
