@@ -9,14 +9,24 @@
  */
 import type { Transition, Variants } from 'motion/react'
 
-/** 弹簧档位 */
+/** 弹簧参数（useSpring 等 motion value 场景使用） */
+export const SPRING_OPTIONS: Record<
+  'smooth' | 'snappy' | 'gentle',
+  { stiffness: number; damping: number; mass: number }
+> = {
+  smooth: { stiffness: 320, damping: 34, mass: 1 },
+  snappy: { stiffness: 460, damping: 38, mass: 0.9 },
+  gentle: { stiffness: 220, damping: 30, mass: 1 },
+}
+
+/** 弹簧档位（transition 场景使用） */
 export const SPRING: Record<'smooth' | 'snappy' | 'gentle', Transition> = {
   /** 面板 / 侧栏 / 视图：稳重无回弹 */
-  smooth: { type: 'spring', stiffness: 320, damping: 34, mass: 1 },
+  smooth: { type: 'spring', ...SPRING_OPTIONS.smooth },
   /** 按压 / hover / 小元素：更跟手 */
-  snappy: { type: 'spring', stiffness: 460, damping: 38, mass: 0.9 },
+  snappy: { type: 'spring', ...SPRING_OPTIONS.snappy },
   /** 大面积弱动效 */
-  gentle: { type: 'spring', stiffness: 220, damping: 30, mass: 1 },
+  gentle: { type: 'spring', ...SPRING_OPTIONS.gentle },
 }
 
 /** 曲线（仅退出 / 淡出等一次性过渡使用） */

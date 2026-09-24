@@ -26,7 +26,6 @@ import { BootGate } from '@/component/common/BootGate'
 import { ErrorBoundary } from '@/component/common/ErrorBoundary'
 import { prefetchViews } from '@/registry/views'
 import { bootstrapTheme } from '@/hooks/useTheme'
-import { SPRING } from '@/lib/motion'
 
 /* 应用外观（读盘；渲染前应用避免闪白） */
 void bootstrapTheme()
@@ -35,7 +34,7 @@ const container = document.getElementById('root')
 if (!container) throw new Error('找不到 #root 挂载点')
 
 createRoot(container).render(
-  <MotionConfig reducedMotion="user" transition={SPRING.smooth}>
+  <MotionConfig reducedMotion="user">
     <BootGate>
       <ErrorBoundary>
         <App />

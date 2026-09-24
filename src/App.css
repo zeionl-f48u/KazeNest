@@ -95,6 +95,7 @@ body {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
+  overflow-x: clip; /* 视图左右推进时不出现横向滚动条 */
   padding: var(--kn-space-1) var(--kn-space-2) var(--kn-space-6);
   box-sizing: border-box;
   border-radius: calc(var(--kn-shell-radius) - var(--kn-shell-pad));
@@ -144,51 +145,35 @@ body.ai-panel-resizing .ai-panel-wrap {
   }
 }
 
-/* ============ 视图切换动画（安卓 Activity 风格：淡入 + 上移） ============ */
-.view-anim {
-  height: 100%;
-  animation: view-in var(--kn-dur-slow) var(--kn-ease-out);
+/* ============ 视图方向过渡（grid 叠层：进/退同占一格，保持滚动语义） ============ */
+.view-stack {
+  display: grid;
+  min-height: 100%;
 }
-.view-anim > * {
+.view-layer {
+  grid-area: 1 / 1;
   height: 100%;
+  min-width: 0;
 }
-@keyframes view-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+/* 正在退场的那层（非最后一层）不接收指针事件 */
+.view-layer:not(:last-child) {
+  pointer-events: none;
+}
+.view-layer > * {
+  height: 100%;
 }
 
-/* ============ 侧栏进入 / 离场动画（存在感包装层） ============ */
+/* ============ 侧栏存在感（宽度弹簧 + 内容左滑，见 App.tsx） ============ */
 .sb-presence {
   display: flex;
   align-items: stretch;
   flex-shrink: 0;
-  animation: sb-in var(--kn-dur-slow) var(--kn-ease-out);
+  overflow: hidden; /* 只裁剪，内部保持固定宽（避免重排） */
 }
-.sb-presence.is-closing {
-  animation: sb-out 0.2s var(--kn-ease-out) forwards;
-  pointer-events: none;
-}
-@keyframes sb-in {
-  from {
-    opacity: 0;
-    transform: translateX(-12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-@keyframes sb-out {
-  to {
-    opacity: 0;
-    transform: translateX(-12px);
-  }
+.sb-presence-inner {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
 }
 
 /* tauri-plugin-decoration 注入的覆盖层不接收事件（让位给应用按钮） */
@@ -209,10 +194,8 @@ body.ai-panel-resizing .ai-panel-wrap {
   border-radius: var(--kn-shell-radius);
   corner-shape: squircle;
   box-shadow: inset 0 1px 0 var(--kn-panel-highlight), var(--kn-shadow-sm);
-  transition:
-    width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.25s var(--kn-ease-out);
-  will-change: width;
+  /* 宽度由 Motion 弹簧驱动（见 App.tsx），这里只保留透明度过渡 */
+  transition: opacity 0.25s var(--kn-ease-out);
 }
 /* 独立中线：位于区块间隙正中；默认不显示，鼠标碰到才显示 */
 .gap-divider {

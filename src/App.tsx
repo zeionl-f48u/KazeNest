@@ -7,6 +7,7 @@
  * - 全局：DemoDialog（showDemo 事件驱动的点击画面）、Ctrl/Cmd+Alt+I 开合面板
  */
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion, useSpring, useTransform } from 'motion/react'
 import { Titlebar } from '@/component/titlebar/Titlebar'
 import { TitlebarChrome } from '@/component/titlebar/TitlebarChrome'
 import { ActivityBar, SideBar } from '@/component/sidebar'
@@ -25,16 +26,30 @@ import {
   resetAiPanelWidth,
   setAiPanelWidth,
 } from '@/hooks/useAiPanel'
-import { activityItems, searchItems, topMenus } from '@/data'
+import { activityItems, directionOf, searchItems, topMenus } from '@/data'
 import type { SearchItem, ViewId } from '@/data'
 import type { ActivityItem } from '@/component/sidebar'
 import { views } from '@/registry/views'
 import { cn } from '@/lib/utils'
 import { initMacNativeMenu, isMac, showDemo } from '@/utils'
+import { EASE, SPRING_OPTIONS, viewVariants } from '@/lib/motion'
 import './App.css'
 
 export default function App() {
   const [activeView, setActiveView] = useState<ViewId>('editor')
+  /* 视图切换方向（1 前进 / -1 后退 / 0 原地）与会话恢复时的"不播动画"标记 */
+  const [viewDir, setViewDir] = useState(0)
+  const activeViewRef = useRef<ViewId>('editor')
+  const instantViewRef = useRef(false)
+
+  const goView = useCallback((next: ViewId, animate = true) => {
+    const prev = activeViewRef.current
+    if (prev === next) return
+    activeViewRef.current = next
+    instantViewRef.current = !animate
+    setViewDir(animate ? directionOf(prev, next) : 0)
+    setActiveView(next)
+  }, [])
   const [sideBarOpen, setSideBarOpen] = useState(true)
   const [notifyCount, setNotifyCount] = useState(3)
   const [workspaceName, setWorkspaceName] = useState('我的工作区')
@@ -70,7 +85,7 @@ export default function App() {
     const go = (id: string) => {
       const target = id as ViewId
       if (!target || !views[target]) return
-      setActiveView(target)
+      goView(target)
       setSideBarOpen(views[target].sidebarDefaultOpen !== false)
     }
 
@@ -98,7 +113,7 @@ export default function App() {
     void restore().then((saved) => {
       if (cancelled) return
       if (saved) {
-        setActiveView(saved.activeView as ViewId)
+        goView(saved.activeView as ViewId, false)
         setSideBarOpen(saved.sideBarOpen)
         if (saved.aiPanel) {
           restoreAiPanelWidth(saved.aiPanel.width)
@@ -115,7 +130,7 @@ export default function App() {
       window.removeEventListener('keydown', onKeydown)
       window.removeEventListener('beforeunload', flush)
     }
-  }, [restore, flush])
+  }, [restore, flush, goView])
 
   /* 活动视图 / 侧栏 / AI 面板 → 写回会话快照 */
   useEffect(() => {
@@ -179,7 +194,7 @@ export default function App() {
 
   const onActivitySelect = (id: string) => {
     const target = id as ViewId
-    setActiveView(target)
+    goView(target)
     setSideBarOpen(views[target]?.sidebarDefaultOpen !== false)
   }
 
@@ -201,46 +216,51 @@ export default function App() {
   /* ==================== 离场动画（存在感状态） ==================== */
   /* React 条件渲染默认瞬间卸载；这里保留元素至离场动画播完再卸载 */
 
-  const [sideBarRendered, setSideBarRendered] = useState(sideBarOpen)
-  const [sideBarClosing, setSideBarClosing] = useState(false)
+  /* 侧栏宽度弹簧（内容保持固定宽，只裁剪 + 左滑，避免内部重排） */
+  const sideBarWidthSpring = useSpring(
+    sideBarVisible ? sidebarWidth.width : 0,
+    SPRING_OPTIONS.smooth
+  )
+  const sideBarInnerX = useTransform(
+    sideBarWidthSpring,
+    (w) => w - sidebarWidth.width
+  )
 
   useEffect(() => {
-    if (sideBarVisible) {
-      setSideBarRendered(true)
-      setSideBarClosing(false)
-      return
-    }
-    if (!sideBarRendered) return
-    setSideBarClosing(true)
-    const t = window.setTimeout(() => {
-      setSideBarRendered(false)
-      setSideBarClosing(false)
-    }, 220)
-    return () => window.clearTimeout(t)
-  }, [sideBarVisible, sideBarRendered])
+    const resizing = document.body.classList.contains('sb-resizing')
+    const target = sideBarVisible ? sidebarWidth.width : 0
+    if (resizing) sideBarWidthSpring.jump(target)
+    else sideBarWidthSpring.set(target)
+  }, [sideBarVisible, sidebarWidth.width, sideBarWidthSpring])
 
   /* 独立列：宽度做 0 ↔ 目标宽 的过渡（开合与展开/停靠切换都走同一动画） */
   const [panelRendered, setPanelRendered] = useState(panel.open)
-  const [panelWidthAnim, setPanelWidthAnim] = useState(0)
+  /* 面板宽度由弹簧驱动：可中断、拖拽时 1:1 跟手（jump） */
+  const panelWidth = useSpring(0, SPRING_OPTIONS.smooth)
 
   useEffect(() => {
-    let raf = 0
     let timer = 0
+    /* 拖拽调宽中：直接赋值，避免弹簧滞后于指针 */
+    const resizing = document.body.classList.contains('ai-panel-resizing')
     if (panel.open) {
       setPanelRendered(true)
-      /* 下一帧再给目标宽度，保证从 0 开始有过渡 */
-      raf = window.requestAnimationFrame(() => setPanelWidthAnim(panelTargetWidth))
+      if (resizing) panelWidth.jump(panelTargetWidth)
+      else panelWidth.set(panelTargetWidth)
     } else {
-      setPanelWidthAnim(0)
+      if (resizing) panelWidth.jump(0)
+      else panelWidth.set(0)
       if (panelRendered) {
-        timer = window.setTimeout(() => setPanelRendered(false), 430)
+        timer = window.setTimeout(() => setPanelRendered(false), 520)
       }
     }
-    return () => {
-      window.cancelAnimationFrame(raf)
-      window.clearTimeout(timer)
-    }
-  }, [panel.open, panelTargetWidth, panelRendered])
+    return () => window.clearTimeout(timer)
+  }, [panel.open, panelTargetWidth, panelRendered, panelWidth])
+
+  /* 视图落位后：清除"不播动画"标记并复位滚动 */
+  useEffect(() => {
+    instantViewRef.current = false
+    contentRef.current?.scrollTo({ top: 0 })
+  }, [activeView])
 
   return (
     <div className="app-shell">
@@ -260,18 +280,29 @@ export default function App() {
           onToggle={onActivityToggle}
         />
 
-        {sideBarRendered && SidebarComp && (
-          <div className={`sb-presence${sideBarClosing ? ' is-closing' : ''}`}>
-            <SideBar title={active.sidebarTitle ?? '侧边栏'} onClose={() => setSideBarOpen(false)}>
-              <SidebarComp />
-            </SideBar>
-          </div>
-        )}
+        <AnimatePresence initial={false}>
+          {sideBarVisible && SidebarComp && (
+            <motion.div
+              key="sidebar"
+              className="sb-presence"
+              style={{ width: sideBarWidthSpring }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18, ease: EASE.apple }}
+            >
+              <motion.div className="sb-presence-inner" style={{ x: sideBarInnerX }}>
+                <SideBar title={active.sidebarTitle ?? '侧边栏'} onClose={() => setSideBarOpen(false)}>
+                  <SidebarComp />
+                </SideBar>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* 中线（左）：侧栏 ↔ 主内容，悬停显示、可拖拽调宽 */}
-        {sideBarRendered && (
+        {sideBarVisible && (
           <GapDivider
-            idle={sideBarClosing}
             dir="right"
             width={sidebarWidth.width}
             clamp={clampWidth}
@@ -292,10 +323,22 @@ export default function App() {
         <div className={cn('app-main-area', panelExpanded && 'is-expanded')} ref={mainAreaRef}>
           <div className={cn('app-stage', isFlush && 'is-flush', panelExpanded && 'is-expanded')}>
             <main ref={contentRef} className={cn('app-content', isFlush && 'is-flush')}>
-              <div key={activeView} className="view-anim">
-                <Suspense fallback={<div className="view-loading" aria-hidden />}>
-                  <Page {...(active.comingSoon ?? {})} />
-                </Suspense>
+              {/* 方向感视图过渡：两视图同占一个网格单元，只动 transform/opacity */}
+              <div className="view-stack">
+                <AnimatePresence mode="sync" initial={false}>
+                  <motion.div
+                    key={activeView}
+                    className="view-layer"
+                    variants={viewVariants(viewDir)}
+                    initial={instantViewRef.current ? false : 'initial'}
+                    animate="animate"
+                    exit="exit"
+                  >
+                    <Suspense fallback={<div className="view-loading" aria-hidden />}>
+                      <Page {...(active.comingSoon ?? {})} />
+                    </Suspense>
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </main>
           </div>
@@ -315,16 +358,16 @@ export default function App() {
           )}
 
           {panelRendered && (
-            <div
+            <motion.div
               className={cn('ai-panel-wrap', panelExpanded && 'is-expanded')}
-              style={{ width: panelWidthAnim, opacity: panel.open ? 1 : 0 }}
+              style={{ width: panelWidth, opacity: panel.open ? 1 : 0 }}
             >
               <AiPanel
                 expanded={panelExpanded}
                 onExpand={() => window.dispatchEvent(new CustomEvent('kn:navigate', { detail: 'ai' }))}
                 onClose={hideAiPanel}
               />
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
