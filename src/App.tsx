@@ -14,6 +14,7 @@ import { ActivityBar, SideBar } from '@/component/sidebar'
 import { AiPanel } from '@/component/ai'
 import { DemoDialog } from '@/component/common/DemoDialog'
 import { GapDivider } from '@/component/common/GapDivider'
+import { ScrollIndicator, suppressScrollIndicator } from '@/component/common/ScrollIndicator'
 import { useAppSession } from '@/hooks/useAppSession'
 import { AI_PANEL_SNAP_CLOSE } from '@/hooks/useAiPanel'
 import { useSidebarWidth, clampWidth, SIDEBAR_SNAP_CLOSE } from '@/hooks/useSidebarWidth'
@@ -260,6 +261,7 @@ export default function App() {
   /* 视图落位后：清除"不播动画"标记并复位滚动 */
   useEffect(() => {
     instantViewRef.current = false
+    suppressScrollIndicator()
     contentRef.current?.scrollTo({ top: 0 })
   }, [activeView])
 
@@ -373,6 +375,7 @@ export default function App() {
         </div>
       </div>
 
+      <ScrollIndicator />
       <DemoDialog />
     </div>
   )

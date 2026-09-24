@@ -164,8 +164,6 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding-bottom: 12px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--kn-border-strong) transparent;
 }
 
 /* ==================== SidebarRow ==================== */
