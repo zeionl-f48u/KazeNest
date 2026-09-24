@@ -112,12 +112,25 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-width: 220px;
+  /* 允许收缩：搜索胶囊跟着变窄/折叠，绝不溢出压到右侧按钮 */
+  min-width: 0;
   height: 100%;
 }
-@media (max-width: 640px) {
-  .tb-center {
-    min-width: 36px;
+
+/* 搜索胶囊：可收缩，保底 148px；更窄时折叠为 34px 图标按钮 */
+.tb-search-pill {
+  min-width: 148px;
+}
+@media (max-width: 900px) {
+  .tb-search-pill {
+    width: 34px !important;
+    min-width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+  .tb-search-pill > span,
+  .tb-search-pill kbd {
+    display: none;
   }
 }
 
