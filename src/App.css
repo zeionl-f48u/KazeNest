@@ -209,7 +209,7 @@ body.ai-panel-resizing .ai-panel-wrap {
   border: 1px solid var(--kn-border);
   border-radius: var(--kn-shell-radius);
   corner-shape: squircle;
-  box-shadow: var(--kn-shadow-sm);
+  box-shadow: inset 0 1px 0 var(--kn-panel-highlight), var(--kn-shadow-sm);
   transition:
     width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.25s var(--kn-ease-out);
