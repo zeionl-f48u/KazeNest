@@ -112,19 +112,26 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  /* 允许收缩：搜索胶囊跟着变窄/折叠，绝不溢出压到右侧按钮 */
-  min-width: 0;
+  /* 关键：中心区最小宽度 = 搜索胶囊最小宽度。
+   * 中心区是 flex:1（basis 0、收缩权重 0），若 min-width 为 0，
+   * 窗口变窄时会被压成 0 宽，而胶囊有最小宽 → 从两侧溢出压到相邻按钮。
+   * 固定下限后胶囊永远包在中心区内，空间不足时由左区先收缩/裁切。 */
+  min-width: var(--tb-search-min);
   height: 100%;
 }
 
-/* 搜索胶囊：可收缩，保底 148px；更窄时折叠为 34px 图标按钮 */
+/* 搜索胶囊：最小宽度与中心区一致 */
 .tb-search-pill {
-  min-width: 148px;
+  min-width: var(--tb-search-min);
 }
-@media (max-width: 900px) {
+
+/* 窄屏：中心区与胶囊一起折叠为 34px 图标按钮 */
+@media (max-width: 640px) {
+  :root {
+    --tb-search-min: 34px;
+  }
   .tb-search-pill {
     width: 34px !important;
-    min-width: 34px;
     padding: 0;
     justify-content: center;
   }

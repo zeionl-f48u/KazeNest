@@ -21,13 +21,15 @@
   --tb-icon-size: 17px;
   --tb-btn-size: 30px;
   --tb-title-font-size: var(--kn-text-lg);
+  /* 搜索胶囊最小宽度：中心区与胶囊共用同一值（窄屏由 titlebar.css 调为 34px） */
+  --tb-search-min: 148px;
 
   /* 间距 */
   --tb-gap: 6px;
   --tb-toolbar-gap: 4px;
 
-  /* caption 控件（─ ☐ ✕）安全区兜底 */
-  --tb-caption-right-clearance: 139px;
+  /* caption 控件（─ ☐ ✕）安全区兜底（插件实际 3 × 58px = 174px） */
+  --tb-caption-right-clearance: 174px;
   /* macOS 交通灯（红黄绿）左侧让位宽度（Titlebar 消费）；插件注入
    * --tauri-plugin-decoration-left-clearance 时以插件值为准 */
   --tb-traffic-lights: 78px;
