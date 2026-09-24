@@ -47,7 +47,8 @@ body {
 .app-body {
   flex: 1;
   min-height: 0;
-  padding-top: var(--tb-height);
+  /* 顶栏高度（跟随原生控制器） + 8px 呼吸空线，避免内容紧贴顶栏 */
+  padding-top: calc(var(--tb-height) + var(--tb-content-gap, 8px));
   display: flex;
   align-items: stretch;
   gap: var(--kn-frame-pad);
