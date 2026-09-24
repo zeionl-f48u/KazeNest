@@ -15,11 +15,16 @@
  */
 
 :root {
-  /* ============ 尺寸（官网导航高度 h-10 = 40px + 拖拽余量）============ */
-  --tb-height: 52px;
+  /* ============ 尺寸（与插件注入的原生控制器对齐）============
+   * --tb-height 由 utils/decoration.ts 读取插件控制条实际高度后覆盖（通常 32px）；
+   * 这里的 32px 是首帧兜底，避免出现"先高后矮"的跳动。 */
+  --tb-height: 32px;
   --tb-pad-x: 12px;
   --tb-icon-size: 17px;
-  --tb-btn-size: 30px;
+  /* 控件高度随顶栏高度收缩：32px → 26px，最高 30px */
+  --tb-btn-size: clamp(26px, calc(var(--tb-height) - 6px), 30px);
+  /* 搜索胶囊：32px → 26px，传统 52px 顶栏时为 34px */
+  --tb-search-height: clamp(26px, calc(var(--tb-height) - 6px), 34px);
   --tb-title-font-size: var(--kn-text-lg);
 
   /* 间距 */
@@ -27,7 +32,7 @@
   --tb-toolbar-gap: 4px;
 
   /* caption 控件（─ ☐ ✕）安全区兜底 */
-  --tb-caption-right-clearance: 139px;
+  --tb-caption-right-clearance: 174px; /* Win：3 × 58px（插件 CSS 实宽） */
   /* macOS 交通灯（红黄绿）左侧让位宽度（Titlebar 消费）；插件注入
    * --tauri-plugin-decoration-left-clearance 时以插件值为准 */
   --tb-traffic-lights: 78px;

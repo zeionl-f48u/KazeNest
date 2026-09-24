@@ -19,9 +19,13 @@ import App from './App'
 import { BootGate } from '@/component/common/BootGate'
 import { ErrorBoundary } from '@/component/common/ErrorBoundary'
 import { bootstrapTheme } from '@/hooks/useTheme'
+import { initDecorationMetrics } from '@/utils/decoration'
 
 /* 应用外观（读盘；渲染前应用避免闪白） */
 void bootstrapTheme()
+
+/* 顶栏高度跟随 tauri-plugin-decoration 注入的原生窗口控制器（32px 等） */
+initDecorationMetrics()
 
 const container = document.getElementById('root')
 if (!container) throw new Error('找不到 #root 挂载点')
