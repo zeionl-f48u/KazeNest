@@ -37,7 +37,7 @@ export function SearchTrigger({ open, onOpen }: SearchTriggerProps) {
       onMouseEnter={() => setFocused(true)}
       onMouseLeave={() => setFocused(false)}
       className={cn(
-        'tb-pill tb-search-pill ui-press inline-flex h-[var(--tb-search-height)] w-[34vw] max-w-[560px] cursor-pointer items-center gap-2',
+        'tb-pill tb-search-pill ui-press inline-flex h-[34px] w-[34vw] max-w-[560px] cursor-pointer items-center gap-2',
         'px-3.5 text-left text-sm text-[var(--tb-fg-muted)] transition-colors duration-200',
         (focused || open) && 'text-[var(--tb-fg)]'
       )}

@@ -135,7 +135,7 @@ export function Titlebar({
 
   /* ==================== 渲染 ==================== */
 
-  const captionSpacer = isMac ? '8px' : 'max(8px, var(--tauri-plugin-decoration-right-clearance, 174px))'
+  const captionSpacer = isMac ? '8px' : 'max(8px, var(--tauri-plugin-decoration-right-clearance, 139px))'
 
   return (
     <header

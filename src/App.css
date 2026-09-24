@@ -47,7 +47,7 @@ body {
 .app-body {
   flex: 1;
   min-height: 0;
-  padding-top: var(--tb-height);
+  padding-top: var(--tb-height, 52px);
   display: flex;
   align-items: stretch;
   gap: var(--kn-frame-pad);
