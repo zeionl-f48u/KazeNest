@@ -30,6 +30,17 @@ export const activityItems = [
  */
 export type ViewId = (typeof activityItems)[number]['id']
 
+/** 活动栏展示顺序（视图"方向感"的单一来源：与顶部/底部分组渲染顺序一致） */
+export const viewOrder: readonly ViewId[] = activityItems.map((item) => item.id)
+
+/** 视图切换方向：1 = 前进（向右推进）/ -1 = 后退 / 0 = 原地 */
+export function directionOf(prev: ViewId, next: ViewId): number {
+  const from = viewOrder.indexOf(prev)
+  const to = viewOrder.indexOf(next)
+  if (from === -1 || to === -1 || from === to) return 0
+  return to > from ? 1 : -1
+}
+
 /** 顶栏文字菜单：增删菜单项只改这里（放不下的自动收进 ⋯） */
 export const topMenus = ['文件', '编辑', '视图', '窗口', '帮助'] as const
 export type TopMenu = typeof topMenus[number]

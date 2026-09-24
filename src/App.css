@@ -98,7 +98,6 @@ body {
   padding: var(--kn-space-1) var(--kn-space-2) var(--kn-space-6);
   box-sizing: border-box;
   border-radius: calc(var(--kn-shell-radius) - var(--kn-shell-pad));
-  transition: margin-right 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* 全宽工具视图（编辑器/AI/浏览器）：直接铺满主区块，去掉内层白框 */

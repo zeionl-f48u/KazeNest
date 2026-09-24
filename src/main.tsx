@@ -19,11 +19,14 @@ import './styles/fonts.css'
 import './styles/effects.css'
 import './styles/native-controls.css'
 
+import { MotionConfig } from 'motion/react'
+
 import App from './App'
 import { BootGate } from '@/component/common/BootGate'
 import { ErrorBoundary } from '@/component/common/ErrorBoundary'
 import { prefetchViews } from '@/registry/views'
 import { bootstrapTheme } from '@/hooks/useTheme'
+import { SPRING } from '@/lib/motion'
 
 /* 应用外观（读盘；渲染前应用避免闪白） */
 void bootstrapTheme()
@@ -32,11 +35,13 @@ const container = document.getElementById('root')
 if (!container) throw new Error('找不到 #root 挂载点')
 
 createRoot(container).render(
-  <BootGate>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  </BootGate>
+  <MotionConfig reducedMotion="user" transition={SPRING.smooth}>
+    <BootGate>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </BootGate>
+  </MotionConfig>
 )
 
 /* 空闲预取其余页面（首次切换视图无需等待加载） */
