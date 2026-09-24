@@ -4,14 +4,7 @@
  * - 全部视图均为真实页面；未来新增建设中视图可复用 ComingSoon 组件
  * - 视图 id 的单一来源仍是 data/activityItems.ts 的 ViewId（漏配会编译报错）
  */
-import type { ComponentType } from 'react'
-import { Home } from '../pages/Home'
-import { Editor } from '../pages/Editor'
-import { Files } from '../pages/Files'
-import { Browser } from '../pages/Browser'
-import { Settings } from '../pages/Settings'
-import { Marketplace } from '../pages/Marketplace'
-import { Account } from '../pages/Account'
+import { lazy, type ComponentType } from 'react'
 import { MarketplaceSidebar } from '../component/sidebar/views/MarketplaceSidebar'
 import { AiWorkspace } from '../component/ai'
 import { HomeSidebar } from '../component/sidebar/views/HomeSidebar'
@@ -20,6 +13,36 @@ import { FilesSidebar } from '../component/sidebar/views/FilesSidebar'
 import { BrowserSidebar } from '../component/sidebar/views/BrowserSidebar'
 import { AISidebar } from '../component/sidebar/views/AISidebar'
 import type { ViewId, ComingSoonConfig } from '../data'
+
+/* 页面组件懒加载：首屏只加载当前视图，其余页面由 prefetchViews() 空闲预取 */
+const Home = lazy(() => import('../pages/Home').then((m) => ({ default: m.Home })))
+const Editor = lazy(() => import('../pages/Editor').then((m) => ({ default: m.Editor })))
+const Files = lazy(() => import('../pages/Files').then((m) => ({ default: m.Files })))
+const Browser = lazy(() => import('../pages/Browser').then((m) => ({ default: m.Browser })))
+const Settings = lazy(() => import('../pages/Settings').then((m) => ({ default: m.Settings })))
+const Marketplace = lazy(() => import('../pages/Marketplace').then((m) => ({ default: m.Marketplace })))
+const Account = lazy(() => import('../pages/Account').then((m) => ({ default: m.Account })))
+
+/* 空闲预取页面 chunk：首次切换视图时无需等待加载 */
+const PAGE_LOADERS = [
+  () => import('../pages/Home'),
+  () => import('../pages/Editor'),
+  () => import('../pages/Files'),
+  () => import('../pages/Browser'),
+  () => import('../pages/Settings'),
+  () => import('../pages/Marketplace'),
+  () => import('../pages/Account'),
+]
+
+export function prefetchViews() {
+  const run = () => {
+    for (const load of PAGE_LOADERS) void load()
+  }
+  const ric = (window as Window & { requestIdleCallback?: (cb: () => void) => number })
+    .requestIdleCallback
+  if (ric) ric(run)
+  else window.setTimeout(run, 1500)
+}
 
 /** 单个视图的完整定义 */
 export interface ViewDefinition {

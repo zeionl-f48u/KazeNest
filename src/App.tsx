@@ -6,7 +6,7 @@
  * - AI 面板：常驻开关；位于 AI 视图时向左扩展铺满内容区（morph 动画）
  * - 全局：DemoDialog（showDemo 事件驱动的点击画面）、Ctrl/Cmd+Alt+I 开合面板
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Titlebar } from '@/component/titlebar/Titlebar'
 import { TitlebarChrome } from '@/component/titlebar/TitlebarChrome'
 import { ActivityBar, SideBar } from '@/component/sidebar'
@@ -293,7 +293,9 @@ export default function App() {
           <div className={cn('app-stage', isFlush && 'is-flush', panelExpanded && 'is-expanded')}>
             <main ref={contentRef} className={cn('app-content', isFlush && 'is-flush')}>
               <div key={activeView} className="view-anim">
-                <Page {...(active.comingSoon ?? {})} />
+                <Suspense fallback={<div className="view-loading" aria-hidden />}>
+                  <Page {...(active.comingSoon ?? {})} />
+                </Suspense>
               </div>
             </main>
           </div>

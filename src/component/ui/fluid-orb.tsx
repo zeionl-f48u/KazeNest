@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 
 import { cn } from '@/lib/utils'
+import { useAnimationActive } from '@/hooks/useAnimationActive'
 
 export type FluidOrbProps = React.ComponentProps<'div'> & {
   size?: number
@@ -114,6 +115,8 @@ const FluidOrb = ({
   ...props
 }: FluidOrbProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  /* 离屏/切后台时暂停渲染循环（WebGL 常驻会空耗 GPU） */
+  const active = useAnimationActive(canvasRef)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -165,7 +168,7 @@ const FluidOrb = ({
     const render = (now: number) => {
       gl.uniform1f(uTime, reduce ? 0 : (now - start) / 1000)
       gl.drawArrays(gl.TRIANGLES, 0, 6)
-      if (!reduce) raf = requestAnimationFrame(render)
+      if (!reduce && active) raf = requestAnimationFrame(render)
     }
     render(start)
 
@@ -176,7 +179,7 @@ const FluidOrb = ({
       gl.deleteShader(frag)
       gl.deleteBuffer(buffer)
     }
-  }, [size, color])
+  }, [size, color, active])
 
   return (
     <div

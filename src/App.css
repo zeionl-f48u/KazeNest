@@ -87,6 +87,7 @@ body {
   border-radius: var(--kn-shell-radius);
   padding: var(--kn-shell-pad);
   corner-shape: squircle;
+  box-shadow: inset 0 1px 0 var(--kn-panel-highlight);
 }
 
 /* 普通视图：内容直接铺在 card 面板上（官网 docs 页） */
@@ -120,6 +121,28 @@ body {
 
 body.ai-panel-resizing .ai-panel-wrap {
   transition: none !important;
+}
+
+/* ============ 视图懒加载兜底（页面 chunk 加载中） ============ */
+.view-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+.view-loading::after {
+  content: '';
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--kn-border);
+  border-top-color: var(--kn-brand-500);
+  animation: view-loading-spin 0.8s linear infinite;
+}
+@keyframes view-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ============ 视图切换动画（安卓 Activity 风格：淡入 + 上移） ============ */

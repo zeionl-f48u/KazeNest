@@ -10,6 +10,9 @@
  */
 import { createRoot } from 'react-dom/client'
 
+import '@fontsource-variable/inter'
+import '@fontsource-variable/jetbrains-mono'
+
 import './styles/tailwind.css'
 import './styles/tokens.css'
 import './styles/fonts.css'
@@ -19,6 +22,7 @@ import './styles/native-controls.css'
 import App from './App'
 import { BootGate } from '@/component/common/BootGate'
 import { ErrorBoundary } from '@/component/common/ErrorBoundary'
+import { prefetchViews } from '@/registry/views'
 import { bootstrapTheme } from '@/hooks/useTheme'
 
 /* 应用外观（读盘；渲染前应用避免闪白） */
@@ -34,6 +38,9 @@ createRoot(container).render(
     </ErrorBoundary>
   </BootGate>
 )
+
+/* 空闲预取其余页面（首次切换视图无需等待加载） */
+prefetchViews()
 
 /* 标记前端已启动（index.html 的兜底脚本据此判断是否需要强制显示窗口） */
 document.documentElement.dataset.knReady = '1'

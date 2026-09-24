@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useSyncExternalStore } from 'react'
 
 import { cn } from '@/lib/utils'
+import { useAnimationActive } from '@/hooks/useAnimationActive'
 
 export type MatrixOrbState = 'idle' | 'listening' | 'thinking'
 
@@ -99,6 +100,8 @@ const MatrixOrb = ({
   ...props
 }: MatrixOrbProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  /* 离屏/切后台时暂停动画循环（常驻 rAF 会空耗） */
+  const active = useAnimationActive(canvasRef)
   const stateRef = useRef(state)
   const levelRef = useRef(level)
   const redrawRef = useRef<(() => void) | null>(null)
@@ -188,6 +191,14 @@ const MatrixOrb = ({
       }
     }
 
+    /* 不可见时只画首帧静态图，不启动循环 */
+    if (!active) {
+      draw(0, levelAt(0), SCALE[stateRef.current])
+      return () => {
+        redrawRef.current = null
+      }
+    }
+
     let t = 0
     let amplitude = 0
     let scale = SCALE[stateRef.current]
@@ -221,7 +232,7 @@ const MatrixOrb = ({
 
     return () => cancelAnimationFrame(raf)
     // state stays out of the deps on purpose: the loop retargets, it never restarts
-  }, [size, color, dots, dpr])
+  }, [size, color, dots, dpr, active])
 
   useEffect(() => {
     redrawRef.current?.()

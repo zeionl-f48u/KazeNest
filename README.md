@@ -145,8 +145,12 @@ Dialog 与 Dropdown 的进出场也已改由 Motion 弹簧驱动（尊重 `prefe
   独立 squircle 浮动侧栏（radius 23）、透明拖拽顶栏 + 玻璃胶囊控件（`--kn-glass-*`）
 - **导航**：官网 `SidebarNav` 语言 —— 选中项橙色虚线导航轨、分组标题 11px 大写 `tracking-[0.14em]`、
   活动栏选中 = 橙字 + 橙底
-- **字体**：Inter（UI 正文）/ Open Runde（展示标题）/ JetBrains Mono（代码），
-  文件在 `src/assets/fonts/`，声明见 `src/styles/fonts.css`，离线可用
+- **字体**：Inter（UI 正文）/ JetBrains Mono（代码）走 `@fontsource-variable` 的 woff2
+  按 unicode-range 子集按需加载（实际只加载用到的字形，约 60KB，替代原先 1MB 的整份 TTF）；
+  Open Runde（展示标题）为本地 woff2，声明见 `src/styles/fonts.css`，全部离线可用
+- **性能**：页面组件按视图懒加载 + 渲染后 `requestIdleCallback` 空闲预取（首屏 JS 约 -42%）；
+  `MatrixOrb` / `FluidOrb` 的动画循环在离屏或切后台时自动暂停（`hooks/useAnimationActive.ts`）；
+  首次进入视图有轻量 spinner 兜底
 - **组件语言**：编辑器/文件管理标签 = 胶囊（选中白底 + 玻璃内高光），主按钮 = 官网 primary（黑/白），
   Rare 组件 shadcn 语义类（`bg-background` 等）在 `src/styles/tailwind.css` 的
   `@theme inline` 桥接到 `--kn-*`，亮暗主题即时生效

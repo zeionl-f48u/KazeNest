@@ -2,22 +2,13 @@
  * ============================================================
  * 字体（与 Rare UI 官网一致）
  * ============================================================
- * - Inter：官网正文/UI 主字体（可变字重，google/fonts 开源版）
- * - Open Runde：官网品牌/展示字体（rare-ui 仓库自带，用于 Logo、大标题）
- * - JetBrains Mono：官网等宽字体（编辑器/代码）
+ * - Inter（UI 正文）/ JetBrains Mono（代码）：@fontsource-variable woff2 子集，
+ *   在 main.tsx 中 `import '@fontsource-variable/...'` 引入（按 unicode-range 分片，
+ *   只加载用到的字形，比打包整份 TTF 小得多）
+ * - Open Runde：官网品牌/展示字体（rare-ui 仓库自带，本地 woff2）
  *
- * 字体文件已本地打包（src/assets/fonts/），离线可用、不走网络。
  * 想在别处使用展示字体：font-family: var(--kn-font-display)
  */
-
-/* ---- Inter（100-900 可变）---- */
-@font-face {
-  font-family: "Inter";
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("../assets/fonts/inter-variable.ttf") format("truetype-variations");
-}
 
 /* ---- Open Runde（官网展示字体，四档静态字重）---- */
 @font-face {
@@ -47,13 +38,4 @@
   font-weight: 700;
   font-display: swap;
   src: url("../assets/fonts/open-runde-bold.woff2") format("woff2");
-}
-
-/* ---- JetBrains Mono（100-800 可变）---- */
-@font-face {
-  font-family: "JetBrains Mono";
-  font-style: normal;
-  font-weight: 100 800;
-  font-display: swap;
-  src: url("../assets/fonts/jetbrains-mono-variable.ttf") format("truetype-variations");
 }
