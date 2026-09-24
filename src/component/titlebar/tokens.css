@@ -26,8 +26,6 @@
   /* 搜索胶囊：32px → 26px，传统 52px 顶栏时为 34px */
   --tb-search-height: clamp(26px, calc(var(--tb-height) - 6px), 34px);
   --tb-title-font-size: var(--kn-text-lg);
-  /* 顶栏与内容块之间的空线（App.css 的 .app-body 消费） */
-  --tb-content-gap: 8px;
 
   /* 间距 */
   --tb-gap: 6px;
