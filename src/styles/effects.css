@@ -112,6 +112,28 @@ html.dark .kn-scroll-indicator {
   }
 }
 
+/* ---------- 交互控件文字不可选中 ----------
+ * 按钮/开关等连点时容易误选成文字，统一禁止；
+ * 输入框与正文内容保持可选择（见下方显式恢复）。 */
+button,
+[role='button'],
+[role='radio'],
+[role='menuitem'],
+[role='tab'],
+label,
+select,
+summary {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+[contenteditable='true'] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 /* ---------- 焦点可见性（无障碍） ---------- */
 :focus-visible {
   outline: 2px solid var(--kn-focus);
