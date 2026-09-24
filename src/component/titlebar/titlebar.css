@@ -161,8 +161,19 @@
 }
 .tb-slot button,
 .tb-slot input {
-  user-select: text;
   cursor: pointer;
+}
+
+/* ============ 顶栏文字不可选中（按钮/应用名/菜单等，输入类除外） ============ */
+.tb,
+.tb * {
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tb input,
+.tb textarea {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* ============ caption 让位 ============ */
