@@ -1,0 +1,92 @@
+/*
+ * ============================================================
+ * 原生窗口控制器视觉融合（tauri-plugin-decoration 注入）
+ * ============================================================
+ * 保留插件的注入与行为（拖拽、最小化/最大化/关闭、让位宽度），
+ * 只统一外观，让三颗按钮与 KazeNest 顶栏风格一致：
+ *  - 高度铺满整个顶栏（原生 32px 条 → 与 52px 顶栏对齐，不再"半截悬空"）
+ *  - 图标使用主题弱文字色；悬停为内缩的圆角块（与应用胶囊控件一致）
+ *  - 关闭按钮悬停用应用的红（#ff3b30），而非系统红
+ *  - 颜色全部走 --kn-* token，跟随应用亮暗主题（不再依赖系统配色）
+ *
+ * 说明：插件样式是运行时注入的 <style>，晚于打包样式，
+ * 因此这里用更高的选择器权重（html 前缀）+ !important 覆盖。
+ */
+
+/* 控制组与按钮：铺满顶栏高度 */
+html [data-tauri-plugin-decoration-root] [data-tauri-decoration-controls],
+html
+  [data-tauri-plugin-decoration-root]
+  [data-tauri-decoration-platform="linux"] {
+  height: var(--tb-height) !important;
+}
+
+html [data-tauri-plugin-decoration-root] [data-tauri-decoration-control] {
+  height: var(--tb-height) !important;
+  /* 内缩的悬停底色（content-box 裁切 + 圆角），视觉上是应用里的胶囊 */
+  padding: 6px 4px !important;
+  background-clip: content-box !important;
+  border-radius: 12px !important;
+  background-color: transparent;
+  color: var(--kn-fg-muted) !important;
+  transition:
+    background-color var(--kn-dur-base) var(--kn-ease-out),
+    color var(--kn-dur-base) var(--kn-ease-out) !important;
+}
+
+/* 悬停 / 键盘同步的 hover 态 */
+html [data-tauri-plugin-decoration-root] [data-tauri-decoration-control]:hover,
+html
+  [data-tauri-plugin-decoration-root]
+  [data-tauri-decoration-control][data-tauri-decoration-hover] {
+  background-color: var(--kn-hover) !important;
+  color: var(--kn-fg) !important;
+}
+
+/* 关闭：应用红（白图标） */
+html
+  [data-tauri-plugin-decoration-root]
+  [data-tauri-decoration-control="close"]:hover,
+html
+  [data-tauri-plugin-decoration-root]
+  [data-tauri-decoration-control="close"][data-tauri-decoration-hover] {
+  background-color: var(--kn-rose-500) !important;
+  color: #ffffff !important;
+}
+
+/* Linux 的圆形按钮：底色与悬停跟随主题 */
+html
+  [data-tauri-plugin-decoration-root]
+  [data-tauri-decoration-platform="linux"]
+  [data-tauri-decoration-control] {
+  background-color: color-mix(in srgb, var(--kn-fg) 14%, transparent) !important;
+}
+html
+  [data-tauri-plugin-decoration-root]
+  [data-tauri-decoration-platform="linux"]
+  [data-tauri-decoration-control]:hover,
+html
+  [data-tauri-plugin-decoration-root]
+  [data-tauri-decoration-platform="linux"]
+  [data-tauri-decoration-control][data-tauri-decoration-hover] {
+  background-color: color-mix(in srgb, var(--kn-fg) 26%, transparent) !important;
+}
+html
+  [data-tauri-plugin-decoration-root]
+  [data-tauri-decoration-platform="linux"]
+  [data-tauri-decoration-control="close"]:hover,
+html
+  [data-tauri-plugin-decoration-root]
+  [data-tauri-decoration-platform="linux"]
+  [data-tauri-decoration-control="close"][data-tauri-decoration-hover] {
+  background-color: var(--kn-rose-500) !important;
+  color: #ffffff !important;
+}
+
+/* Windows 图标字形（Segoe Fluent Icons）大小保持原生，只让颜色跟随 token */
+html
+  [data-tauri-plugin-decoration-root]
+  [data-tauri-decoration-platform="windows"]
+  [data-tauri-decoration-control] {
+  font-size: 10px !important;
+}

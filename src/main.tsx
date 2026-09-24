@@ -14,6 +14,7 @@ import './styles/tailwind.css'
 import './styles/tokens.css'
 import './styles/fonts.css'
 import './styles/effects.css'
+import './styles/native-controls.css'
 
 import App from './App'
 import { BootGate } from '@/component/common/BootGate'
