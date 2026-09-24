@@ -313,6 +313,7 @@ export function FileDetail({
         </div>
         <div className="fd-danger-row">
           <span className="fd-danger-desc">删除操作演示（不会真的删除文件）</span>
+          <span className="fd-danger-btn">
           <DeleteButton
             onConfirm={() =>
               showDemo({
@@ -323,6 +324,7 @@ export function FileDetail({
             }
             onCancel={() => {}}
           />
+          </span>
         </div>
       </div>
 

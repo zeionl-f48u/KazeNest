@@ -1304,8 +1304,18 @@
   background: color-mix(in srgb, var(--kn-rose-500) 6%, transparent);
 }
 .fd-danger-desc {
+  flex: 1;
+  min-width: 0;
   font-size: var(--kn-text-sm);
   color: var(--kn-fg-muted);
+}
+/* DeleteButton 槽位：预留展开后的宽度（关闭 48 + 展开面板 84），
+ * 展开动画期间不会向左溢出压到说明文字 */
+.fd-danger-btn {
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  min-width: 132px;
 }
 @media (max-width: 860px) {
   .fm-rail {
