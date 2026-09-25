@@ -163,6 +163,12 @@ export function formatRelativeTime(timestamp: number): string {
 
 /** AI 消息快照（可 JSON 序列化的子集，只存展示所需字段） */
 export interface AiMessageSnapshot {
+  /** 思考过程（每条助手回复自带；旧数据可缺省） */
+  thinking?: string
+  /** 思考耗时（ms） */
+  thinkingMs?: number
+  /** 思考块展开态（恢复后统一折叠） */
+  thinkingOpen?: boolean
   id: number
   role: 'user' | 'assistant'
   text: string

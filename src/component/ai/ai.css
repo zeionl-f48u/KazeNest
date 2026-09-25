@@ -363,20 +363,23 @@
 }
 
 /* ==================== 消息 AiMessageView ==================== */
+/* 回复内思考块（位于该条助手回复正文上方）：
+ * - 思考中：展开、头部「思考中…」+ 打字点，步骤逐条写入
+ * - 完成后：头部「已深度思考（用时 N 秒）」，自动折叠（可手动展开）
+ * - 折叠动画用 grid-template-rows 0fr/1fr（内容裁剪，不做高度计算） */
 .ai-think {
   width: 100%;
-  border: 1px solid var(--kn-border);
-  border-radius: var(--kn-radius-lg);
-  background: color-mix(in srgb, var(--kn-bg-sunken) 55%, transparent);
-  overflow: hidden;
-  flex-shrink: 0;
+  margin-bottom: 2px;
+  border-left: 2px solid color-mix(in srgb, var(--kn-fg) 14%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--kn-bg-sunken) 45%, transparent);
 }
 .ai-think-head {
   display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
-  padding: 7px 10px;
+  padding: 6px 10px 6px 8px;
   border: 0;
   background: transparent;
   color: var(--kn-fg-muted);
@@ -385,6 +388,7 @@
   font-weight: 600;
   cursor: pointer;
   text-align: left;
+  border-radius: 3px;
   transition: background var(--kn-dur-fast);
 }
 .ai-think-head:hover {
@@ -392,14 +396,35 @@
 }
 .ai-think-arrow {
   flex-shrink: 0;
-  transition: transform var(--kn-dur-fast) var(--kn-ease-out);
+  opacity: 0.7;
+  transition: transform var(--kn-dur-base) var(--kn-ease-out);
 }
 .ai-think-arrow.is-open {
   transform: rotate(90deg);
 }
-.ai-think-model {
-  font-weight: 400;
-  color: var(--kn-fg-subtle);
+.ai-think-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 折叠动画：网格行 0fr → 1fr */
+.ai-think-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--kn-dur-slow) var(--kn-ease-out);
+}
+.ai-think.is-open .ai-think-body {
+  grid-template-rows: 1fr;
+}
+.ai-think-inner {
+  overflow: hidden;
+  min-height: 0;
+  padding: 0 12px 0 10px;
+}
+.ai-think.is-open .ai-think-inner {
+  padding-bottom: 10px;
 }
 .ai-think-tasks {
   list-style: none;
@@ -408,15 +433,18 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  opacity: 0.88;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-think-body {
+    transition: none;
+  }
 }
 
-.ai-think-body {
-  padding: 8px 12px 10px 26px;
-  border-top: 1px dashed var(--kn-border);
+.ai-msg-stopped {
+  margin: 0;
   font-size: var(--kn-text-xs);
-  line-height: 1.75;
-  color: var(--kn-fg-muted);
-  white-space: pre-line;
+  color: var(--kn-fg-subtle);
 }
 .ai-msg {
   display: flex;

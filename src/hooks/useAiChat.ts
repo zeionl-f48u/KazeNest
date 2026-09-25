@@ -53,6 +53,12 @@ export interface AiMessage {
   id: number
   role: 'user' | 'assistant'
   text: string
+  /** 思考过程（每条助手回复自带；空串 = 正在思考） */
+  thinking?: string
+  /** 思考耗时（ms，完成时记录）→「已深度思考（用时 N 秒）」 */
+  thinkingMs?: number
+  /** 思考块展开状态（用户可切换；历史默认折叠） */
+  thinkingOpen?: boolean
   work?: WorkKind
   time: string
   sessionId: string
@@ -79,7 +85,7 @@ export interface Usage {
 let sessions: AiSession[] = []
 let activeSessionId = ''
 let activeModel = 'model-chat'
-let thinking: { open: boolean; text: string } | null = null
+let thinkingStream: { messageId: number; length: number } | null = null
 let streaming: { messageId: number; length: number } | null = null
 let usage: Usage = { inputTokens: 0, outputTokens: 0, cost: 0 }
 let seq = 0
@@ -129,6 +135,9 @@ function syncSession() {
           id: m.id,
           role: m.role,
           text: m.text,
+          thinking: m.thinking,
+          thinkingMs: m.thinkingMs,
+          thinkingOpen: false /* 恢复后统一折叠 */,
           work: m.work,
           time: m.time,
           sessionId: sess.id,
@@ -162,6 +171,9 @@ export async function restoreAi() {
           id: m.id,
           role: m.role,
           text: m.text,
+          thinking: m.thinking,
+          thinkingMs: m.thinkingMs,
+          thinkingOpen: false,
           work: m.work as WorkKind | undefined,
           time: m.time,
           sessionId: sid ?? '',
@@ -238,16 +250,14 @@ function newChat() {
     messages: [],
   })
   activeSessionId = id
-  thinking = null
-  streaming = null
+  resetStreams()
   bump()
 }
 
 function selectSession(id: string) {
   if (activeSessionId === id) return
   activeSessionId = id
-  thinking = null
-  streaming = null
+  resetStreams()
   bump()
 }
 
@@ -293,28 +303,79 @@ function thinkingFor(work?: WorkKind): string {
   ].join('\n')
 }
 
+let streamTimer: number | undefined
+let thinkTimer: number | undefined
+
+/** 清空两阶段流式状态（清定时器） */
+function resetStreams() {
+  window.clearInterval(thinkTimer)
+  window.clearInterval(streamTimer)
+  thinkTimer = undefined
+  streamTimer = undefined
+  thinkingStream = null
+  streaming = null
+}
+
+/**
+ * 模拟工作流（两阶段，都写进同一条助手消息）：
+ *   1) 思考：思考文本流式写入 m.thinking（思考块在回复上方展开显示）
+ *   2) 答案：思考完成 → 记录耗时并自动折叠 → 答案流式写入 m.text
+ */
 function simulateWorkflow(work?: WorkKind) {
   const sess = activeSession()
   if (!sess) return
   const sessionId = sess.id
-  thinking = { open: false, text: '' }
+
+  const id = ++seq
+  sess.messages.push({
+    id,
+    role: 'assistant',
+    text: '',
+    thinking: '',
+    thinkingOpen: true,
+    work,
+    time: nowTime(),
+    sessionId,
+  })
+  thinkingStream = { messageId: id, length: 0 }
+  streaming = null
   bump()
-  window.setTimeout(() => {
-    if (activeSessionId !== sessionId) return
-    thinking = { open: false, text: thinkingFor(work) }
+
+  const thought = thinkingFor(work)
+  const startedAt = Date.now()
+
+  thinkTimer = window.setInterval(() => {
+    const target = sess.messages.find((m) => m.id === id)
+    if (
+      !thinkingStream ||
+      thinkingStream.messageId !== id ||
+      !target ||
+      activeSessionId !== sessionId
+    ) {
+      window.clearInterval(thinkTimer)
+      thinkTimer = undefined
+      return
+    }
+    thinkingStream.length = Math.min(thinkingStream.length + 3, thought.length)
+    target.thinking = thought.slice(0, thinkingStream.length)
+    if (thinkingStream.length >= thought.length) {
+      window.clearInterval(thinkTimer)
+      thinkTimer = undefined
+      target.thinking = thought
+      target.thinkingMs = Math.max(1000, Date.now() - startedAt)
+      target.thinkingOpen = false /* 思考完成 → 自动收起（DeepSeek 行为） */
+      thinkingStream = null
+      streamAnswer(work, sessionId, id)
+    }
     bump()
-    streamAssistant(work, sessionId)
-  }, 700)
+  }, 18)
 }
 
-let streamTimer: number | undefined
-
-function streamAssistant(work: WorkKind | undefined, sessionId: string) {
+/** 第二阶段：答案流式写入同一条消息 */
+function streamAnswer(work: WorkKind | undefined, sessionId: string, id: number) {
   const sess = sessions.find((s) => s.id === sessionId)
   if (!sess) return
   const full = replyFor(work)
-  const id = ++seq
-  sess.messages.push({ id, role: 'assistant', text: '', work, time: nowTime(), sessionId })
   streaming = { messageId: id, length: 0 }
   bump()
   streamTimer = window.setInterval(() => {
@@ -337,17 +398,30 @@ function streamAssistant(work: WorkKind | undefined, sessionId: string) {
   }, 16)
 }
 
-/** 停止生成（保留已输出内容并按已输出部分计费；空占位则移除） */
+/** 停止生成（保留已输出内容；思考阶段停止则保留部分思考、不再生成答案） */
 function stopStreaming() {
+  const sess = activeSession()
+
+  /* 思考阶段：保留部分思考，折叠收起 */
+  if (thinkingStream) {
+    window.clearInterval(thinkTimer)
+    thinkTimer = undefined
+    const target = sess?.messages.find((m) => m.id === thinkingStream?.messageId)
+    if (target) target.thinkingOpen = false
+    thinkingStream = null
+    bump()
+    return
+  }
+
   if (!streaming) return
   window.clearInterval(streamTimer)
   streamTimer = undefined
   const st = streaming
-  const sess = activeSession()
   const target = sess?.messages.find((m) => m.id === st.messageId)
   if (sess && target) {
     if (target.text) billUsage('assistant', target.text)
-    else {
+    else if (!target.thinking) {
+      /* 完全空占位（思考也还没开始）才移除 */
       const idx = sess.messages.findIndex((m) => m.id === st.messageId)
       if (idx >= 0) sess.messages.splice(idx, 1)
     }
@@ -359,7 +433,7 @@ function stopStreaming() {
 /** 重新生成最后一条助手回复 */
 function regenerate() {
   const sess = activeSession()
-  if (!sess || streaming) return
+  if (!sess || streaming || thinkingStream) return
   for (let i = sess.messages.length - 1; i >= 0; i--) {
     if (sess.messages[i].role === 'assistant') {
       sess.messages.splice(i, 1)
@@ -371,11 +445,19 @@ function regenerate() {
   bump()
 }
 
-function toggleThinking() {
-  if (thinking) {
-    thinking.open = !thinking.open
-    bump()
-  }
+/** 切换思考块展开状态（默认：流式中/最后一条助手消息） */
+function toggleThinking(messageId?: number) {
+  const sess = activeSession()
+  if (!sess) return
+  const id =
+    messageId ??
+    thinkingStream?.messageId ??
+    [...sess.messages].reverse().find((m) => m.role === 'assistant')?.id
+  if (id == null) return
+  const target = sess.messages.find((m) => m.id === id)
+  if (!target || target.thinking === undefined) return
+  target.thinkingOpen = !(target.thinkingOpen ?? false)
+  bump()
 }
 
 function setActiveModel(id: string) {
@@ -429,8 +511,8 @@ const api = {
   get activeModelInfo() {
     return activeModelInfo()
   },
-  get thinking() {
-    return thinking
+  get thinkingStream() {
+    return thinkingStream
   },
   get streaming() {
     return streaming

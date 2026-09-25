@@ -1,8 +1,10 @@
 /**
- * AiMessageView：消息流渲染（React 版，DeepSeek Harness 风格）
- * - 思考过程折叠块（默认收起；text 为空 = 思考中动画点）
+ * AiMessageView：消息流渲染（React 版，DeepSeek Harness / opencode 风格）
+ * - 每条助手回复自带思考块（位于回复正文上方）：
+ *   思考中 → 展开、步骤流式写入、头部「思考中…」+ 打字点
+ *   完成后 → 「已深度思考（用时 N 秒）」并自动折叠，可手动展开
  * - 用户消息右对齐浅色卡片；助手消息左对齐面板卡片（平铺）
- * - 流式打字机光标；悬停操作：复制 / 重新生成（仅最后一条）
+ * - 流式打字机光标；悬停操作：表情 / 复制 / 重新生成（仅最后一条）
  */
 import { useState } from 'react'
 import { Icon } from '@/component/common/Icon'
@@ -16,17 +18,19 @@ import './ai.css'
 
 export interface AiMessageViewProps {
   messages: AiMessage[]
-  thinking: { open: boolean; text: string } | null
+  /** 思考阶段流式状态（messageId = 正在思考的消息） */
+  thinkingStream: { messageId: number; length: number } | null
+  /** 答案阶段流式状态 */
   streaming: { messageId: number; length: number } | null
   modelLabel: string
   lastAssistantId: number | null
-  onToggleThinking: () => void
+  onToggleThinking: (messageId: number) => void
   onRegenerate: () => void
 }
 
 export function AiMessageView({
   messages,
-  thinking,
+  thinkingStream,
   streaming,
   modelLabel,
   lastAssistantId,
@@ -58,55 +62,24 @@ export function AiMessageView({
 
   return (
     <>
-      {thinking && (
-        <div className="ai-think">
-          <button type="button" className="ai-think-head" onClick={onToggleThinking}>
-            <Icon
-              name="chevron-right"
-              size={12}
-              className={`ai-think-arrow${thinking.open ? ' is-open' : ''}`}
-            />
-            <span className="ai-think-title">思考过程</span>
-            <span className="ai-think-model">{modelLabel}</span>
-            {!thinking.text && (
-              <span className="ai-typing">
-                <i />
-                <i />
-                <i />
-              </span>
-            )}
-          </button>
-          {thinking.open && thinking.text && (
-            <div className="ai-think-body">
-              {/* Rare UI 任务清单：思考步骤（最后一条 = 进行中） */}
-              <TaskList
-                className="ai-think-tasks"
-                size="sm"
-                accent="var(--kn-brand-500)"
-                tasks={thinking.text
-                  .split('\n')
-                  .map((line) => line.trim())
-                  .filter(Boolean)
-                  .map((label, i, arr) => ({
-                    id: `think-${i}`,
-                    label,
-                    done: i < arr.length - 1,
-                  }))}
-                onTasksChange={() => {}}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
       {messages.map((m) => {
         const work = workByKind(m.work)
         const isStreaming = !!streaming && streaming.messageId === m.id
+        const isThinking = !!thinkingStream && thinkingStream.messageId === m.id
+        const hasThinking = m.role === 'assistant' && m.thinking !== undefined
+        const thinkOpen = hasThinking && (isThinking || (m.thinkingOpen ?? false))
+        const steps = hasThinking
+          ? (m.thinking ?? '')
+              .split('\n')
+              .map((line) => line.trim())
+              .filter(Boolean)
+          : []
+
         return (
           <div key={m.id} className={`ai-msg is-${m.role}`}>
             <div className="ai-msg-head">
-              {m.role === 'assistant' && isStreaming ? (
-                /* Rare UI MatrixOrb：生成中的 AI 形象 */
+              {m.role === 'assistant' && (isThinking || isStreaming) ? (
+                /* Rare UI MatrixOrb：思考/生成中的 AI 形象 */
                 <MatrixOrb size={16} state="thinking" className="ai-orb ai-msg-orb" />
               ) : (
                 <Icon name={m.role === 'user' ? 'user' : 'sparkles'} size={11} className="ai-msg-role-icon" />
@@ -121,18 +94,74 @@ export function AiMessageView({
             </div>
 
             {m.role === 'assistant' ? (
-              <div
-                className="ai-msg-markdown"
-                onClick={onMarkdownClick}
-                dangerouslySetInnerHTML={{ __html: renderMessage(m.text) }}
-              />
+              <>
+                {hasThinking && (
+                  <div className={`ai-think${thinkOpen ? ' is-open' : ''}`}>
+                    <button
+                      type="button"
+                      className="ai-think-head"
+                      aria-expanded={thinkOpen}
+                      onClick={() => onToggleThinking(m.id)}
+                    >
+                      <Icon
+                        name="chevron-right"
+                        size={12}
+                        className={`ai-think-arrow${thinkOpen ? ' is-open' : ''}`}
+                      />
+                      <span className="ai-think-title">
+                        {isThinking
+                          ? '思考中'
+                          : m.thinkingMs
+                            ? `已深度思考（用时 ${Math.max(1, Math.round(m.thinkingMs / 1000))} 秒）`
+                            : '思考过程'}
+                      </span>
+                      {isThinking && (
+                        <span className="ai-typing">
+                          <i />
+                          <i />
+                          <i />
+                        </span>
+                      )}
+                    </button>
+                    <div className="ai-think-body">
+                      <div className="ai-think-inner">
+                        {steps.length > 0 && (
+                          <TaskList
+                            className="ai-think-tasks"
+                            size="sm"
+                            accent="var(--kn-brand-500)"
+                            tasks={steps.map((label, i) => ({
+                              id: `think-${m.id}-${i}`,
+                              label,
+                              done: isThinking ? i < steps.length - 1 : true,
+                            }))}
+                            onTasksChange={() => {}}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {m.text ? (
+                  <div
+                    className="ai-msg-markdown"
+                    onClick={onMarkdownClick}
+                    dangerouslySetInnerHTML={{ __html: renderMessage(m.text) }}
+                  />
+                ) : (
+                  !isStreaming &&
+                  !isThinking &&
+                  hasThinking && <p className="ai-msg-stopped">已停止生成</p>
+                )}
+              </>
             ) : (
               <p className="ai-msg-text">{m.text}</p>
             )}
 
             {isStreaming && <span className="ai-caret" />}
 
-            {m.role === 'assistant' && !isStreaming && (
+            {m.role === 'assistant' && !isStreaming && !isThinking && (
               <div className="ai-msg-actions">
                 <EmojiReaction size="sm" onReact={() => {}} />
                 <button type="button" className="ai-act" aria-label="复制" onClick={() => copyMessage(m)}>

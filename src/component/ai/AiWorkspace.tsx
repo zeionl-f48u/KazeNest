@@ -51,15 +51,11 @@ export function AiWorkspace({ variant = 'page', closable = false, onExpand, onCl
 
   const messages = chat.messages
   const streaming = chat.streaming
-  const thinking = chat.thinking
+  const thinkingStream = chat.thinkingStream
 
-  /* AI 形象（MatrixOrb）状态：生成/思考中 → thinking；输入聚焦 → listening；否则 idle */
+  /* AI 形象（MatrixOrb）状态：思考/生成中 → thinking；输入聚焦 → listening；否则 idle */
   const orbState: MatrixOrbState =
-    streaming || (thinking && thinking.text === '')
-      ? 'thinking'
-      : inputFocused
-        ? 'listening'
-        : 'idle'
+    thinkingStream || streaming ? 'thinking' : inputFocused ? 'listening' : 'idle'
 
   const lastAssistantId = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -88,10 +84,10 @@ export function AiWorkspace({ variant = 'page', closable = false, onExpand, onCl
     }, 0)
   }, [])
 
-  /* 新消息 / 流式增量：贴近底部时跟随 */
+  /* 新消息 / 思考 / 答案流式增量：贴近底部时跟随 */
   useLayoutEffect(() => {
     scrollToBottom(false)
-  }, [messages.length, streaming?.length, scrollToBottom])
+  }, [messages.length, thinkingStream?.length, streaming?.length, scrollToBottom])
 
   useEffect(() => {
     scrollToBottom(true)
@@ -250,7 +246,7 @@ export function AiWorkspace({ variant = 'page', closable = false, onExpand, onCl
           ) : (
             <AiMessageView
               messages={messages}
-              thinking={thinking}
+              thinkingStream={thinkingStream}
               streaming={streaming}
               modelLabel={chat.activeModelInfo?.label ?? ''}
               lastAssistantId={lastAssistantId}
