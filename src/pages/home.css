@@ -12,6 +12,9 @@
   flex-direction: column;
   gap: var(--kn-space-3);
   overflow: hidden;
+  /* 容器查询容器：首页断点按"实际可用宽度"判断（侧栏收起后内容立刻变宽） */
+  container-type: inline-size;
+  container-name: home;
 }
 
 /* ============ 欢迎横幅 ============ */
@@ -337,8 +340,8 @@
   }
 }
 
-/* ============ 宽度适配 ============ */
-@media (max-width: 1240px) {
+/* ============ 宽度适配（容器查询：按首页实际可用宽度） ============ */
+@container home (max-width: 1040px) {
   .home-main {
     grid-template-columns: minmax(0, 1fr) 280px;
   }
@@ -346,12 +349,12 @@
     display: none;
   }
 }
-@media (max-width: 1040px) {
+@container home (max-width: 860px) {
   .home-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (max-width: 880px) {
+@container home (max-width: 720px) {
   .home-main {
     grid-template-columns: minmax(0, 1fr);
   }

@@ -66,6 +66,8 @@ export default function App() {
   const mainAreaRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLElement>(null)
   const [mainAreaWidth, setMainAreaWidth] = useState(() => window.innerWidth)
+  /* 视口宽度（rAF 节流）：用于"窗口变小先让侧栏/面板，而不是压缩主内容" */
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth)
 
   useEffect(() => {
     const el = mainAreaRef.current
@@ -75,6 +77,19 @@ export default function App() {
     const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
+  }, [])
+
+  useEffect(() => {
+    let raf = 0
+    const onResize = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => setViewportWidth(window.innerWidth))
+    }
+    window.addEventListener('resize', onResize)
+    return () => {
+      window.removeEventListener('resize', onResize)
+      cancelAnimationFrame(raf)
+    }
   }, [])
 
   /* ==================== 启动：窗口 + 会话恢复 + 全局事件 ==================== */
@@ -201,6 +216,11 @@ export default function App() {
   }
 
   const onActivityToggle = (_item: ActivityItem) => {
+    /* 自动让位中：点击改为临时强制显示（窗口变宽后自动复位） */
+    if (sideBarAutoHidden) {
+      setSideBarForceShow((v) => !v)
+      return
+    }
     setSideBarOpen((v) => !v)
   }
 
@@ -208,12 +228,31 @@ export default function App() {
 
   const Page = active.page
   const SidebarComp = active.sidebar
-  const sideBarVisible = sideBarOpen && active.sidebarVisible && !!SidebarComp
-  const isFlush = activeView === 'editor' || activeView === 'ai' || activeView === 'browser'
 
   /* AI 面板：展开（AI 视图，占满主区域） / 停靠（其它视图，独立一列） */
   const panelExpanded = panel.open && activeView === 'ai'
+  const panelDocked = panel.open && !panelExpanded
   const panelTargetWidth = panelExpanded ? mainAreaWidth : panel.width
+
+  /* ==================== 按尺寸自动让位 ====================
+   * 窗口变小时优先保住主内容：把固定宽度的侧栏自动收起（不改用户偏好，
+   * 窗口恢复后自动回来）；若 AI 面板停靠占用右侧，门槛再抬高其宽度。
+   * 侧栏内容基准需求：活动栏 50 + 侧栏 300 + 间隙/圆角 ≈ 880，
+   * 再加主内容最小可用宽约 520 → 基准 900。 */
+  const sideBarAutoHidden =
+    viewportWidth < 900 + (panelDocked ? panel.width + 8 : 0)
+
+  /* 窄窗口下用户手动再开侧栏：临时强制显示，窗口变宽后自动复位 */
+  const [sideBarForceShow, setSideBarForceShow] = useState(false)
+  useEffect(() => {
+    if (!sideBarAutoHidden) setSideBarForceShow(false)
+  }, [sideBarAutoHidden])
+
+  const sideBarVisible =
+    ((sideBarOpen && !sideBarAutoHidden) || sideBarForceShow) &&
+    active.sidebarVisible &&
+    !!SidebarComp
+  const isFlush = activeView === 'editor' || activeView === 'ai' || activeView === 'browser'
 
   /* ==================== 离场动画（存在感状态） ==================== */
   /* React 条件渲染默认瞬间卸载；这里保留元素至离场动画播完再卸载 */
