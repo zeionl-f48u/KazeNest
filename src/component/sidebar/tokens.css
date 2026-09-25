@@ -17,10 +17,12 @@
  */
 
 :root {
-  /* ============ 活动栏（Activity Bar）============ */
-  --ab-width: 46px;
-  --ab-action-size: 36px;
-  --ab-icon-size: 20px;
+  /* ============ 活动栏（Activity Bar）============
+   * 尺寸随界面密度缩放（--kn-density） */
+  --ab-width: calc(50px * var(--kn-density));
+  --ab-action-size: calc(42px * var(--kn-density));
+  --ab-icon-size: calc(24px * var(--kn-density));
+  --ab-badge-size: calc(17px * var(--kn-density));
   --ab-font-size: var(--kn-text-md);
 
   --ab-bg: transparent;
@@ -34,10 +36,16 @@
 
   /* ============ 侧边栏（Side Bar）============ */
   --sb-width: 300px;
-  --sb-titlebar-height: 44px;
-  --sb-font-size: var(--kn-text-md);
-  --sb-row-height: 30px;
+  --sb-titlebar-height: calc(44px * var(--kn-density));
+  --sb-font-size: calc(var(--kn-text-md) * var(--kn-density));
+  --sb-row-height: calc(30px * var(--kn-density));
   --sb-tree-indent: 12px;
+  /* 侧栏内图标 / 动作按钮 / 分组头尺寸（随密度缩放） */
+  --sb-icon-size: calc(13px * var(--kn-density));
+  --sb-tree-icon-size: calc(14px * var(--kn-density));
+  --sb-sec-icon-size: calc(12px * var(--kn-density));
+  --sb-action-size: calc(24px * var(--kn-density));
+  --sb-sec-header-height: calc(26px * var(--kn-density));
 
   --sb-bg: var(--kn-bg-elev);            /* 侧栏浮动面板 = 卡片色 */
   --sb-fg: var(--kn-fg);

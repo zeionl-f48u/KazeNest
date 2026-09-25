@@ -15,6 +15,8 @@ import type { DurationValue } from '@/component/ui/duration-picker'
 import CodeBlock from '@/component/ui/code-block'
 import { useTheme } from '@/hooks/useTheme'
 import type { ThemeMode } from '@/hooks/useTheme'
+import { useDensity } from '@/hooks/useDensity'
+import type { DensityMode } from '@/hooks/useDensity'
 import { showDemo } from '@/utils'
 import './settings.css'
 
@@ -38,9 +40,10 @@ const SHORTCUTS: { keys: string; label: string }[] = [
 
 export function Settings() {
   const { mode, setThemeMode } = useTheme()
+  /* 界面密度：真实设置（立即生效 + 持久化） */
+  const { mode: density, setDensityMode } = useDensity()
 
   /* 演示控件（仅本地视觉反馈） */
-  const [density, setDensity] = useState<'compact' | 'standard' | 'loose'>('standard')
   const [language, setLanguage] = useState('zh')
   const [fontSize, setFontSize] = useState(14)
   const [tabSize, setTabSize] = useState('2')
@@ -88,7 +91,7 @@ export function Settings() {
           <Icon name="cog" size={20} className="st-title-icon" />
           设置
         </h1>
-        <p className="st-subtitle">主题、编辑器与快捷键偏好（除主题外为界面演示）</p>
+        <p className="st-subtitle">主题、界面密度与编辑器偏好（主题 / 界面密度为真实设置）</p>
       </header>
 
       {/* ==================== 外观 ==================== */}
@@ -118,12 +121,12 @@ export function Settings() {
           <div className="st-row">
             <div className="st-row-main">
               <span className="st-row-title">界面密度</span>
-              <span className="st-row-desc">控件与列表的紧凑程度</span>
+              <span className="st-row-desc">控件与列表的紧凑程度（立即生效并持久化）</span>
             </div>
-            <Segmented<'compact' | 'standard' | 'loose'>
+            <Segmented<DensityMode>
               aria-label="界面密度"
               value={density}
-              onChange={setDensity}
+              onChange={setDensityMode}
               options={[
                 { value: 'compact', label: '紧凑' },
                 { value: 'standard', label: '标准' },
@@ -312,7 +315,7 @@ export function Settings() {
         </div>
       </section>
 
-      <p className="st-hint">演示模式：除主题外，设置项暂未持久化（接后端设置服务后生效）</p>
+      <p className="st-hint">演示模式：除主题与界面密度外，设置项暂未持久化（接后端设置服务后生效）</p>
       </div>
     </div>
   )

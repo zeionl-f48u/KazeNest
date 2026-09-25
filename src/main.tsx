@@ -26,9 +26,11 @@ import { BootGate } from '@/component/common/BootGate'
 import { ErrorBoundary } from '@/component/common/ErrorBoundary'
 import { prefetchViews } from '@/registry/views'
 import { bootstrapTheme } from '@/hooks/useTheme'
+import { bootstrapDensity } from '@/hooks/useDensity'
 
-/* 应用外观（读盘；渲染前应用避免闪白） */
+/* 应用外观与密度（读盘；渲染前应用避免闪白/尺寸跳动） */
 void bootstrapTheme()
+void bootstrapDensity()
 
 const container = document.getElementById('root')
 if (!container) throw new Error('找不到 #root 挂载点')

@@ -28,7 +28,7 @@ export function ActivityBar({ items, activeId, onSelect, onToggle }: ActivityBar
       onClick={() => (activeId === item.id ? onToggle(item) : onSelect(item.id))}
     >
       <span className="ab-indicator" aria-hidden="true" />
-      <Icon name={item.icon} size={22} className="ab-icon" />
+      <Icon name={item.icon} size="var(--ab-icon-size)" className="ab-icon" />
       {item.badge ? <span className="ab-badge">{item.badge}</span> : null}
     </button>
   )

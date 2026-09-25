@@ -80,10 +80,10 @@
 }
 .ab-badge {
   position: absolute;
-  top: 5px;
-  right: 4px;
-  min-width: 16px;
-  height: 16px;
+  top: 3px;
+  right: calc(var(--ab-action-size) * 0.06);
+  min-width: var(--ab-badge-size);
+  height: var(--ab-badge-size);
   padding: 0 4px;
   display: inline-flex;
   align-items: center;
@@ -142,8 +142,8 @@
   gap: 2px;
 }
 .sb-action {
-  width: 24px;
-  height: 24px;
+  width: var(--sb-action-size);
+  height: var(--sb-action-size);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -231,7 +231,7 @@
   align-items: center;
   gap: 4px;
   width: 100%;
-  height: 26px;
+  height: var(--sb-sec-header-height);
   padding: 0 18px;
   background: transparent;
   border: 0;

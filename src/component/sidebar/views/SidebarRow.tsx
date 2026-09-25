@@ -26,7 +26,7 @@ export function SidebarRow({ icon, color, selected, meta, onClick, children }: S
       {icon && (
         <Icon
           name={icon}
-          size={13}
+          size="var(--sb-icon-size)"
           className="sbrow-icon"
           style={color ? { color } : undefined}
         />
@@ -69,13 +69,13 @@ export function SidebarSection({
           onClick={() => setCollapsed((v) => !v)}
         >
           <Icon name={collapsed ? 'chevron-right' : 'chevron-down'} size={10} className="sbsec-chevron" />
-          {icon && <Icon name={icon} size={12} className="sbsec-icon" />}
+          {icon && <Icon name={icon} size="var(--sb-sec-icon-size)" className="sbsec-icon" />}
           <span className="sbsec-title">{title}</span>
           {count ? <span className="sbsec-count">{count}</span> : null}
         </button>
       ) : (
         <div className="sbsec-header">
-          {icon && <Icon name={icon} size={12} className="sbsec-icon" />}
+          {icon && <Icon name={icon} size="var(--sb-sec-icon-size)" className="sbsec-icon" />}
           <span className="sbsec-title">{title}</span>
           {count ? <span className="sbsec-count">{count}</span> : null}
         </div>

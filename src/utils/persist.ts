@@ -19,6 +19,7 @@ const KEYS = {
   recentFiles: 'recentFiles',
   appSession: 'appSession',
   theme: 'theme',
+  density: 'density',
 } as const
 
 /** 最近打开的文件项（name 去重键） */
@@ -88,6 +89,31 @@ export async function setTheme(mode: StoredTheme): Promise<void> {
   if (!s) return
   try {
     await s.set(KEYS.theme, mode)
+  } catch {
+    /* 忽略持久化失败 */
+  }
+}
+
+/* =================== 界面密度 =================== */
+
+export type StoredDensity = 'compact' | 'standard' | 'loose'
+
+export async function getDensity(): Promise<StoredDensity | null> {
+  const s = await getStore()
+  if (!s) return null
+  try {
+    const v = await s.get<StoredDensity>(KEYS.density)
+    return v === 'compact' || v === 'standard' || v === 'loose' ? v : null
+  } catch {
+    return null
+  }
+}
+
+export async function setDensity(mode: StoredDensity): Promise<void> {
+  const s = await getStore()
+  if (!s) return
+  try {
+    await s.set(KEYS.density, mode)
   } catch {
     /* 忽略持久化失败 */
   }

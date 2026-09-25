@@ -64,7 +64,7 @@ export function SideBarTree({
             )}
             <Icon
               name={nodeIcon(node)}
-              size={14}
+              size="var(--sb-tree-icon-size)"
               className="sbt-icon"
               style={node.color ? { color: node.color } : undefined}
             />

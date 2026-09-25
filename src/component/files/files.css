@@ -655,7 +655,7 @@
   box-sizing: border-box;
 }
 .ft-head {
-  height: 32px;
+  height: calc(32px * var(--kn-density));
   font-size: var(--kn-text-xs);
   font-weight: 600;
   letter-spacing: 0.2px;
@@ -664,7 +664,7 @@
 }
 .ft-row {
   position: relative;
-  height: 44px;
+  height: calc(44px * var(--kn-density));
   border: 0;
   border-radius: var(--kn-radius-md);
   background: transparent;

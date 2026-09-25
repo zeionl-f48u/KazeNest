@@ -143,6 +143,11 @@
   --kn-shadow-2xl: 0 1px 3px 0 rgba(0, 0, 0, 0.25);
   --kn-shadow-focus: 0 0 0 3px rgba(59, 130, 246, 0.25);
 
+  /* ============ 界面密度（useDensity 切换 <html data-density>）============
+   * 1 = 标准；紧凑 0.92 / 宽松 1.08。
+   * 组件的"可缩放尺寸"统一写成 calc(基准 * var(--kn-density))。 */
+  --kn-density: 1;
+
   /* ============ 动效（与 src/lib/motion.ts 的 token 对齐）============ */
   /* CSS 侧只负责 hover / 淡入淡出这类一次性过渡；
      会移动/变形的交给 JS 弹簧（SPRING）。 */
@@ -151,6 +156,14 @@
   --kn-dur-fast: 0.12s;
   --kn-dur-base: 0.18s;
   --kn-dur-slow: 0.26s;
+}
+
+/* 界面密度档位（属性选择器优先级高于 :root，覆盖 --kn-density） */
+html[data-density='compact'] {
+  --kn-density: 0.92;
+}
+html[data-density='loose'] {
+  --kn-density: 1.08;
 }
 
 html.dark {

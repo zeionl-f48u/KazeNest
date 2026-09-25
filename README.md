@@ -153,6 +153,9 @@ Dialog 与 Dropdown 的进出场也已改由 Motion 弹簧驱动（尊重 `prefe
   （按活动栏顺序左右推进，grid 叠层只动 transform/opacity，退出 130ms < 进入弹簧，滚动语义不变、切换复位滚动、会话恢复不播动画）；
   AI 面板与侧栏的宽度由 Motion 弹簧驱动（可中断，拖拽时 1:1 跟手，侧栏内容固定宽只裁剪+左滑）；
   Segmented 选中胶囊用共享 `layoutId` 滑动；卡片入场改 `whileInView` + 错峰（上限 8）；`MotionConfig reducedMotion="user"` 全局尊重系统"减少动态效果"
+- **界面密度**：设置页「紧凑 / 标准 / 宽松」为真实设置（`hooks/useDensity.ts`，落盘 settings.json），
+  通过 `<html data-density>` 上的 `--kn-density`（0.92 / 1 / 1.08）驱动活动栏、侧栏行高与图标、
+  文件列表行高等尺寸；启动时 `bootstrapDensity()` 先应用再渲染避免跳动
 - **滚动条**：竖向隐藏原生条（不占位、无灰条），改由 `ScrollIndicator` 覆盖层指示条呈现
   （滚动淡入、停 0.9s 淡出、任意容器通用、直接改 DOM 不触发 React 重渲染）；横向保留细圆角条
 - **性能**：页面组件按视图懒加载 + 渲染后 `requestIdleCallback` 空闲预取（首屏 JS 约 -42%）；
