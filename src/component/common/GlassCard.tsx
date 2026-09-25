@@ -18,6 +18,8 @@ export interface GlassCardProps {
   footer?: ReactNode
   children?: ReactNode
   onClick?: () => void
+  /** 额外样式（如网格中拉伸填满：h-full） */
+  className?: string
 }
 
 export function GlassCard({
@@ -29,11 +31,13 @@ export function GlassCard({
   footer,
   children,
   onClick,
+  className,
 }: GlassCardProps) {
   return (
     <article
       onClick={onClick}
       className={cn(
+        className,
         'relative flex flex-col gap-3 rounded-2xl p-5 text-[var(--kn-fg)]',
         'bg-[var(--kn-glass-bg)] backdrop-blur-[var(--kn-glass-blur)] backdrop-saturate-[var(--kn-glass-saturation)]',
         'border border-[var(--kn-glass-border)] shadow-[var(--kn-glass-shadow)]',
@@ -57,7 +61,7 @@ export function GlassCard({
         </div>
       )}
 
-      <div className="flex min-w-0 flex-col gap-2">
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
         {title && <h3 className="m-0 text-lg font-semibold tracking-[0.1px]">{title}</h3>}
         <div className="text-sm leading-[1.55] text-[var(--kn-fg-muted)]">
           {children ?? (desc && <p className="m-0">{desc}</p>)}

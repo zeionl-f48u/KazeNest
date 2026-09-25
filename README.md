@@ -153,6 +153,9 @@ Dialog 与 Dropdown 的进出场也已改由 Motion 弹簧驱动（尊重 `prefe
   （按活动栏顺序左右推进，grid 叠层只动 transform/opacity，退出 130ms < 进入弹簧，滚动语义不变、切换复位滚动、会话恢复不播动画）；
   AI 面板与侧栏的宽度由 Motion 弹簧驱动（可中断，拖拽时 1:1 跟手，侧栏内容固定宽只裁剪+左滑）；
   Segmented 选中胶囊用共享 `layoutId` 滑动；卡片入场改 `whileInView` + 错峰（上限 8）；`MotionConfig reducedMotion="user"` 全局尊重系统"减少动态效果"
+- **首页单屏布局**：整页不产生滚动条 —— 紧凑欢迎横幅（FluidOrb 背景 + GravityLetters 互动层 + 品牌/操作/状态）+
+  主区两栏（左「快速开始」3×2 卡片网格随高度拉伸填满，右「最近打开」列表内部滚动）；
+  按窗口高度（≤780 / ≤680px）与宽度（≤1240 / ≤1040 / ≤880px）逐级收缩，矮窗口不溢出
 - **界面密度**：设置页「紧凑 / 标准 / 宽松」为真实设置（`hooks/useDensity.ts`，落盘 settings.json），
   通过 `<html data-density>` 上的 `--kn-density`（0.92 / 1 / 1.08）驱动活动栏、侧栏行高与图标、
   文件列表行高等尺寸；启动时 `bootstrapDensity()` 先应用再渲染避免跳动

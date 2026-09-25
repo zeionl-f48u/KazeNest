@@ -13,6 +13,7 @@ import { Badge } from '@/component/ui/primitives'
 import { plugins, pluginCategories } from '@/data/plugins'
 import type { PluginDef } from '@/data/plugins'
 import ProximitySidebar from '@/component/ui/proximity-sidebar'
+import { GooeyNav } from '@/component/ui/gooey-nav'
 import StepPlayer from '@/component/ui/step-player'
 import { showDemo } from '@/utils'
 import './marketplace.css'
@@ -29,7 +30,7 @@ const INSTALL_STEPS = [
 
 export function Marketplace() {
   const [query, setQuery] = useState('')
-  const [category, setCategory] = useState<string>('全部')
+  const [category, setCategory] = useState<(typeof pluginCategories)[number]>('全部')
   const [sort, setSort] = useState<SortKey>('popular')
 
   /* 安装流程演示状态：StepPlayer 随安装动作推进 */
@@ -171,18 +172,15 @@ export function Marketplace() {
         />
       </div>
 
-      {/* 分类筛选 */}
+      {/* 分类筛选（Rare UI 果冻导航） */}
       <div className="mk-cats">
-        {pluginCategories.map((c) => (
-          <button
-            key={c}
-            type="button"
-            className={`mk-cat${category === c ? ' is-on' : ''}`}
-            onClick={() => setCategory(c)}
-          >
-            {c}
-          </button>
-        ))}
+        <GooeyNav
+          size="sm"
+          items={pluginCategories.map((c) => ({ label: c }))}
+          value={Math.max(0, pluginCategories.indexOf(category))}
+          onChange={(i: number) => setCategory(pluginCategories[i])}
+          activeColor="var(--kn-brand-500)"
+        />
       </div>
 
       {/* 卡片网格 */}
