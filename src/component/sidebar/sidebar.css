@@ -168,6 +168,7 @@
 
 /* ==================== SidebarRow ==================== */
 .sbrow {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -189,23 +190,33 @@
 .sbrow:hover {
   background: var(--sb-item-hover);
 }
+/* 选中指示条：左缘圆角细长条（替代原来的虚线点，选中时淡入并轻微展开） */
+.sbrow::before,
+.sbt-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 5px;
+  bottom: 5px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--sb-rail);
+  opacity: 0;
+  transform: scaleY(0.55);
+  transform-origin: center;
+  pointer-events: none;
+  transition:
+    opacity var(--kn-dur-base) var(--kn-ease-out),
+    transform var(--kn-dur-base) var(--kn-ease-out);
+}
 .sbrow.is-selected {
-  position: relative;
   background: var(--sb-selection-bg);
   color: var(--sb-selection-fg);
 }
-.sbrow.is-selected::before {
-  content: '';
-  position: absolute;
-  left: -1px;
-  top: 2px;
-  bottom: 2px;
-  width: 2px;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    var(--sb-rail) 0 2px,
-    transparent 2px 4px
-  );
+.sbrow.is-selected::before,
+.sbt-row.is-selected::before {
+  opacity: 1;
+  transform: scaleY(1);
 }
 .sbrow.is-selected .sbrow-icon {
   color: inherit;
@@ -310,19 +321,6 @@
 .sbt-row.is-selected .sbt-icon,
 .sbt-row.is-selected .sbt-meta {
   color: inherit;
-}
-.sbt-row.is-selected::before {
-  content: '';
-  position: absolute;
-  left: -1px;
-  top: 2px;
-  bottom: 2px;
-  width: 2px;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    var(--sb-rail) 0 2px,
-    transparent 2px 4px
-  );
 }
 .sbt-chevron {
   opacity: 0.6;

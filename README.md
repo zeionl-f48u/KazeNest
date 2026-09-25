@@ -143,7 +143,7 @@ Dialog 与 Dropdown 的进出场也已改由 Motion 弹簧驱动（尊重 `prefe
   状态色 iOS 体系；选中 = 橙底 10% + 橙字
 - **外壳**：官网 `DesktopShell` 同款区块布局（`p-2` 页面框 + 块间 8px 间隙）；侧栏、主内容、AI 面板是三个并列的独立窗口块（互不重叠）；AI 面板开合/展开为宽度过渡（0 ↔ 目标宽），编辑器/浏览器/AI 等全宽工具视图直接铺满主区块（不套内层白框）；`rounded-[45px]` squircle 主面板（`--kn-shell-radius`）、
   独立 squircle 浮动侧栏（radius 23）、透明拖拽顶栏 + 玻璃胶囊控件（`--kn-glass-*`）
-- **导航**：官网 `SidebarNav` 语言 —— 选中项橙色虚线导航轨、分组标题 11px 大写 `tracking-[0.14em]`、
+- **导航**：官网 `SidebarNav` 语言 —— 选中项左缘橙色圆角指示条（淡入 + 轻微展开）、分组标题 11px 大写 `tracking-[0.14em]`、
   活动栏选中 = 橙字 + 橙底
 - **字体**：Inter（UI 正文）/ JetBrains Mono（代码）走 `@fontsource-variable` 的 woff2
   按 unicode-range 子集按需加载（实际只加载用到的字形，约 60KB，替代原先 1MB 的整份 TTF）；
